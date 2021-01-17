@@ -127,7 +127,7 @@ class QSSHServer():
 			pass
 		return False
 
-	def test_server(self,ip,port,username,password):
+	def test_server(self,ip=None,port=None,username=None,password=None):
 		try:
 			sleep(2)
 			_ip = ip or self.ip
