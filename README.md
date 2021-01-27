@@ -29,7 +29,6 @@ pip3 install honeypots
 
 ## Usage Example - Easy! (ssh, http, https.. honeypot)
 ```
-pip install honeypots
 python3 -m honeypots ssh,http,https
 ```
 
