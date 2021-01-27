@@ -20,9 +20,17 @@ Easy to setup customizable honeypots for monitoring network traffic, bots activi
 - QTelnetServer <- TELNET (Server using Twisted)
 - QVNCServer <- VNC (Emulator using Twisted)
 
+or dns ftp httpproxy http https imap mysql pop3 postgres redis smb smtp socks5 ssh telnet vnc
+
 ## Install
 ```
 pip3 install honeypots
+```
+
+## Usage Example - Easy! (ssh, http, https.. honeypot)
+```
+pip install honeypots
+python3 -m honeypots ssh,http,https
 ```
 
 ## Usage Example (ssh honeypot + auto test)
