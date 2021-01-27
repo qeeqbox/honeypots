@@ -106,6 +106,7 @@ class QSOCKS5Server():
 
 	def kill_server(self,process=False):
 		try:
+			self.process.kill()
 			for process in process_iter():
 				cmdline = ' '.join(process.cmdline())
 				if '--custom' in cmdline and Path(__file__).name in cmdline:

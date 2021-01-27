@@ -167,7 +167,7 @@ class QMysqlServer():
 
 	def kill_server(self,process=False):
 		try:
-			
+			self.process.kill()
 			for process in process_iter():
 				cmdline = ' '.join(process.cmdline())
 				if '--custom' in cmdline and Path(__file__).name in cmdline:
@@ -175,8 +175,10 @@ class QMysqlServer():
 					process.kill()
 			if self.process != None:
 				self.process.kill()
+			return True
 		except:
 			pass
+		return False
 
 	def test_server(self,ip=None,port=None,username=None,password=None):
 		try:

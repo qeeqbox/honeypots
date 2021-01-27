@@ -21,6 +21,7 @@ from collections import Mapping
 from logging import Handler
 from sys import stdout
 from pygments import highlight, lexers, formatters
+from datetime import datetime
 
 def clean_all():
 	for entry in scandir('.'):
@@ -32,7 +33,6 @@ def kill_servers(name):
 		for process in process_iter():
 			cmdline = ' '.join(process.cmdline())
 			if '--custom' in cmdline and name in cmdline:
-				print(name)
 				process.send_signal(SIGTERM)
 				process.kill()
 		if self.process != None:
@@ -88,6 +88,23 @@ class CustomHandler(Handler):
 
 	def emit(self, record):
 		try:
+			time_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+			if record.msg[0] == "servers":
+				if "server" in record.msg[1]:
+					temp = record.msg[1]
+					action = record.msg[1]['action']
+					server = temp['server'].replace('server','').replace('_','')
+					del temp['server']
+					del temp['action']
+					stdout.write("[{}] [{}] [{}] -> {}\n".format(time_now,server,action,dumps(temp, sort_keys=True, cls=ComplexEncoder)))
+			else:
+				stdout.write(dumps(record.msg, sort_keys=True,cls=ComplexEncoder))
+		except Exception as e:
+			stdout.write(dumps({"logger":repr(record)}, sort_keys=True,cls=ComplexEncoder))
+		stdout.flush()
+
+	def emit_old(self, record):
+		try:
 			if record.msg[0] == "servers":
 				if "server" in record.msg[1]:
 					temp = record.msg[1]
@@ -98,5 +115,4 @@ class CustomHandler(Handler):
 				stdout.write(highlight(dumps(record.msg, sort_keys=True,indent=4,cls=ComplexEncoder), lexers.JsonLexer(), formatters.TerminalFormatter()))
 		except Exception as e:
 			stdout.write(highlight(dumps({"logger":repr(record)}, sort_keys=True,indent=4,cls=ComplexEncoder), lexers.JsonLexer(), formatters.TerminalFormatter()))
-			pass
 		stdout.flush()
