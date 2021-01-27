@@ -32,6 +32,8 @@ from socket import socket as ssocket
 from socket import AF_INET,SOCK_STREAM
 from pathlib import Path
 from os import path
+from honeypots.helper import server_arguments, get_free_port, CustomHandler
+from uuid import uuid4
 
 disable_warnings()
 
@@ -55,9 +57,9 @@ class QHTTPSServer():
 		tlog.startLogging(open(temp_name, 'w'), setStdout=False)
 
 	def setup_logger(self,logs):
-		self.logs = getLogger('honeypotslogger')
+		self.logs = getLogger('honeypotslogger'+'_'+__class__.__name__+'_'+str(uuid4())[:8])
 		self.logs.setLevel(DEBUG)
-		basicConfig()
+		self.logs.addHandler(CustomHandler())
 
 	def CreateCert(self,host_name, key, cert):
 		pk = crypto.PKey()
@@ -184,11 +186,25 @@ class QHTTPSServer():
 		reactor.listenSSL(self.port, Site(MainResource()), ssl_context)
 		reactor.run()
 
-	def run_server(self,process=False):
-
+	def run_server(self,process=False,auto=False):
 		if process:
-			if self.close_port():
+			if auto:
+				port = get_free_port()
+				if port > 0:
+					self.port = port
+					self.process = Popen(['python3',path.realpath(__file__),'--custom','--ip',str(self.ip),'--port',str(self.port),'--username',str(self.username),'--password',str(self.password),'--mocking',str(self.mocking),'--logs',str(self._logs)])
+					if self.process.poll() is None:
+						self.logs.info(["servers",{'server':'https_server','action':'process','status':'success','ip':self.ip,'port':self.port,'username':self.username,'password':self.password}])
+					else:
+						self.logs.info(["servers",{'server':'https_server','action':'process','status':'error','ip':self.ip,'port':self.port,'username':self.username,'password':self.password}])
+				else:
+					self.logs.info(["servers",{'server':'https_server','action':'setup','status':'error','ip':self.ip,'port':self.port,'username':self.username,'password':self.password}])
+			elif self.close_port() and self.kill_server():
 				self.process = Popen(['python3',path.realpath(__file__),'--custom','--ip',str(self.ip),'--port',str(self.port),'--username',str(self.username),'--password',str(self.password),'--mocking',str(self.mocking),'--logs',str(self._logs)])
+				if self.process.poll() is None:
+					self.logs.info(["servers",{'server':'https_server','action':'process','status':'success','ip':self.ip,'port':self.port,'username':self.username,'password':self.password}])
+				else:
+					self.logs.info(["servers",{'server':'https_server','action':'process','status':'error','ip':self.ip,'port':self.port,'username':self.username,'password':self.password}])
 		else:
 			self.https_server_main()
 
@@ -236,7 +252,6 @@ class QHTTPSServer():
 			return False
 
 if __name__ == '__main__':
-	from helper import server_arguments
 	parsed = server_arguments()
 	if parsed.docker or parsed.aws or parsed.custom:
 		qhttpsserver = QHTTPSServer(ip=parsed.ip,port=parsed.port,username=parsed.username,password=parsed.password,mocking=parsed.mocking,logs=parsed.logs)

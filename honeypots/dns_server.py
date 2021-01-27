@@ -29,6 +29,8 @@ from socket import AF_INET,SOCK_STREAM
 from pathlib import Path
 from os import path
 from dns.resolver import Resolver
+from honeypots.helper import server_arguments, get_free_port, CustomHandler
+from uuid import uuid4
 
 class QDNSServer():
 	def __init__(self,ip=None,port=None,resolver_addresses=None,logs=None):
@@ -45,9 +47,9 @@ class QDNSServer():
 		tlog.startLogging(open(temp_name, 'w'), setStdout=False)
 
 	def setup_logger(self,logs):
-		self.logs = getLogger('honeypotslogger')
+		self.logs = getLogger('honeypotslogger'+'_'+__class__.__name__+'_'+str(uuid4())[:8])
 		self.logs.setLevel(DEBUG)
-		basicConfig()
+		self.logs.addHandler(CustomHandler())
 
 	def dns_server_main(self):
 		_q_s = self
@@ -80,10 +82,25 @@ class QDNSServer():
 		reactor.listenTCP(self.port, self.factory,interface=self.ip)
 		reactor.run()
 
-	def run_server(self,process=False):
+	def run_server(self,process=False,auto=False):
 		if process:
-			if self.close_port():
+			if auto:
+				port = get_free_port()
+				if port > 0:
+					self.port = port
+					self.process = Popen(['python3',path.realpath(__file__),'--custom','--ip',str(self.ip),'--port',str(self.port),'--logs',str(self._logs)])
+					if self.process.poll() is None:
+						self.logs.info(["servers",{'server':'dns_server','action':'process','status':'success','ip':self.ip,'port':self.port}])
+					else:
+						self.logs.info(["servers",{'server':'dns_server','action':'process','status':'error','ip':self.ip,'port':self.port}])
+				else:
+					self.logs.info(["servers",{'server':'dns_server','action':'setup','status':'error','ip':self.ip,'port':self.port}])
+			elif self.close_port() and self.kill_server():
 				self.process = Popen(['python3',path.realpath(__file__),'--custom','--ip',str(self.ip),'--port',str(self.port),'--logs',str(self._logs)])
+				if self.process.poll() is None:
+					self.logs.info(["servers",{'server':'dns_server','action':'process','status':'success','ip':self.ip,'port':self.port}])
+				else:
+					self.logs.info(["servers",{'server':'dns_server','action':'process','status':'error','ip':self.ip,'port':self.port}])
 		else:
 			self.dns_server_main()
 
@@ -129,7 +146,6 @@ class QDNSServer():
 			return False
 
 if __name__ == '__main__':
-	from helper import server_arguments
 	parsed = server_arguments()
 	if parsed.docker or parsed.aws or parsed.custom:
 		qdnsserver = QDNSServer(ip=parsed.ip,port=parsed.port,resolver_addresses=parsed.resolver_addresses,logs=parsed.logs)

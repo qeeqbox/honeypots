@@ -4,7 +4,7 @@ Current Servers/Emulators
 =========================
 - QDNSServer <- DNS (Server using Twisted)
 - QFTPServer <- FTP (Server using Twisted)
-- QHTTPPoxyServer <- HTTP Proxy (Server using Twisted)
+- QHTTPProxyServer <- HTTP Proxy (Server using Twisted)
 - QHTTPServer <- HTTP (Server using Twisted)
 - QHTTPSServer <- HTTPS (Server using Twisted)
 - QIMAPServer <- IMAP (Server using Twisted)
@@ -19,8 +19,16 @@ Current Servers/Emulators
 - QTelnetServer <- TELNET (Server using Twisted)
 - QVNCServer <- VNC (Emulator using Twisted)
 
-Usage Example (ssh honeypot)
-============================
+Usage Example - Easy! (ssh, http, https.. honeypot)
+===================================================
+
+.. code:: bash
+
+   pip install honeypots
+   python3 -m honeypots ssh,http,https
+
+Usage Example as Objects (ssh honeypot)
+=======================================
 Import your target honeypot
 
 .. code:: python
@@ -36,8 +44,6 @@ Import your target honeypot
     from honeypots import QSSHServer
     qsshserver = QSSHServer(port=9999)
     qsshserver.run_server(process=True)
-    qsshserver.test_server(port=9999)
-    qsshserver.kill_server()
 
 Test the honeypot
 
@@ -50,6 +56,24 @@ Honeypot answer
 .. code:: python
 
     INFO:chameleonlogger:['servers', {'status': 'success', 'username': 'test', 'ip': '127.0.0.1', 'server': 'ssh_server', 'action': 'login', 'password': 'test', 'port': 38696}]
+
+Close the honeypot
+
+.. code:: python
+
+    qsshserver.kill_server()
+
+Usage Example as Objects and test (ssh honeypot)
+================================================
+Import your target honeypot
+
+.. code:: python
+
+    from honeypots import QSSHServer
+    qsshserver = QSSHServer()
+    qsshserver.run_server(process=True, auto=True)
+    qsshserver.test_server()
+    qsshserver.kill_server()
 
 acknowledgement
 ===============

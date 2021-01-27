@@ -3,7 +3,7 @@ Easy to setup customizable honeypots for monitoring network traffic, bots activi
 ## Current Servers/Emulators
 - QDNSServer <- DNS (Server using Twisted)
 - QFTPServer <- FTP (Server using Twisted)
-- QHTTPPoxyServer <- HTTP Proxy (Server using Twisted)
+- QHTTPProxyServer <- HTTP Proxy (Server using Twisted)
 - QHTTPServer <- HTTP (Server using Twisted)
 - QHTTPSServer <- HTTPS (Server using Twisted)
 - QIMAPServer <- IMAP (Server using Twisted)

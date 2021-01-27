@@ -33,6 +33,8 @@ from socket import socket as ssocket
 from socket import AF_INET,SOCK_STREAM
 from subprocess import Popen
 from tempfile import gettempdir,_get_candidate_names
+from honeypots.helper import server_arguments, get_free_port, CustomHandler
+from uuid import uuid4
 
 #loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
 #print([logging.getLogger(name) for name in logging.root.manager.loggerDict])
@@ -50,9 +52,9 @@ class QSMBServer():
 		self.disable_logger()
 
 	def setup_logger(self,logs):
-		self.logs = getLogger("honeypotslogger")
+		self.logs = getLogger('honeypotslogger'+'_'+__class__.__name__+'_'+str(uuid4())[:8])
 		self.logs.setLevel(DEBUG)
-		basicConfig()
+		self.logs.addHandler(CustomHandler())
 
 	def disable_logger(self):
 		getLogger('impacket').propagate = False
@@ -66,13 +68,13 @@ class QSMBServer():
 				#sys.stdout.flush()
 				try:
 					if "Incoming connection" in message.strip() or "AUTHENTICATE_MESSAGE" in message.strip() or "authenticated successfully" in message.strip():
-						_q_s.logs.info(["servers",{'server':'http_server','action':'connection','msg':message.strip()}])
+						_q_s.logs.info(["servers",{'server':'smb_server','action':'connection','msg':message.strip()}])
 					elif ":4141414141414141:" in message.strip():
 						parsed = message.strip().split(":")
 						if len(parsed)>2:
-							_q_s.logs.info(["servers",{'server':'http_server','action':'login','workstation':parsed[0],'test':parsed[1]}])
+							_q_s.logs.info(["servers",{'server':'smb_server','action':'login','workstation':parsed[0],'test':parsed[1]}])
 				except Exception as e:
-					_q_s.logs.error(["errors",{'server':'http_server','error':'write',"type":"error -> "+repr(e)}])
+					_q_s.logs.error(["errors",{'server':'smb_server','error':'write',"type":"error -> "+repr(e)}])
 
 		handler = StreamHandler(Logger())
 		getLogger("impacket").addHandler(handler)
@@ -88,10 +90,25 @@ class QSMBServer():
 		server.start()
 		rmtree(dirpath)
 
-	def run_server(self,process=False):
+	def run_server(self,process=False,auto=False):
 		if process:
-			if self.close_port():
+			if auto:
+				port = get_free_port()
+				if port > 0:
+					self.port = port
+					self.process = Popen(['python3',path.realpath(__file__),'--custom','--ip',str(self.ip),'--port',str(self.port),'--username',str(self.username),'--password',str(self.password),'--mocking',str(self.mocking),'--logs',str(self._logs)])
+					if self.process.poll() is None:
+						self.logs.info(["servers",{'server':'smb_server','action':'process','status':'success','ip':self.ip,'port':self.port,'username':self.username,'password':self.password}])
+					else:
+						self.logs.info(["servers",{'server':'smb_server','action':'process','status':'error','ip':self.ip,'port':self.port,'username':self.username,'password':self.password}])
+				else:
+					self.logs.info(["servers",{'server':'smb_server','action':'setup','status':'error','ip':self.ip,'port':self.port,'username':self.username,'password':self.password}])
+			elif self.close_port() and self.kill_server():
 				self.process = Popen(['python3',path.realpath(__file__),'--custom','--ip',str(self.ip),'--port',str(self.port),'--username',str(self.username),'--password',str(self.password),'--mocking',str(self.mocking),'--logs',str(self._logs)])
+				if self.process.poll() is None:
+					self.logs.info(["servers",{'server':'smb_server','action':'process','status':'success','ip':self.ip,'port':self.port,'username':self.username,'password':self.password}])
+				else:
+					self.logs.info(["servers",{'server':'smb_server','action':'process','status':'error','ip':self.ip,'port':self.port,'username':self.username,'password':self.password}])
 		else:
 			self.smb_server_main()
 
@@ -117,7 +134,7 @@ class QSMBServer():
 			smb_client = SMBConnection(_ip, _ip,sess_port=_port)
 			smb_client.login(_username, _password)
 		except Exception as e:
-			self.logs.error(["errors",{'server':'http_server','error':'write',"type":"error -> "+repr(e)}])
+			self.logs.error(["errors",{'server':'smb_server','error':'write',"type":"error -> "+repr(e)}])
 
 	def close_port(self):
 		sock = ssocket(AF_INET,SOCK_STREAM)
@@ -134,11 +151,11 @@ class QSMBServer():
 		if sock.connect_ex((self.ip,self.port)) != 0:
 			return True
 		else:
-			self.logs.error(['errors',{'server':'redis_server','error':'port_open','type':'Port {} still open..'.format(self.ip)}])
+			self.logs.error(['errors',{'server':'smb_server','error':'port_open','type':'Port {} still open..'.format(self.ip)}])
 			return False
 
 if __name__ == '__main__':
-	from helper import server_arguments
+
 	parsed = server_arguments()
 	if parsed.docker or parsed.aws or parsed.custom:
 		qsmbserver = QSMBServer(ip=parsed.ip,port=parsed.port,username=parsed.username,password=parsed.password,mocking=parsed.mocking,logs=parsed.logs)

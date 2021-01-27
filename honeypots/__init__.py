@@ -1,6 +1,6 @@
 from .dns_server import QDNSServer
 from .ftp_server import QFTPServer
-from .http_proxy_server import QHTTPPoxyServer
+from .http_proxy_server import QHTTPProxyServer
 from .http_server import QHTTPServer
 from .https_server import QHTTPSServer
 from .smb_server import QSMBServer

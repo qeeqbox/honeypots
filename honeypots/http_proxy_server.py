@@ -28,8 +28,10 @@ from socket import AF_INET,SOCK_STREAM
 from email.parser import BytesParser
 from pathlib import Path
 from os import path
+from honeypots.helper import server_arguments, get_free_port, CustomHandler
+from uuid import uuid4
 
-class QHTTPPoxyServer():
+class QHTTPProxyServer():
 	def __init__(self,ip=None,port=None,mocking=None,logs=None):
 		self.ip= ip or '0.0.0.0'
 		self.port = port or 8080 
@@ -44,9 +46,9 @@ class QHTTPPoxyServer():
 		tlog.startLogging(open(temp_name, 'w'), setStdout=False)
 
 	def setup_logger(self,logs):
-		self.logs = getLogger('honeypotslogger')
+		self.logs = getLogger('honeypotslogger'+'_'+__class__.__name__+'_'+str(uuid4())[:8])
 		self.logs.setLevel(DEBUG)
-		basicConfig()
+		self.logs.addHandler(CustomHandler())
 
 	def http_proxy_server_main(self):
 		_q_s = self
@@ -106,11 +108,25 @@ class QHTTPPoxyServer():
 		reactor.listenTCP(port=self.port, factory=factory, interface=self.ip)
 		reactor.run()
 
-	def run_server(self,process=False):
-
+	def run_server(self,process=False,auto=False):
 		if process:
-			if self.close_port():
+			if auto:
+				port = get_free_port()
+				if port > 0:
+					self.port = port
+					self.process = Popen(['python3',path.realpath(__file__),'--custom','--ip',str(self.ip),'--port',str(self.port),'--mocking',str(self.mocking),'--logs',str(self._logs)])
+					if self.process.poll() is None:
+						self.logs.info(["servers",{'server':'http_proxy_server','action':'process','status':'success','ip':self.ip,'port':self.port}])
+					else:
+						self.logs.info(["servers",{'server':'http_proxy_server','action':'process','status':'error','ip':self.ip,'port':self.port}])
+				else:
+					self.logs.info(["servers",{'server':'http_proxy_server','action':'setup','status':'error','ip':self.ip,'port':self.port}])
+			elif self.close_port() and self.kill_server():
 				self.process = Popen(['python3',path.realpath(__file__),'--custom','--ip',str(self.ip),'--port',str(self.port),'--mocking',str(self.mocking),'--logs',str(self._logs)])
+				if self.process.poll() is None:
+					self.logs.info(["servers",{'server':'http_proxy_server','action':'process','status':'success','ip':self.ip,'port':self.port}])
+				else:
+					self.logs.info(["servers",{'server':'http_proxy_server','action':'process','status':'error','ip':self.ip,'port':self.port}])
 		else:
 			self.http_proxy_server_main()
 
@@ -155,8 +171,7 @@ class QHTTPPoxyServer():
 			return False
 
 if __name__ == '__main__':
-	from helper import server_arguments
 	parsed = server_arguments()
 	if parsed.docker or parsed.aws or parsed.custom:
-		qhttpproxyserver = QHTTPPoxyServer(ip=parsed.ip,port=parsed.port,mocking=parsed.mocking,logs=parsed.logs)
+		qhttpproxyserver = QHTTPProxyServer(ip=parsed.ip,port=parsed.port,mocking=parsed.mocking,logs=parsed.logs)
 		qhttpproxyserver.run_server()

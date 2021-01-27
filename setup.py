@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup, find_packages
 
 with open("README.rst", "r") as fh:
     long_description = fh.read()
@@ -9,11 +9,16 @@ setup(
     	author_email='gigaqeeq@gmail.com',
 	description="Easy to setup honeypots!",
 	long_description=long_description,
-	version='0.3',
+	version='0.5',
 	license="AGPL-3.0",
 	url="https://github.com/qeeqbox/honeypots",
 	packages=['honeypots'],
 	include_package_data=True,
+    entry_points={
+        "console_scripts": [
+            "honeypots = honeypots.__main__:main"
+        ]
+    },
 	install_requires=[
 		'pipenv',
 		'twisted',
@@ -28,7 +33,8 @@ setup(
 		'pycryptodome',
 		'vncdotool',
 		'service_identity',
-		'requests[socks]'
+		'requests[socks]',
+		'pygments'
 	],
 	python_requires='>=3'
 )
