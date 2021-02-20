@@ -11,7 +11,7 @@ pip3 install honeypots
 
 ## Usage Example - Auto configure
 
-honeypot, or multiple honeypots separated by comma or word all
+honeypot, or multiple honeypots separated by comma or word `all`
 
 ```
 python3 -m honeypots ssh
