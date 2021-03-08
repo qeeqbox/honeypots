@@ -1,6 +1,6 @@
 <p align="center"> <img src="https://raw.githubusercontent.com/qeeqbox/honeypots/main/readme/honeypots.png"></p>
 
-16 different honeypots in a single PyPI package for monitoring network traffic, bots activities, and username\password credentials. All honeypots are non-blocking and can be used as objects or calling the auto-configure scripts directly.
+16 different honeypots in a single PyPI package for monitoring network traffic, bots activities, and username\password credentials. All honeypots are non-blocking and can be used as objects or called directly with auto-configure scripts.
 
 The current available honeypots are: dns ftp httpproxy http https imap mysql pop3 postgres redis smb smtp socks5 ssh telnet vnc
 
