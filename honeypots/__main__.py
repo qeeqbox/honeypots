@@ -29,6 +29,7 @@ def main():
     try:
         if argv[1] == "list":
             list_all_honeypots()
+            exit()
         elif argv[1] == "all":
             for honeypot in all_servers:
                 x = globals()[honeypot]()
