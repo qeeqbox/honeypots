@@ -1,1 +1,9 @@
+Sat Apr  3 06:30:47 UTC 2021
+[X] honeypots
+[X] installing python3, python3-pip, autopep8 & jq
+[X] installing the pip package
+[X] checking the pip package
+[X] delete 
+[X] good package
+[X] running autopep8
 [X] done
