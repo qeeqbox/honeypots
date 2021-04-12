@@ -28,6 +28,8 @@ python3 -m honeypots imap:143,mysql:3306,redis:6379
 ## Usage Example - Import as object and auto test
 
 ```
+#you need higher user permissions for binding\closing some ports
+
 ip= String E.g. 0.0.0.0
 port= Int E.g. 9999
 username= String E.g. Test
@@ -48,6 +50,8 @@ qsshserver.kill_server()
 
 ## Usage Example - Import as object and test with external ssh command
 ```
+#you need higher user permissions for binding\closing some ports
+
 from honeypots import QSSHServer
 qsshserver = QSSHServer(port=9999)
 qsshserver.run_server(process=True)
