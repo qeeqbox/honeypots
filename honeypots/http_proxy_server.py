@@ -16,40 +16,26 @@ filterwarnings(action='ignore', module='.*OpenSSL.*')
 from dns.resolver import query as dsnquery
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol, ClientFactory, Factory
-from psutil import process_iter
-from signal import SIGTERM
-from requests import get
-from logging import DEBUG, basicConfig, getLogger
 from twisted.python import log as tlog
-from tempfile import gettempdir, _get_candidate_names
+from requests import get
 from subprocess import Popen
-from socket import socket as ssocket
-from socket import AF_INET, SOCK_STREAM
 from email.parser import BytesParser
-from pathlib import Path
 from os import path
-from honeypots.helper import server_arguments, get_free_port, CustomHandler
+from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger
 from uuid import uuid4
 
 
 class QHTTPProxyServer():
-    def __init__(self, ip=None, port=None, mocking=None, logs=None):
+    def __init__(self, ip=None, port=None, mocking=None, logs=None, logs_location=None):
         self.ip = ip or '0.0.0.0'
         self.port = port or 8080
         self.mocking = mocking or ''
         self.process = None
-        self._logs = logs
-        self.setup_logger(self._logs)
-        self.disable_logger()
-
-    def disable_logger(self):
-        temp_name = path.join(gettempdir(), next(_get_candidate_names()))
-        tlog.startLogging(open(temp_name, 'w'), setStdout=False)
-
-    def setup_logger(self, logs):
-        self.logs = getLogger('honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8])
-        self.logs.setLevel(DEBUG)
-        self.logs.addHandler(CustomHandler())
+        self._logs = logs or ''
+        self.logs_location = logs_location or ''
+        self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
+        self.logs = setup_logger(self.uuid, self.logs_location, self._logs)
+        disable_logger(1, tlog)
 
     def http_proxy_server_main(self):
         _q_s = self
@@ -115,7 +101,7 @@ class QHTTPProxyServer():
                 port = get_free_port()
                 if port > 0:
                     self.port = port
-                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--mocking', str(self.mocking), '--logs', str(self._logs)])
+                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
                     if self.process.poll() is None:
                         self.logs.info(["servers", {'server': 'http_proxy_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port}])
                     else:
@@ -123,28 +109,13 @@ class QHTTPProxyServer():
                 else:
                     self.logs.info(["servers", {'server': 'http_proxy_server', 'action': 'setup', 'status': 'error', 'ip': self.ip, 'port': self.port}])
             elif self.close_port() and self.kill_server():
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--mocking', str(self.mocking), '--logs', str(self._logs)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
                 if self.process.poll() is None:
                     self.logs.info(["servers", {'server': 'http_proxy_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port}])
                 else:
                     self.logs.info(["servers", {'server': 'http_proxy_server', 'action': 'process', 'status': 'error', 'ip': self.ip, 'port': self.port}])
         else:
             self.http_proxy_server_main()
-
-    def kill_server(self, process=False):
-        try:
-            self.process.kill()
-            for process in process_iter():
-                cmdline = ' '.join(process.cmdline())
-                if '--custom' in cmdline and Path(__file__).name in cmdline:
-                    process.send_signal(SIGTERM)
-                    process.kill()
-            if self.process is not None:
-                self.process.kill()
-            return True
-        except BaseException:
-            pass
-        return False
 
     def test_server(self, ip=None, port=None, domain=None):
         try:
@@ -156,26 +127,16 @@ class QHTTPProxyServer():
             pass
 
     def close_port(self):
-        sock = ssocket(AF_INET, SOCK_STREAM)
-        sock.settimeout(2)
-        if sock.connect_ex((self.ip, self.port)) == 0:
-            for process in process_iter():
-                try:
-                    for conn in process.connections(kind='inet'):
-                        if self.port == conn.laddr.port:
-                            process.send_signal(SIGTERM)
-                            process.kill()
-                except BaseException:
-                    pass
-        if sock.connect_ex((self.ip, self.port)) != 0:
-            return True
-        else:
-            self.logs.error(['errors', {'server': 'http_proxy_server', 'error': 'port_open', 'type': 'Port {} still open..'.format(self.ip)}])
-            return False
+        ret = close_port_wrapper('http_proxy_server', self.ip, self.port, self.logs)
+        return ret
+
+    def kill_server(self):
+        ret = kill_server_wrapper('http_proxy_server', self.uuid, self.process)
+        return ret
 
 
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
-        qhttpproxyserver = QHTTPProxyServer(ip=parsed.ip, port=parsed.port, mocking=parsed.mocking, logs=parsed.logs)
+        qhttpproxyserver = QHTTPProxyServer(ip=parsed.ip, port=parsed.port, mocking=parsed.mocking, logs=parsed.logs, logs_location=parsed.logs_location)
         qhttpproxyserver.run_server()

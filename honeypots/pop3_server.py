@@ -14,23 +14,16 @@ from twisted.mail.pop3 import POP3
 from twisted.internet.protocol import Factory
 from twisted.internet import reactor
 from random import choice
-from psutil import process_iter
-from signal import SIGTERM
 from poplib import POP3 as poplibPOP3
-from logging import DEBUG, basicConfig, getLogger
 from twisted.python import log as tlog
-from tempfile import gettempdir, _get_candidate_names
 from subprocess import Popen
-from socket import socket as ssocket
-from socket import AF_INET, SOCK_STREAM
-from pathlib import Path
 from os import path
-from honeypots.helper import server_arguments, get_free_port, CustomHandler
+from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger
 from uuid import uuid4
 
 
 class QPOP3Server():
-    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, logs=None):
+    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, logs=None, logs_location=None):
         self.ip = ip or '0.0.0.0'
         self.port = port or 110
         self.username = username or "test"
@@ -38,18 +31,11 @@ class QPOP3Server():
         self.mocking = mocking or ''
         self.random_servers = ['Microsoft Exchange POP3 service is ready']
         self.process = None
-        self._logs = logs
-        self.setup_logger(self._logs)
-        self.disable_logger()
-
-    def disable_logger(self):
-        temp_name = path.join(gettempdir(), next(_get_candidate_names()))
-        tlog.startLogging(open(temp_name, 'w'), setStdout=False)
-
-    def setup_logger(self, logs):
-        self.logs = getLogger('honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8])
-        self.logs.setLevel(DEBUG)
-        self.logs.addHandler(CustomHandler())
+        self._logs = logs or ''
+        self.logs_location = logs_location or ''
+        self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
+        self.logs = setup_logger(self.uuid, self.logs_location, self._logs)
+        disable_logger(1, tlog)
 
     def pop3_server_main(self):
         _q_s = self
@@ -111,7 +97,7 @@ class QPOP3Server():
                 port = get_free_port()
                 if port > 0:
                     self.port = port
-                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs)])
+                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
                     if self.process.poll() is None:
                         self.logs.info(["servers", {'server': 'pop3_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
                     else:
@@ -119,28 +105,13 @@ class QPOP3Server():
                 else:
                     self.logs.info(["servers", {'server': 'pop3_server', 'action': 'setup', 'status': 'error', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
             elif self.close_port() and self.kill_server():
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
                 if self.process.poll() is None:
                     self.logs.info(["servers", {'server': 'pop3_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
                 else:
                     self.logs.info(["servers", {'server': 'pop3_server', 'action': 'process', 'status': 'error', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
         else:
             self.pop3_server_main()
-
-    def kill_server(self, process=False):
-        try:
-            self.process.kill()
-            for process in process_iter():
-                cmdline = ' '.join(process.cmdline())
-                if '--custom' in cmdline and Path(__file__).name in cmdline:
-                    process.send_signal(SIGTERM)
-                    process.kill()
-            if self.process is not None:
-                self.process.kill()
-            return True
-        except BaseException:
-            pass
-        return False
 
     def test_server(self, ip=None, port=None, username=None, password=None):
         try:
@@ -155,26 +126,16 @@ class QPOP3Server():
             pass
 
     def close_port(self):
-        sock = ssocket(AF_INET, SOCK_STREAM)
-        sock.settimeout(2)
-        if sock.connect_ex((self.ip, self.port)) == 0:
-            for process in process_iter():
-                try:
-                    for conn in process.connections(kind='inet'):
-                        if self.port == conn.laddr.port:
-                            process.send_signal(SIGTERM)
-                            process.kill()
-                except BaseException:
-                    pass
-        if sock.connect_ex((self.ip, self.port)) != 0:
-            return True
-        else:
-            self.logs.error(['errors', {'server': 'pop3_server', 'error': 'port_open', 'type': 'Port {} still open..'.format(self.ip)}])
-            return False
+        ret = close_port_wrapper('pop3_server', self.ip, self.port, self.logs)
+        return ret
+
+    def kill_server(self):
+        ret = kill_server_wrapper('pop3_server', self.uuid, self.process)
+        return ret
 
 
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
-        qpop3server = QPOP3Server(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, logs=parsed.logs)
+        qpop3server = QPOP3Server(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, logs=parsed.logs, logs_location=parsed.logs_location)
         qpop3server.run_server()
