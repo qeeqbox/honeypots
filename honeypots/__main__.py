@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-from honeypots import clean_all
+from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, server_arguments, clean_all
 from time import sleep
 from atexit import register
 from argparse import ArgumentParser
