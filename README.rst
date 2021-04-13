@@ -17,7 +17,15 @@ Use a honeypot, or multiple honeypots separated by comma or word all
 
 .. code:: bash
 
-    python3 -m honeypots ssh
+    python3 -m honeypots --setup ssh
+
+Usage Example - Auto configure with logs location
+=================================================
+Use a honeypot, or multiple honeypots separated by comma or word all
+
+.. code:: bash
+
+    python3 -m honeypots --setup ssh --logs all --logs_location tmp/honeypotslogs
 
 Usage Example - Auto configure with specific ports
 ==================================================

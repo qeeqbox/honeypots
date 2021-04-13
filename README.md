@@ -14,7 +14,15 @@ pip3 install honeypots
 honeypot, or multiple honeypots separated by comma or word `all`
 
 ```
-python3 -m honeypots ssh
+python3 -m honeypots --setup ssh
+```
+
+## Usage Example - Auto configure with logs location
+
+honeypot, or multiple honeypots separated by comma or word `all`
+
+```
+python3 -m honeypots --setup ssh --logs all --logs_location tmp/honeypotslogs
 ```
 
 ## Usage Example - Auto configure with specific ports
@@ -22,7 +30,7 @@ python3 -m honeypots ssh
 Use as honeypot:port or multiple honeypots as honeypot:port,honeypot:port
 
 ```
-python3 -m honeypots imap:143,mysql:3306,redis:6379
+python3 -m honeypots --setup imap:143,mysql:3306,redis:6379
 ```
 
 ## Usage Example - Import as object and auto test

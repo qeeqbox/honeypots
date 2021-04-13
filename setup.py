@@ -1,4 +1,4 @@
-from setuptools import setup, find_packages
+from setuptools import setup
 
 with open("README.rst", "r") as fh:
     long_description = fh.read()
@@ -9,7 +9,7 @@ setup(
     author_email='gigaqeeq@gmail.com',
     description="Easy to setup honeypots!",
     long_description=long_description,
-    version='0.6',
+    version='0.8',
     license="AGPL-3.0",
     url="https://github.com/qeeqbox/honeypots",
     packages=['honeypots'],
