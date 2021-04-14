@@ -16,7 +16,7 @@ from argparse import ArgumentParser
 from os import scandir
 from socket import socket, AF_INET, SOCK_STREAM
 from json import JSONEncoder, dumps
-from logging import Handler
+from logging import Handler, Formatter
 from sys import stdout
 from pygments import highlight, lexers, formatters
 from datetime import datetime
@@ -43,7 +43,9 @@ def setup_logger(temp_name, dir_name, logs):
     if logs == '' or logs == "terminal" or logs == "all":
         ret_logs_obj.addHandler(CustomHandler())
     if logs == "file" or logs == "all":
+        formatter = Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s')
         file_handler = RotatingFileHandler(path.join(dir_name, temp_name), maxBytes=10000, backupCount=10)
+        file_handler.setFormatter(formatter)
         ret_logs_obj.addHandler(file_handler)
     return ret_logs_obj
 
