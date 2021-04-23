@@ -9,7 +9,7 @@ setup(
     author_email='gigaqeeq@gmail.com',
     description="Easy to setup honeypots!",
     long_description=long_description,
-    version='0.8',
+    version='0.11',
     license="AGPL-3.0",
     url="https://github.com/qeeqbox/honeypots",
     packages=['honeypots'],
