@@ -15,7 +15,6 @@ from honeypots.helper import server_arguments, setup_logger
 from uuid import uuid4
 
 
-
 class QBSniffer():
     def __init__(self, filter=None, interface=None, config=''):
         self.current_ip = ifaddresses(interface)[AF_INET][0]['addr'].encode('utf-8')
