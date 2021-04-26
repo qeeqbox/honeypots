@@ -109,13 +109,13 @@ if __name__ == "__main__":
                             x = globals()[honeypot](config=ARGV.config)
                             x.run_server(process=True, auto=True)
                             temp_honeypots.append(x)
-        input("")
-        for server in temp_honeypots:
-            try:
-                print("Killing {}".format(server.__class__.__name__))
-                server.kill_server()
-            except BaseException:
-                pass
         if len(temp_honeypots) > 0:
+            input("")
+            for server in temp_honeypots:
+                try:
+                    print("Killing {}".format(server.__class__.__name__))
+                    server.kill_server()
+                except BaseException:
+                    pass
             print("Please wait few seconds")
             sleep(5)

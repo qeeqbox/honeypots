@@ -38,7 +38,7 @@ def disable_logger(logger_type, object):
 
 
 def setup_logger(temp_name, config, drop=False):
-    logs = ''
+    logs = 'terminal'
     logs_location = ''
     config_data = None
     if config and config != '':
@@ -53,12 +53,12 @@ def setup_logger(temp_name, config, drop=False):
     file_handler = None
     ret_logs_obj = getLogger(temp_name)
     ret_logs_obj.setLevel(DEBUG)
-    if logs == '' or logs == 'db' or logs == "all":
-        if logs == 'all' or logs == 'db':
+    if logs == 'terminal' or logs == 'db' or logs == "all" or logs == '':
+        if 'db' in logs or 'all' in logs:
             ret_logs_obj.addHandler(CustomHandler(temp_name, logs, config_data, drop))
-        if logs == 'all' or logs == '':
+        if 'terminal' in logs or 'all' in logs or logs == '':
             ret_logs_obj.addHandler(CustomHandler(temp_name, logs))
-    if logs == "file" or logs == "all":
+    if 'file' in logs or 'all' in logs:
         formatter = Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s')
         file_handler = RotatingFileHandler(path.join(logs_location, temp_name), maxBytes=10000, backupCount=10)
         file_handler.setFormatter(formatter)

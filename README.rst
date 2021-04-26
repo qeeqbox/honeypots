@@ -25,7 +25,14 @@ Use a honeypot, or multiple honeypots separated by comma or word all
 
 .. code:: bash
 
-    python3 -m honeypots --setup ssh --logs all --logs_location tmp/honeypotslogs
+    python3 -m honeypots --setup ssh --config config.json
+
+.. code:: json
+
+    {
+        "logs":"file,terminal",
+        "logs_location":"/temp/honeypots_logs/"
+    } 
 
 Usage Example - Auto configure with specific ports
 ==================================================
