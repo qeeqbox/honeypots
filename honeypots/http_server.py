@@ -32,7 +32,7 @@ disable_warnings()
 
 
 class QHTTPServer():
-    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, logs=None, logs_location=None):
+    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
         self.ip = ip or '0.0.0.0'
         self.port = port or 80
         self.username = username or "test"
@@ -42,10 +42,12 @@ class QHTTPServer():
         self.cert = path.join(gettempdir(), next(_get_candidate_names()))
         self.random_servers = ['Apache', 'nginx', 'Microsoft-IIS/7.5', 'Microsoft-HTTPAPI/2.0', 'Apache/2.2.15', 'SmartXFilter', 'Microsoft-IIS/8.5', 'Apache/2.4.6', 'Apache-Coyote/1.1', 'Microsoft-IIS/7.0', 'Apache/2.4.18', 'AkamaiGHost', 'Apache/2.2.25', 'Microsoft-IIS/10.0', 'Apache/2.2.3', 'nginx/1.12.1', 'Apache/2.4.29', 'cloudflare', 'Apache/2.2.22']
         self.process = None
-        self._logs = logs or ''
-        self.logs_location = logs_location or ''
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
-        self.logs = setup_logger(self.uuid, self.logs_location, self._logs)
+        self.config = config
+        if config:
+            self.logs = setup_logger(self.uuid, config)
+        else:
+            self.logs = setup_logger(self.uuid, None)
         disable_logger(1, tlog)
 
     def http_server_main(self):
@@ -151,7 +153,7 @@ class QHTTPServer():
                 elif request.method == b"POST":
                     self.headers = request.getAllHeaders()
                     _q_s.logs.info(["servers", {'server': 'http_server', 'action': 'post', 'ip': request.getClientIP()}])
-                    if request.uri == b"/login.html":
+                    if request.uri == b"/login.html" or b'/':
                         if _q_s.username != '' and _q_s.password != '':
                             form = FieldStorage(fp=request.content, headers=self.headers, environ={'REQUEST_METHOD': 'POST', 'CONTENT_TYPE': self.headers[b'content-type'], })
                             if 'username' in form and 'password' in form:
@@ -175,7 +177,7 @@ class QHTTPServer():
                 port = get_free_port()
                 if port > 0:
                     self.port = port
-                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                     if self.process.poll() is None:
                         self.logs.info(["servers", {'server': 'http_server', 'action': 'process', 'status': 'success', 'route': '/login.html', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
                     else:
@@ -183,7 +185,7 @@ class QHTTPServer():
                 else:
                     self.logs.info(["servers", {'server': 'http_server', 'action': 'setup', 'status': 'error', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
             elif self.close_port() and self.kill_server():
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                 if self.process.poll() is None:
                     self.logs.info(["servers", {'server': 'http_server', 'action': 'process', 'status': 'success', 'route': '/login.html', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
                 else:
@@ -215,5 +217,5 @@ class QHTTPServer():
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
-        qhttpserver = QHTTPServer(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, logs=parsed.logs, logs_location=parsed.logs_location)
+        qhttpserver = QHTTPServer(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, config=parsed.config)
         qhttpserver.run_server()

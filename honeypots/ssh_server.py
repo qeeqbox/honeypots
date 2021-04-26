@@ -27,7 +27,7 @@ from uuid import uuid4
 
 
 class QSSHServer():
-    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, logs=None, logs_location=None):
+    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
         self.ip = ip or '0.0.0.0'
         self.port = port or 22
         self.username = username or "test"
@@ -35,10 +35,12 @@ class QSSHServer():
         self.mocking = mocking or ''
         self.random_servers = ['OpenSSH 7.5', 'OpenSSH 7.3', 'Serv-U SSH Server 15.1.1.108', 'OpenSSH 6.4']
         self.process = None
-        self._logs = logs or ''
-        self.logs_location = logs_location or ''
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
-        self.logs = setup_logger(self.uuid, self.logs_location, self._logs)
+        self.config = config
+        if config:
+            self.logs = setup_logger(self.uuid, config)
+        else:
+            self.logs = setup_logger(self.uuid, None)
 
     def generate_pub_pri_keys(self):
         try:
@@ -61,7 +63,6 @@ class QSSHServer():
                 ServerInterface.__init__(self)
 
             def check_auth_password(self, username, password):
-                username, password = username.encode("utf-8"), password.encode("utf-8")
                 if username == _q_s.username and password == _q_s.password:
                     _q_s.logs.info(["servers", {'server': 'ssh_server', 'action': 'login', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': username, 'password': password}])
                 else:
@@ -99,7 +100,7 @@ class QSSHServer():
                 port = get_free_port()
                 if port > 0:
                     self.port = port
-                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                     if self.process.poll() is None:
                         self.logs.info(["servers", {'server': 'ssh_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
                     else:
@@ -107,7 +108,7 @@ class QSSHServer():
                 else:
                     self.logs.info(["servers", {'server': 'ssh_server', 'action': 'setup', 'status': 'error', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
             elif self.close_port() and self.kill_server():
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                 if self.process.poll() is None:
                     self.logs.info(["servers", {'server': 'ssh_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
                 else:
@@ -140,5 +141,5 @@ class QSSHServer():
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
-        qsshserver = QSSHServer(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, logs=parsed.logs, logs_location=parsed.logs_location)
+        qsshserver = QSSHServer(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, config=parsed.config)
         qsshserver.run_server()

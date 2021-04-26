@@ -23,7 +23,7 @@ from uuid import uuid4
 
 
 class QPOP3Server():
-    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, logs=None, logs_location=None):
+    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
         self.ip = ip or '0.0.0.0'
         self.port = port or 110
         self.username = username or "test"
@@ -31,10 +31,12 @@ class QPOP3Server():
         self.mocking = mocking or ''
         self.random_servers = ['Microsoft Exchange POP3 service is ready']
         self.process = None
-        self._logs = logs or ''
-        self.logs_location = logs_location or ''
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
-        self.logs = setup_logger(self.uuid, self.logs_location, self._logs)
+        self.config = config
+        if config:
+            self.logs = setup_logger(self.uuid, config)
+        else:
+            self.logs = setup_logger(self.uuid, None)
         disable_logger(1, tlog)
 
     def pop3_server_main(self):
@@ -61,7 +63,7 @@ class QPOP3Server():
 
             def do_PASS(self, password):
                 if self._user:
-                    if self._user == _q_s.username and password == _q_s.password:
+                    if self._user.decode() == _q_s.username and password.decode() == _q_s.password:
                         _q_s.logs.info(["servers", {'server': 'pop3_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
                     else:
                         _q_s.logs.info(["servers", {'server': 'pop3_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': self._user, 'password': password}])
@@ -97,7 +99,7 @@ class QPOP3Server():
                 port = get_free_port()
                 if port > 0:
                     self.port = port
-                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                     if self.process.poll() is None:
                         self.logs.info(["servers", {'server': 'pop3_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
                     else:
@@ -105,7 +107,7 @@ class QPOP3Server():
                 else:
                     self.logs.info(["servers", {'server': 'pop3_server', 'action': 'setup', 'status': 'error', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
             elif self.close_port() and self.kill_server():
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                 if self.process.poll() is None:
                     self.logs.info(["servers", {'server': 'pop3_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
                 else:
@@ -137,5 +139,5 @@ class QPOP3Server():
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
-        qpop3server = QPOP3Server(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, logs=parsed.logs, logs_location=parsed.logs_location)
+        qpop3server = QPOP3Server(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, config=parsed.config)
         qpop3server.run_server()

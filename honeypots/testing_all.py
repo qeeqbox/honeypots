@@ -1,42 +1,6 @@
 from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPSServer, QHTTPServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, clean_all
 from time import sleep
 
-
-print("Testing QSOCKS5Server")
-qsocks5server = QSOCKS5Server()
-qsocks5server.run_server(process=True, auto=True)
-sleep(1)
-qsocks5server.test_server()
-qsocks5server.kill_server()
-clean_all()
-
-print("Testing QSSHServer")
-qsshserver = QSSHServer()
-qsshserver.run_server(process=True, auto=True)
-sleep(1)
-qsshserver.test_server()
-qsshserver.kill_server()
-clean_all()
-
-print("Testing QTelnetServer")
-qtelnetserver = QTelnetServer()
-qtelnetserver.run_server(process=True, auto=True)
-sleep(1)
-qtelnetserver.test_server()
-qtelnetserver.kill_server()
-clean_all()
-
-print("Testing QVNCServer")
-qvncserver = QVNCServer()
-qvncserver.run_server(process=True, auto=True)
-sleep(1)
-qvncserver.test_server()
-qvncserver.kill_server()
-clean_all()
-
-
-exit()
-
 print("Testing QDNSServer")
 qdnsserver = QDNSServer()
 qdnsserver.run_server(process=True, auto=True)

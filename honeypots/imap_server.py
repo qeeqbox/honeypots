@@ -23,7 +23,7 @@ from uuid import uuid4
 
 
 class QIMAPServer():
-    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, logs=None, logs_location=None):
+    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
         self.ip = ip or '0.0.0.0'
         self.port = port or 143
         self.username = username or "test"
@@ -31,10 +31,12 @@ class QIMAPServer():
         self.mocking = mocking or ''
         self.random_servers = [b'OK Microsoft Exchange Server 2003 IMAP4rev1 server version 6.5.6944.0 DC9 ready']
         self.process = None
-        self._logs = logs or ''
-        self.logs_location = logs_location or ''
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
-        self.logs = setup_logger(self.uuid, self.logs_location, self._logs)
+        self.config = config
+        if config:
+            self.logs = setup_logger(self.uuid, config)
+        else:
+            self.logs = setup_logger(self.uuid, None)
 
     def imap_server_main(self):
 
@@ -89,7 +91,7 @@ class QIMAPServer():
                 port = get_free_port()
                 if port > 0:
                     self.port = port
-                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                     if self.process.poll() is None:
                         self.logs.info(["servers", {'server': 'imap_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
                     else:
@@ -97,7 +99,7 @@ class QIMAPServer():
                 else:
                     self.logs.info(["servers", {'server': 'imap_server', 'action': 'setup', 'status': 'error', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
             elif self.close_port() and self.kill_server():
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                 if self.process.poll() is None:
                     self.logs.info(["servers", {'server': 'imap_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
                 else:
@@ -128,5 +130,5 @@ class QIMAPServer():
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
-        qimapserver = QIMAPServer(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, logs=parsed.logs, logs_location=parsed.logs_location)
+        qimapserver = QIMAPServer(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, config=parsed.config)
         qimapserver.run_server()

@@ -21,17 +21,19 @@ from uuid import uuid4
 
 
 class QSOCKS5Server():
-    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, logs=None, logs_location=None):
+    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
         self.ip = ip or '0.0.0.0'
         self.port = port or 1080
         self.username = username or "test"
         self.password = password or "test"
         self.mocking = mocking or ''
         self.process = None
-        self._logs = logs or ''
-        self.logs_location = logs_location or ''
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
-        self.logs = setup_logger(self.uuid, self.logs_location, self._logs)
+        self.config = config
+        if config:
+            self.logs = setup_logger(self.uuid, config)
+        else:
+            self.logs = setup_logger(self.uuid, None)
 
     def socks5_server_main(self):
         _q_s = self
@@ -48,10 +50,10 @@ class QSOCKS5Server():
                             username = self.connection.recv(_len)
                             _len = ord(self.connection.recv(1))
                             password = self.connection.recv(_len)
-                            if username == _q_s.username and password == _q_s.password:
+                            if username.decode() == _q_s.username and password.decode() == _q_s.password:
                                 _q_s.logs.info(["servers", {'server': 'socks5_server', 'action': 'login', 'status': 'success', 'ip': self.client_address[0], 'port':self.client_address[1], 'username':_q_s.username, 'password':_q_s.password}])
                             else:
-                                _q_s.logs.info(["servers", {'server': 'socks5_server', 'action': 'login', 'status': 'failed', 'ip': self.client_address[0], 'port':self.client_address[1], 'username':username, 'password':password}])
+                                _q_s.logs.info(["servers", {'server': 'socks5_server', 'action': 'login', 'status': 'failed', 'ip': self.client_address[0], 'port':self.client_address[1], 'username':username.decode(), 'password':password.decode()}])
                 self.server.close_request(self.request)
 
         class ThreadingTCPServer(ThreadingMixIn, TCPServer):
@@ -64,7 +66,7 @@ class QSOCKS5Server():
     def run_server(self, process=False, auto=False):
         if process:
             if self.close_port() and self.kill_server():
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
         else:
             self.socks5_server_main()
 
@@ -74,7 +76,7 @@ class QSOCKS5Server():
                 port = get_free_port()
                 if port > 0:
                     self.port = port
-                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                     if self.process.poll() is None:
                         self.logs.info(["servers", {'server': 'socks5_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
                     else:
@@ -82,7 +84,7 @@ class QSOCKS5Server():
                 else:
                     self.logs.info(["servers", {'server': 'socks5_server', 'action': 'setup', 'status': 'error', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
             elif self.close_port() and self.kill_server():
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                 if self.process.poll() is None:
                     self.logs.info(["servers", {'server': 'socks5_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
                 else:
@@ -113,5 +115,5 @@ class QSOCKS5Server():
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
-        QSOCKS5Server = QSOCKS5Server(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, logs=parsed.logs, logs_location=parsed.logs_location)
+        QSOCKS5Server = QSOCKS5Server(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, config=parsed.config)
         QSOCKS5Server.run_server()

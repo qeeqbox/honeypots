@@ -15,7 +15,7 @@ from signal import SIGTERM
 from argparse import ArgumentParser
 from os import scandir
 from socket import socket, AF_INET, SOCK_STREAM
-from json import JSONEncoder, dumps
+from json import JSONEncoder, dumps, load
 from logging import Handler, Formatter
 from sys import stdout
 from pygments import highlight, lexers, formatters
@@ -24,6 +24,11 @@ from logging import DEBUG, getLogger
 from logging.handlers import RotatingFileHandler
 from tempfile import _get_candidate_names, gettempdir
 from os import path, makedirs
+from psycopg2 import sql, connect
+from sys import stdout
+from time import sleep
+from traceback import format_exc
+from collections import Mapping
 
 
 def disable_logger(logger_type, object):
@@ -32,19 +37,30 @@ def disable_logger(logger_type, object):
         object.startLogging(open(temp_name, 'w'), setStdout=False)
 
 
-def setup_logger(temp_name, dir_name, logs):
-    if dir_name == '' or dir_name is None:
-        dir_name = path.join(gettempdir(), 'logs')
-    if not path.exists(dir_name):
-        makedirs(dir_name)
+def setup_logger(temp_name, config, drop=False):
+    logs = ''
+    logs_location = ''
+    config_data = None
+    if config and config != '':
+        with open(config) as f:
+            config_data = load(f)
+            logs = config_data['logs']
+            logs_location = config_data['logs_location']
+    if logs_location == '' or logs_location is None:
+        logs_location = path.join(gettempdir(), 'logs')
+    if not path.exists(logs_location):
+        makedirs(logs_location)
     file_handler = None
     ret_logs_obj = getLogger(temp_name)
     ret_logs_obj.setLevel(DEBUG)
-    if logs == '' or logs == "terminal" or logs == "all":
-        ret_logs_obj.addHandler(CustomHandler())
+    if logs == '' or logs == 'db' or logs == "all":
+        if logs == 'all' or logs == 'db':
+            ret_logs_obj.addHandler(CustomHandler(temp_name, logs, config_data, drop))
+        if logs == 'all' or logs == '':
+            ret_logs_obj.addHandler(CustomHandler(temp_name, logs))
     if logs == "file" or logs == "all":
         formatter = Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s')
-        file_handler = RotatingFileHandler(path.join(dir_name, temp_name), maxBytes=10000, backupCount=10)
+        file_handler = RotatingFileHandler(path.join(logs_location, temp_name), maxBytes=10000, backupCount=10)
         file_handler.setFormatter(formatter)
         ret_logs_obj.addHandler(file_handler)
     return ret_logs_obj
@@ -113,6 +129,153 @@ def close_port_wrapper(server_name, ip, port, logs):
         return False
 
 
+class ComplexEncoder(JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, bytes):
+            return obj.decode(errors='replace')
+        else:
+            return repr(obj)
+        return JSONEncoder.default(self, obj)
+
+
+class ComplexEncoder_db(JSONEncoder):
+    def default(self, obj):
+        return "Something wrong, deleted.."
+
+
+def serialize_object(_dict):
+    if isinstance(_dict, Mapping):
+        return dict((k, serialize_object(v)) for k, v in _dict.items())
+    else:
+        return repr(_dict)
+
+
+class CustomHandler(Handler):
+    def __init__(self, uuid='', logs='', config=None, drop=False):
+        self.db = None
+        self.logs = logs
+        self.uuid = uuid
+        if config and config != '':
+            self.db = postgres_class(host=config['host'], port=config['port'], username=config['username'], password=config['password'], db=config['db'], uuid=self.uuid, drop=drop)
+        Handler.__init__(self)
+
+    def emit(self, record):
+        try:
+            if self.logs == 'all' or self.logs == 'db':
+                if self.db:
+                    self.db.insert_into_data_safe(record.msg[0], dumps(serialize_object(record.msg[1]), cls=ComplexEncoder))
+        except Exception as e:
+            stdout.write(dumps({"error": repr(e), "logger": repr(record)}, sort_keys=True, cls=ComplexEncoder) + "\n")
+        try:
+            if self.logs == 'all' or self.logs == '':
+                time_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                if record.msg[0] == "servers":
+                    if "server" in record.msg[1]:
+                        temp = record.msg[1]
+                        action = record.msg[1]['action']
+                        server = temp['server'].replace('server', '').replace('_', '')
+                        del temp['server']
+                        del temp['action']
+                        stdout.write("[{}] [{}] [{}] -> {}\n".format(time_now, server, action, dumps(temp, sort_keys=True, cls=ComplexEncoder)))
+            else:
+                stdout.write(dumps(record.msg, sort_keys=True, cls=ComplexEncoder) + "\n")
+        except Exception as e:
+            stdout.write(dumps({"error": repr(e), "logger": repr(record)}, sort_keys=True, cls=ComplexEncoder) + "\n")
+        stdout.flush()
+
+    def emit_old(self, record):
+        try:
+            if record.msg[0] == "servers":
+                if "server" in record.msg[1]:
+                    temp = record.msg[1]
+                    server = temp['server']
+                    del temp['server']
+                    stdout.write(highlight(dumps({server: temp}, sort_keys=True, indent=4, cls=ComplexEncoder), lexers.JsonLexer(), formatters.TerminalFormatter()))
+            else:
+                stdout.write(highlight(dumps(record.msg, sort_keys=True, indent=4, cls=ComplexEncoder), lexers.JsonLexer(), formatters.TerminalFormatter()))
+        except Exception as e:
+            stdout.write(highlight(dumps({"error": repr(e), "logger": repr(record)}, sort_keys=True, indent=4, cls=ComplexEncoder), lexers.JsonLexer(), formatters.TerminalFormatter()))
+        stdout.flush()
+
+
+class postgres_class():
+    def __init__(self, host=None, port=None, username=None, password=None, db=None, drop=False, uuid=None):
+        self.host = host
+        self.port = port
+        self.username = username
+        self.password = password
+        self.db = db
+        self.uuid = uuid
+        self.mapped_tables = ["errors", "servers", "sniffer", "system"]
+        self.wait_until_up()
+        if drop:
+            self.con = connect(host=self.host, port=self.port, user=self.username, password=self.password)
+            self.con.set_isolation_level(0)
+            self.cur = self.con.cursor()
+            self.drop_db()
+            self.drop_tables()
+            self.con.close()
+        self.con = connect(host=self.host, port=self.port, user=self.username, password=self.password, database=self.db)
+        self.con.set_isolation_level(0)
+        self.cur = self.con.cursor()
+        self.create_tables()
+
+    def wait_until_up(self):
+        test = True
+        while test:
+            try:
+                print("{} - Waiting on postgres connection".format(self.uuid))
+                stdout.flush()
+                conn = connect(host=self.host, port=self.port, user=self.username, password=self.password, connect_timeout=1)
+                conn.close()
+                test = False
+            except Exception as e:
+                pass
+            sleep(1)
+        print("{} - postgres connection is good".format(self.uuid))
+
+    def addattr(self, x, val):
+        self.__dict__[x] = val
+
+    def check_db_if_exists(self):
+        self.cur.execute("SELECT exists(SELECT 1 from pg_catalog.pg_database where datname = %s)", (self.db,))
+        if self.cur.fetchall()[0][0]:
+            return True
+        else:
+            return False
+
+    def drop_db(self):
+        try:
+            if self.check_db_if_exists():
+                self.cur.execute(sql.SQL("drop DATABASE IF EXISTS {}").format(sql.Identifier(self.db)))
+                sleep(2)
+                self.cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(self.db)))
+            else:
+                self.cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(self.db)))
+        except BaseException:
+            pass
+
+    def drop_tables(self,):
+        for x in self.mapped_tables:
+            self.cur.execute(sql.SQL("drop TABLE IF EXISTS {}").format(sql.Identifier(x + "_table")))
+
+    def create_tables(self):
+        for x in self.mapped_tables:
+            self.cur.execute(sql.SQL("CREATE TABLE IF NOT EXISTS {} (id SERIAL NOT NULL,date timestamp with time zone DEFAULT now(),data json)").format(sql.Identifier(x + "_table")))
+
+    def insert_into_data_safe(self, table, obj):
+        try:
+            # stdout.write(str(table))
+            self.cur.execute(
+                sql.SQL("INSERT INTO {} (id,date, data) VALUES (DEFAULT ,now(), %s)")
+                .format(sql.Identifier(table + "_table")),
+                [obj])
+            #self.cur.execute(sql.SQL("INSERT INTO errors_table (data) VALUES (%s,)"),dumps(serialize_object(obj),cls=ComplexEncoder))
+        except Exception:
+            stdout.write(str(format_exc()).replace("\n", " "))
+        stdout.flush()
+
+
 def server_arguments():
     _server_parser = ArgumentParser(prog="Server")
     _server_parsergroupdeq = _server_parser.add_argument_group('Initialize Server')
@@ -127,8 +290,7 @@ def server_arguments():
     _server_parsergroupdes.add_argument('--filter', type=str, help="setup the Sinffer filter", required=False)
     _server_parsergroupdes.add_argument('--interface', type=str, help="sinffer interface E.g eth0", required=False)
     _server_parsergroupdef = _server_parser.add_argument_group('Initialize Loging')
-    _server_parsergroupdef.add_argument('--logs', type=str, help="file, terminal or all", required=False, default="terminal")
-    _server_parsergroupdef.add_argument('--logs_location', type=str, help="logs location", required=False, default="")
+    _server_parsergroupdef.add_argument('--config', type=str, help="config file for logs and database", required=False, default="")
     _server_parsergroupdea = _server_parser.add_argument_group('Auto Configuration')
     _server_parsergroupdea.add_argument('--docker', action='store_true', help="Run project in docker", required=False)
     _server_parsergroupdea.add_argument('--aws', action='store_true', help="Run project in aws", required=False)
@@ -137,48 +299,3 @@ def server_arguments():
     _server_parsergroupdea.add_argument('--auto', action='store_true', help="Run auto configured with random port", required=False)
     _server_parsergroupdef.add_argument('--uuid', type=str, help="unique id", required=False)
     return _server_parser.parse_args()
-
-
-class ComplexEncoder(JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, bytes):
-            return obj.decode()
-        else:
-            return repr(obj)
-        return JSONEncoder.default(self, obj)
-
-
-class CustomHandler(Handler):
-    def __init__(self):
-        Handler.__init__(self)
-
-    def emit(self, record):
-        try:
-            time_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            if record.msg[0] == "servers":
-                if "server" in record.msg[1]:
-                    temp = record.msg[1]
-                    action = record.msg[1]['action']
-                    server = temp['server'].replace('server', '').replace('_', '')
-                    del temp['server']
-                    del temp['action']
-                    stdout.write("[{}] [{}] [{}] -> {}\n".format(time_now, server, action, dumps(temp, sort_keys=True, cls=ComplexEncoder)))
-            else:
-                stdout.write(dumps(record.msg, sort_keys=True, cls=ComplexEncoder))
-        except Exception as e:
-            stdout.write(dumps({"logger": repr(record)}, sort_keys=True, cls=ComplexEncoder))
-        stdout.flush()
-
-    def emit_old(self, record):
-        try:
-            if record.msg[0] == "servers":
-                if "server" in record.msg[1]:
-                    temp = record.msg[1]
-                    server = temp['server']
-                    del temp['server']
-                    stdout.write(highlight(dumps({server: temp}, sort_keys=True, indent=4, cls=ComplexEncoder), lexers.JsonLexer(), formatters.TerminalFormatter()))
-            else:
-                stdout.write(highlight(dumps(record.msg, sort_keys=True, indent=4, cls=ComplexEncoder), lexers.JsonLexer(), formatters.TerminalFormatter()))
-        except Exception as e:
-            stdout.write(highlight(dumps({"logger": repr(record)}, sort_keys=True, indent=4, cls=ComplexEncoder), lexers.JsonLexer(), formatters.TerminalFormatter()))
-        stdout.flush()

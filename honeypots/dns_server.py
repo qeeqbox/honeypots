@@ -25,15 +25,17 @@ from uuid import uuid4
 
 
 class QDNSServer():
-    def __init__(self, ip=None, port=None, resolver_addresses=None, logs=None, logs_location=None):
+    def __init__(self, ip=None, port=None, resolver_addresses=None, config=''):
         self.ip = ip or '0.0.0.0'
         self.port = port or 53
         self.resolver_addresses = resolver_addresses or [('8.8.8.8', 53)]
         self.process = None
-        self._logs = logs or ''
-        self.logs_location = logs_location or ''
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
-        self.logs = setup_logger(self.uuid, self.logs_location, self._logs)
+        self.config = config
+        if config:
+            self.logs = setup_logger(self.uuid, config)
+        else:
+            self.logs = setup_logger(self.uuid, None)
         disable_logger(1, tlog)
 
     def dns_server_main(self):
@@ -73,7 +75,7 @@ class QDNSServer():
                 port = get_free_port()
                 if port > 0:
                     self.port = port
-                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--config', str(self.config), '--uuid', str(self.uuid)])
                     if self.process.poll() is None:
                         self.logs.info(["servers", {'server': 'dns_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port}])
                     else:
@@ -81,7 +83,7 @@ class QDNSServer():
                 else:
                     self.logs.info(["servers", {'server': 'dns_server', 'action': 'setup', 'status': 'error', 'ip': self.ip, 'port': self.port}])
             elif self.close_port() and self.kill_server():
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--config', str(self.config), '--uuid', str(self.uuid)])
                 if self.process.poll() is None:
                     self.logs.info(["servers", {'server': 'dns_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port}])
                 else:
@@ -111,5 +113,5 @@ class QDNSServer():
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
-        qdnsserver = QDNSServer(ip=parsed.ip, port=parsed.port, resolver_addresses=parsed.resolver_addresses, logs=parsed.logs, logs_location=parsed.logs_location)
+        qdnsserver = QDNSServer(ip=parsed.ip, port=parsed.port, resolver_addresses=parsed.resolver_addresses, config=parsed.config)
         qdnsserver.run_server()

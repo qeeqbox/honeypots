@@ -26,15 +26,17 @@ from uuid import uuid4
 
 
 class QHTTPProxyServer():
-    def __init__(self, ip=None, port=None, mocking=None, logs=None, logs_location=None):
+    def __init__(self, ip=None, port=None, mocking=None, config=''):
         self.ip = ip or '0.0.0.0'
         self.port = port or 8080
         self.mocking = mocking or ''
         self.process = None
-        self._logs = logs or ''
-        self.logs_location = logs_location or ''
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
-        self.logs = setup_logger(self.uuid, self.logs_location, self._logs)
+        self.config = config
+        if config:
+            self.logs = setup_logger(self.uuid, config)
+        else:
+            self.logs = setup_logger(self.uuid, None)
         disable_logger(1, tlog)
 
     def http_proxy_server_main(self):
@@ -101,7 +103,7 @@ class QHTTPProxyServer():
                 port = get_free_port()
                 if port > 0:
                     self.port = port
-                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                     if self.process.poll() is None:
                         self.logs.info(["servers", {'server': 'http_proxy_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port}])
                     else:
@@ -109,7 +111,7 @@ class QHTTPProxyServer():
                 else:
                     self.logs.info(["servers", {'server': 'http_proxy_server', 'action': 'setup', 'status': 'error', 'ip': self.ip, 'port': self.port}])
             elif self.close_port() and self.kill_server():
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--mocking', str(self.mocking), '--logs', str(self._logs), '--logs_location', str(self.logs_location), '--uuid', str(self.uuid)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                 if self.process.poll() is None:
                     self.logs.info(["servers", {'server': 'http_proxy_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port}])
                 else:
@@ -138,5 +140,5 @@ class QHTTPProxyServer():
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
-        qhttpproxyserver = QHTTPProxyServer(ip=parsed.ip, port=parsed.port, mocking=parsed.mocking, logs=parsed.logs, logs_location=parsed.logs_location)
+        qhttpproxyserver = QHTTPProxyServer(ip=parsed.ip, port=parsed.port, mocking=parsed.mocking, config=parsed.config)
         qhttpproxyserver.run_server()
