@@ -9,7 +9,7 @@ setup(
     author_email='gigaqeeq@gmail.com',
     description="Easy to setup honeypots!",
     long_description=long_description,
-    version='0.11',
+    version='0.12',
     license="AGPL-3.0",
     url="https://github.com/qeeqbox/honeypots",
     packages=['honeypots'],
@@ -34,7 +34,9 @@ setup(
         'vncdotool',
         'service_identity',
         'requests[socks]',
-        'pygments'
+        'pygments',
+        'scapy',
+        'netifaces'
     ],
     python_requires='>=3'
 )
