@@ -22,7 +22,7 @@ python3 -m honeypots --setup ssh
 honeypot, or multiple honeypots separated by comma or word `all`
 
 ```
-python3 -m honeypots --setup ssh --logs all --config config.json
+python3 -m honeypots --setup ssh --config config.json
 
 #config.json
 {
