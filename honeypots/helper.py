@@ -53,7 +53,7 @@ def setup_logger(temp_name, config, drop=False):
     file_handler = None
     ret_logs_obj = getLogger(temp_name)
     ret_logs_obj.setLevel(DEBUG)
-    if 'terminal' in logs or 'db' in logs or 'all' in logs or logs =='':
+    if 'terminal' in logs or 'db' in logs or 'all' in logs or logs == '':
         if 'db' in logs or 'all' in logs:
             ret_logs_obj.addHandler(CustomHandler(temp_name, logs, config_data, drop))
         if 'terminal' in logs or 'all' in logs or logs == '':
