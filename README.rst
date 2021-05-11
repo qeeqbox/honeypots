@@ -40,7 +40,7 @@ Use as honeypot:port or multiple honeypots as honeypot:port,honeypot:port
 
 .. code:: bash
 
-    python3 -m honeypots imap:143,mysql:3306,redis:6379
+    python3 -m honeypots --setup imap:143,mysql:3306,redis:6379
 
 Usage Example - Import as object and auto test
 ==============================================

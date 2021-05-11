@@ -3,7 +3,7 @@
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 
-from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer
+from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer, get_running_servers
 from time import sleep
 from atexit import register
 from argparse import ArgumentParser
@@ -54,13 +54,15 @@ if __name__ == "__main__":
     elif ARGV.chameleon and ARGV.config and ARGV.config != '':
         port = None
         interface = None
+        honeypots = None
         with open(ARGV.config) as f:
             config_data = load(f)
             port = config_data['port']
             interface = config_data['interface']
+            honeypots = config_data['honeypots']
         if port and interface:
-            print('Your IP: {}'.format(ifaddresses(interface)[AF_INET][0]['addr']).encode('utf-8'))
-            print('Your MAC: {}'.format(ifaddresses(interface)[AF_LINK][0]['addr']).encode('utf-8'))
+            print('Your IP: {}'.format(ifaddresses(interface)[AF_INET][0]['addr']))
+            print('Your MAC: {}'.format(ifaddresses(interface)[AF_LINK][0]['addr']))
             Popen('iptables -A OUTPUT -p tcp -m tcp --tcp-flags RST RST -j DROP', shell=True)
             print('Wait for 10 seconds..')
             stdout.flush()
@@ -68,10 +70,25 @@ if __name__ == "__main__":
             uuid = 'honeypotslogger' + '_' + 'main' + '_' + str(uuid4())[:8]
             logs = setup_logger(uuid, ARGV.config, True)
             servers = []
-            for honeypot in all_servers:
-                x = globals()[honeypot](config=ARGV.config)
-                x.run_server(process=True)
-                temp_honeypots.append(x)
+            if honeypots:
+                for server in honeypots.split(','):
+                    if ":" in server:
+                        for honeypot in all_servers:
+                            if 'q{}server'.format(server.split(':')[0]).lower() == honeypot.lower():
+                                x = globals()[honeypot](port=int(server.split(':')[1]), config=ARGV.config)
+                                x.run_server(process=True)
+                                temp_honeypots.append(x)
+                    else:
+                        for honeypot in all_servers:
+                            if 'q{}server'.format(server).lower() == honeypot.lower():
+                                x = globals()[honeypot](config=ARGV.config)
+                                x.run_server(process=True)
+                                temp_honeypots.append(x)
+            else:
+                for honeypot in all_servers:
+                    x = globals()[honeypot](config=ARGV.config)
+                    x.run_server(process=True)
+                    temp_honeypots.append(x)
 
             x = globals()['QBSniffer'](filter='not port {}'.format(port), interface=interface, config=ARGV.config)
             x.run_sniffer(process=True)
