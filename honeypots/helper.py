@@ -34,15 +34,16 @@ from collections import Mapping
 def get_running_servers():
     temp_list = []
     try:
-        honeypots = ['QDNSServer','QFTPServer','QHTTPProxyServer','QHTTPServer','QHTTPSServer','QIMAPServer','QMysqlServer','QPOP3Server','QPostgresServer','QRedisServer','QSMBServer','QSMTPServer','QSOCKS5Server','QSSHServer','QTelnetServer','QVNCServer']
+        honeypots = ['QDNSServer', 'QFTPServer', 'QHTTPProxyServer', 'QHTTPServer', 'QHTTPSServer', 'QIMAPServer', 'QMysqlServer', 'QPOP3Server', 'QPostgresServer', 'QRedisServer', 'QSMBServer', 'QSMTPServer', 'QSOCKS5Server', 'QSSHServer', 'QTelnetServer', 'QVNCServer']
         for process in process_iter():
             cmdline = ' '.join(process.cmdline())
-            for honeypot in honeypots: 
+            for honeypot in honeypots:
                 if '--custom' in cmdline and honeypot in cmdline:
                     temp_list.append(cmdline.split(" --custom ")[1])
     except BaseException:
         pass
     return temp_list
+
 
 def disable_logger(logger_type, object):
     if logger_type == 1:
