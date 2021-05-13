@@ -69,8 +69,21 @@ if __name__ == "__main__":
             sleep(2)
             uuid = 'honeypotslogger' + '_' + 'main' + '_' + str(uuid4())[:8]
             logs = setup_logger(uuid, ARGV.config, True)
-            servers = []
-            if honeypots:
+            if type(honeypots) == {}:
+                for honeypot in honeypots.items():
+                    if "port" in honeypots[honeypot]:
+                        for _honeypot in all_servers:
+                            if 'q{}server'.format(honeypot).lower() == _honeypot.lower():
+                                x = globals()[_honeypot](port=honeypots[honeypot]["port"], config=ARGV.config)
+                                x.run_server(process=True)
+                                temp_honeypots.append(x)
+                    else:
+                        for _honeypot in all_servers:
+                            if 'q{}server'.format(honeypot).lower() == _honeypot.lower():
+                                x = globals()[_honeypot](config=ARGV.config)
+                                x.run_server(process=True)
+                                temp_honeypots.append(x)
+            if type(honeypots) == []:
                 for server in honeypots.split(','):
                     if ":" in server:
                         for honeypot in all_servers:
