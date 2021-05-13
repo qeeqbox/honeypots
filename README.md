@@ -36,7 +36,7 @@ python3 -m honeypots --setup ssh --config config.json
 honeypot, or multiple honeypots separated by comma or word `all`
 
 ```
-python3 -m honeypots --setup ssh --config config.json
+python3 -m honeypots --setup ftp --config config.json
 
 #config.json
 {
