@@ -21,12 +21,13 @@ from requests import get
 from subprocess import Popen
 from email.parser import BytesParser
 from os import path
-from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger
+from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars
 from uuid import uuid4
 
 
 class QHTTPProxyServer():
     def __init__(self, ip=None, port=None, mocking=None, config=''):
+        self.auto_disabled = None
         self.ip = ip or '0.0.0.0'
         self.port = port or 8080
         self.mocking = mocking or ''
@@ -35,6 +36,7 @@ class QHTTPProxyServer():
         self.config = config
         if config:
             self.logs = setup_logger(self.uuid, config)
+            set_local_vars(self,config)
         else:
             self.logs = setup_logger(self.uuid, None)
         disable_logger(1, tlog)
@@ -99,7 +101,7 @@ class QHTTPProxyServer():
 
     def run_server(self, process=False, auto=False):
         if process:
-            if auto:
+            if auto and not self.auto_disabled:
                 port = get_free_port()
                 if port > 0:
                     self.port = port

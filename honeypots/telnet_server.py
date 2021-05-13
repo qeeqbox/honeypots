@@ -17,16 +17,17 @@ from telnetlib import Telnet as TTelnet
 from twisted.python import log as tlog
 from subprocess import Popen
 from os import path
-from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger
+from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars
 from uuid import uuid4
-
+import sys
 
 class QTelnetServer():
     def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
+        self.auto_disabled = None
         self.ip = ip or '0.0.0.0'
         self.port = port or 23
-        self.username = username or b"test"
-        self.password = password or b"test"
+        self.username = username or "test"
+        self.password = password or "test"
         self.mocking = mocking or ''
         self.random_servers = ['Ubuntu 18.04 LTS', 'Ubuntu 16.04.3 LTS', 'Welcome to Microsoft Telnet Server.']
         self.process = None
@@ -34,6 +35,7 @@ class QTelnetServer():
         self.config = config
         if config:
             self.logs = setup_logger(self.uuid, config)
+            set_local_vars(self,config)
         else:
             self.logs = setup_logger(self.uuid, None)
         disable_logger(1, tlog)
@@ -63,7 +65,7 @@ class QTelnetServer():
                 elif self._state == b'Password':
                     self._pass = data
                     if self._user.decode() == _q_s.username and self._pass.decode() == _q_s.password:
-                        _q_s.logs.info(["servers", {'server': 'telnet_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username.decode('utf-8'), 'password': _q_s.password.decode('utf-8')}])
+                        _q_s.logs.info(["servers", {'server': 'telnet_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
                     else:
                         _q_s.logs.info(["servers", {'server': 'telnet_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': self._user.decode('utf-8'), 'password': self._pass.decode('utf-8')}])
                     self.transport.loseConnection()
@@ -82,7 +84,7 @@ class QTelnetServer():
 
     def run_server(self, process=False, auto=False):
         if process:
-            if auto:
+            if auto and not self.auto_disabled:
                 port = get_free_port()
                 if port > 0:
                     self.port = port

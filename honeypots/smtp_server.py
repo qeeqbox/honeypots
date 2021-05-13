@@ -20,12 +20,13 @@ from time import sleep
 from smtplib import SMTP
 from os import path
 from subprocess import Popen
-from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger
+from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, set_local_vars
 from uuid import uuid4
 
 
 class QSMTPServer():
     def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
+        self.auto_disabled = None
         self.ip = ip or '0.0.0.0'
         self.port = port or 25
         self.username = username or "test"
@@ -37,6 +38,7 @@ class QSMTPServer():
         self.config = config
         if config:
             self.logs = setup_logger(self.uuid, config)
+            set_local_vars(self,config)
         else:
             self.logs = setup_logger(self.uuid, None)
 
@@ -90,7 +92,7 @@ class QSMTPServer():
 
     def run_server(self, process=False, auto=False):
         if process:
-            if auto:
+            if auto and not self.auto_disabled:
                 port = get_free_port()
                 if port > 0:
                     self.port = port

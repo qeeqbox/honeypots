@@ -26,7 +26,7 @@ from random import choice
 from twisted.python import log as tlog
 from subprocess import Popen
 from os import path
-from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger
+from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars
 from uuid import uuid4
 
 disable_warnings()
@@ -34,6 +34,7 @@ disable_warnings()
 
 class QHTTPSServer():
     def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
+        self.auto_disabled = None
         self.ip = ip or '0.0.0.0'
         self.port = port or 443
         self.username = username or "test"
@@ -47,6 +48,7 @@ class QHTTPSServer():
         self.config = config
         if config:
             self.logs = setup_logger(self.uuid, config)
+            set_local_vars(self,config)
         else:
             self.logs = setup_logger(self.uuid, None)
         disable_logger(1, tlog)
@@ -194,7 +196,7 @@ class QHTTPSServer():
 
     def run_server(self, process=False, auto=False):
         if process:
-            if auto:
+            if auto and not self.auto_disabled:
                 port = get_free_port()
                 if port > 0:
                     self.port = port

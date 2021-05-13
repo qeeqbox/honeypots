@@ -31,6 +31,23 @@ from traceback import format_exc
 from collections import Mapping
 
 
+def set_local_vars(self,config):
+    try:
+        honeypot = None
+        if config and config != '':
+            with open(config) as f:
+                config_data = load(f)
+                honeypots = config_data['honeypots']
+                honeypot = self.__class__.__name__[1:-6].lower()
+            if honeypot and honeypot in honeypots:
+                for var in honeypots[honeypot]:
+                    if var in vars(self):
+                        setattr(self, var, honeypots[honeypot][var])
+                        if var == "port":
+                            setattr(self, "auto_disabled", True)
+    except BaseException:
+        pass
+
 def get_running_servers():
     temp_list = []
     try:

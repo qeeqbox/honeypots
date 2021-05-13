@@ -31,6 +31,28 @@ python3 -m honeypots --setup ssh --config config.json
 } 
 ```
 
+## Usage Example - Csutom configure
+
+honeypot, or multiple honeypots separated by comma or word `all`
+
+```
+python3 -m honeypots --setup ssh --config config.json
+
+#config.json
+{
+    "logs":"file,terminal",
+    "logs_location":"/temp/honeypots_logs/"
+    "honeypots": {
+        "ftp": {
+            "port": 21,
+            "ip": "0.0.0.0",
+            "username": "test",
+            "password": "test"
+            }
+        }
+}
+```
+
 ## Usage Example - Auto configure with specific ports
 
 Use as honeypot:port or multiple honeypots as honeypot:port,honeypot:port
