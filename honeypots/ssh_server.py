@@ -40,7 +40,7 @@ class QSSHServer():
         self.config = config
         if config:
             self.logs = setup_logger(self.uuid, config)
-            set_local_vars(self, config)
+            set_local_vars(self,config)
         else:
             self.logs = setup_logger(self.uuid, None)
         print(vars(self))
