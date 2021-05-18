@@ -21,6 +21,7 @@ from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrap
 from uuid import uuid4
 import sys
 
+
 class QTelnetServer():
     def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
         self.auto_disabled = None
@@ -35,7 +36,7 @@ class QTelnetServer():
         self.config = config
         if config:
             self.logs = setup_logger(self.uuid, config)
-            set_local_vars(self,config)
+            set_local_vars(self, config)
         else:
             self.logs = setup_logger(self.uuid, None)
         disable_logger(1, tlog)

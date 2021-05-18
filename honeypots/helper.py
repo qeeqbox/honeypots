@@ -31,7 +31,7 @@ from traceback import format_exc
 from collections import Mapping
 
 
-def set_local_vars(self,config):
+def set_local_vars(self, config):
     try:
         honeypot = None
         if config and config != '':
@@ -47,6 +47,7 @@ def set_local_vars(self,config):
                             setattr(self, "auto_disabled", True)
     except BaseException:
         pass
+
 
 def get_running_servers():
     temp_list = []
