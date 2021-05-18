@@ -31,9 +31,9 @@ python3 -m honeypots --setup ssh --config config.json
 } 
 ```
 
-## Usage Example - Csutom configure
+## Usage Example - Custom configure
 
-honeypot, or multiple honeypots separated by comma or word `all`
+honeypot, or multiple honeypots in a dict
 
 ```
 python3 -m honeypots --setup ftp --config config.json
