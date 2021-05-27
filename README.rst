@@ -129,7 +129,7 @@ Current Servers/Emulators
 - QTelnetServer <- TELNET (Server using Twisted)
 - QVNCServer <- VNC (Emulator using Twisted)
 - QMSSQLServer <- MSSQL (Emulator using Twisted)
-- QElasticServer <- VNC (Emulator using http.server)
+- QElasticServer <- Elastic (Emulator using http.server)
 
 acknowledgement
 ===============
