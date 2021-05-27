@@ -117,6 +117,8 @@ qsshserver.kill_server()
 - QSSHServer <- SSH (Server using socket)
 - QTelnetServer <- TELNET (Server using Twisted)
 - QVNCServer <- VNC (Emulator using Twisted)
+- QMSSQLServer <- MSSQL (Emulator using Twisted)
+- QElasticServer <- VNC (Emulator using http.server)
 
 ## acknowledgement
 By using this framework, you are accepting the license terms of all these packages: `pipenv twisted psutil psycopg2-binary dnspython requests impacket paramiko redis mysql-connector pycryptodome vncdotool service_identity requests[socks] pygments`
