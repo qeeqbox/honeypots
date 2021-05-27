@@ -43,7 +43,6 @@ class QSSHServer():
             set_local_vars(self, config)
         else:
             self.logs = setup_logger(self.uuid, None)
-        print(vars(self))
 
     def generate_pub_pri_keys(self):
         try:
@@ -65,7 +64,15 @@ class QSSHServer():
                 self.port = port
                 ServerInterface.__init__(self)
 
+            def check_bytes(self, string):
+                if isinstance(string, bytes):
+                    return string.decode()
+                else:
+                    return str(string)
+
             def check_auth_password(self, username, password):
+                username = self.check_bytes(username)
+                password = self.check_bytes(password)
                 if username == _q_s.username and password == _q_s.password:
                     _q_s.logs.info(["servers", {'server': 'ssh_server', 'action': 'login', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': username, 'password': password}])
                 else:

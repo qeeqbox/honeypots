@@ -9,7 +9,7 @@ setup(
     author_email='gigaqeeq@gmail.com',
     description="Easy to setup honeypots!",
     long_description=long_description,
-    version='0.18',
+    version='0.19',
     license="AGPL-3.0",
     url="https://github.com/qeeqbox/honeypots",
     packages=['honeypots'],
@@ -36,7 +36,9 @@ setup(
         'requests[socks]',
         'pygments',
         'scapy',
-        'netifaces'
+        'netifaces',
+        'elasticsearch',
+        'pymssql'
     ],
-    python_requires='>=3'
+    python_requires='>=3.7'
 )

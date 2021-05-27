@@ -104,6 +104,12 @@ class QMysqlServer():
 
             _state = None
 
+            def check_bytes(self, string):
+                if isinstance(string, bytes):
+                    return string.decode()
+                else:
+                    return str(string)
+
             def connectionMade(self):
                 self._state = 1
                 self.transport.write(_q_s.greeting().encode())
@@ -112,6 +118,8 @@ class QMysqlServer():
             def dataReceived(self, data):
                 if self._state == 1:
                     username, password, good = _q_s.parse_data(data)
+                    username = self.check_bytes(username)
+                    password = self.check_bytes(password)
                     if good:
                         if password:
                             _x = _q_s.decode(password)

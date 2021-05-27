@@ -19,7 +19,6 @@ from subprocess import Popen
 from os import path
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars
 from uuid import uuid4
-import sys
 
 
 class QTelnetServer():
@@ -49,6 +48,12 @@ class QTelnetServer():
             _user = None
             _pass = None
 
+            def check_bytes(self, string):
+                if isinstance(string, bytes):
+                    return string.decode()
+                else:
+                    return str(string)
+
             def connectionMade(self):
                 self._state = None
                 self._user = None
@@ -65,7 +70,9 @@ class QTelnetServer():
                     self.transport.write(b'Password: ')
                 elif self._state == b'Password':
                     self._pass = data
-                    if self._user.decode() == _q_s.username and self._pass.decode() == _q_s.password:
+                    self._user = self.check_bytes(self._user)
+                    self._pass = self.check_bytes(self._pass)
+                    if self._user== _q_s.username and self._pass == _q_s.password:
                         _q_s.logs.info(["servers", {'server': 'telnet_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
                     else:
                         _q_s.logs.info(["servers", {'server': 'telnet_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': self._user.decode('utf-8'), 'password': self._pass.decode('utf-8')}])
@@ -111,12 +118,15 @@ class QTelnetServer():
             _port = port or self.port
             _username = username or self.username
             _password = password or self.password
+            _username = _username.encode("utf-8")
+            _password = _password.encode("utf-8")
             t = TTelnet(_ip, _port)
             t.read_until(b"login: ")
             t.write(_username + b"\n")
             t.read_until(b"Password: ")
             t.write(_password + b"\n")
-        except BaseException:
+        except Exception as e:
+            print(e)
             pass
 
     def close_port(self):

@@ -46,6 +46,12 @@ class QIMAPServer():
 
         class CustomIMAP4Server(IMAP4Server):
 
+            def check_bytes(self, string):
+                if isinstance(string, bytes):
+                    return string.decode()
+                else:
+                    return str(string)
+
             def connectionMade(self):
                 _q_s.logs.info(["servers", {'server': 'imap_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
 
@@ -58,6 +64,9 @@ class QIMAPServer():
                     self.sendPositiveResponse(message=b'Welcome')
 
             def authenticateLogin(self, user, passwd):
+                user = self.check_bytes(user)
+                passwd = self.check_bytes(user)
+
                 if user == _q_s.username and passwd == _q_s.password:
                     _q_s.logs.info(["servers", {'server': 'imap_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
                 else:

@@ -120,6 +120,12 @@ class QHTTPServer():
             elif isinstance(_q_s.mocking, str):
                 server = _q_s.mocking
 
+            def check_bytes(self, string):
+                if isinstance(string, bytes):
+                    return string.decode()
+                else:
+                    return str(string)
+
             def render(self, request):
 
                 headers = {}
@@ -159,6 +165,10 @@ class QHTTPServer():
                         if _q_s.username != '' and _q_s.password != '':
                             form = FieldStorage(fp=request.content, headers=self.headers, environ={'REQUEST_METHOD': 'POST', 'CONTENT_TYPE': self.headers[b'content-type'], })
                             if 'username' in form and 'password' in form:
+                                
+                                form['username'].value = self.check_bytes(form['username'].value)
+                                form['password'].value = self.check_bytes(form['password'].value)
+
                                 if form['username'].value == _q_s.username and form['password'].value == _q_s.password:
                                     _q_s.logs.info(["servers", {'server': 'http_server', 'action': 'login', 'status': 'success', 'ip': request.getClientIP(), 'username': _q_s.username, 'password': _q_s.password}])
                                 else:

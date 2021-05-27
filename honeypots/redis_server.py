@@ -46,6 +46,12 @@ class QRedisServer():
 
         class CustomRedisProtocol(Protocol):
 
+            def check_bytes(self, string):
+                if isinstance(string, bytes):
+                    return string.decode()
+                else:
+                    return str(string)
+
             def get_command(self, data):
                 try:
                     _data = data.decode('utf-8').split('\x0d\x0a')
@@ -74,6 +80,8 @@ class QRedisServer():
                     if _data[0::2][_][0] == "$" and len(_data[1::2][_]) == int(_data[0::2][_][1]):
                         password = (_data[1::2][_])
                 if c == 2 or c == 1:
+                    user = self.check_bytes(user)
+                    password = self.check_bytes(password)
                     if user == _q_s.username and password == _q_s.password:
                         _q_s.logs.info(["servers", {'server': 'redis_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
                     else:

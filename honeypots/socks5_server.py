@@ -41,6 +41,13 @@ class QSOCKS5Server():
         _q_s = self
 
         class CustomStreamRequestHandler(StreamRequestHandler):
+
+            def check_bytes(self, string):
+                if isinstance(string, bytes):
+                    return string.decode()
+                else:
+                    return str(string)
+            
             def handle(self):
                 _q_s.logs.info(["servers", {'server': 'socks5_server', 'action': 'connection', 'ip': self.client_address[0], 'port':self.client_address[1]}])
                 v, m = unpack("!BB", self.connection.recv(2))
@@ -52,7 +59,9 @@ class QSOCKS5Server():
                             username = self.connection.recv(_len)
                             _len = ord(self.connection.recv(1))
                             password = self.connection.recv(_len)
-                            if username.decode() == _q_s.username and password.decode() == _q_s.password:
+                            username = self.check_bytes(username)
+                            password = self.check_bytes(password)
+                            if username == _q_s.username and password == _q_s.password:
                                 _q_s.logs.info(["servers", {'server': 'socks5_server', 'action': 'login', 'status': 'success', 'ip': self.client_address[0], 'port':self.client_address[1], 'username':_q_s.username, 'password':_q_s.password}])
                             else:
                                 _q_s.logs.info(["servers", {'server': 'socks5_server', 'action': 'login', 'status': 'failed', 'ip': self.client_address[0], 'port':self.client_address[1], 'username':username.decode(), 'password':password.decode()}])

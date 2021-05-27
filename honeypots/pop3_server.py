@@ -48,6 +48,12 @@ class QPOP3Server():
 
             self._user = None
 
+            def check_bytes(self, string):
+                if isinstance(string, bytes):
+                    return string.decode()
+                else:
+                    return str(string)
+
             def connectionMade(self):
                 _q_s.logs.info(["servers", {'server': 'pop3_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
                 self._user = None
@@ -65,7 +71,9 @@ class QPOP3Server():
 
             def do_PASS(self, password):
                 if self._user:
-                    if self._user.decode() == _q_s.username and password.decode() == _q_s.password:
+                    self._user = self.check_bytes(self._user)
+                    password = self.check_bytes(password)
+                    if self._user == _q_s.username and password == _q_s.password:
                         _q_s.logs.info(["servers", {'server': 'pop3_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
                     else:
                         _q_s.logs.info(["servers", {'server': 'pop3_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': self._user, 'password': password}])

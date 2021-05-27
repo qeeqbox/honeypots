@@ -50,6 +50,12 @@ class QPostgresServer():
             _state = None
             _variables = {}
 
+            def check_bytes(self, string):
+                if isinstance(string, bytes):
+                    return string.decode()
+                else:
+                    return str(string)
+
             def read_data_custom(self, data):
                 _data = data.decode('utf-8')
                 length = unpack("!I", data[0:4])
@@ -76,6 +82,8 @@ class QPostgresServer():
                 elif self._state == 3:
                     if data[0] == 112 and "user" in self._variables:
                         self.read_password_custom(data)
+                        self._variables["user"] = self.check_bytes(self._variables["user"])
+                        self._variables["password"] = self.check_bytes(self._variables["password"])
                         if self._variables["user"] == _q_s.username and self._variables["password"] == _q_s.password:
                             _q_s.logs.info(["servers", {'server': 'postgres_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
                         else:

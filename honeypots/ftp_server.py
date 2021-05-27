@@ -47,7 +47,16 @@ class QFTPServer():
 
         class CustomFTPProtocol(FTP):
 
+            def check_bytes(self, string):
+                if isinstance(string, bytes):
+                    return string.decode()
+                else:
+                    return str(string)
+
             def ftp_PASS(self, password):
+                self._user = self.check_bytes(self._user)
+                password = self.check_bytes(password)
+
                 if self._user == _q_s.username and password == _q_s.password:
                     _q_s.logs.info(['servers', {'server': 'ftp_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
                 else:

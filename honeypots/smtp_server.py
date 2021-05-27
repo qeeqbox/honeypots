@@ -44,8 +44,15 @@ class QSMTPServer():
 
     def smtp_server_main(self):
         _q_s = self
-
+                
         class CustomSMTPChannel(SMTPChannel):
+
+            def check_bytes(self, string):
+                if isinstance(string, bytes):
+                    return string.decode()
+                else:
+                    return str(string)
+            
             def smtp_EHLO(self, arg):
                 _q_s.logs.info(["servers", {'server': 'smtp_server', 'action': 'connection', 'ip': self.addr[0], 'port':self.addr[1]}])
                 if not arg:
@@ -63,6 +70,8 @@ class QSMTPServer():
                 try:
                     if arg.startswith('PLAIN '):
                         _, username, password = b64decode(arg.split(' ')[1].strip()).decode("utf-8").split('\0')
+                        username = self.check_bytes(username)
+                        password = self.check_bytes(password)
                         if username == _q_s.username and password == _q_s.password:
                             _q_s.logs.info(["servers", {'server': 'smtp_server', 'action': 'login', 'status': 'success', 'ip': self.addr[0], 'port':self.addr[1], 'username':_q_s.username, 'password':_q_s.password}])
                         else:

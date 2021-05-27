@@ -13,8 +13,24 @@ from smtp_server import QSMTPServer
 from socks5_server import QSOCKS5Server
 from ssh_server import QSSHServer
 from telnet_server import QTelnetServer
+from elastic_server import QElasticServer
+from mssql_server import QMSSQLServer
 from vnc_server import QVNCServer
 from time import sleep
+
+print("Testing QMSSQLServer")
+qmssqlserver = QMSSQLServer()
+qmssqlserver.run_server(process=True, auto=True)
+sleep(2)
+qmssqlserver.test_server()
+qmssqlserver.kill_server()
+
+print("Testing QElasticServer")
+qelasticserver = QElasticServer()
+qelasticserver.run_server(process=True, auto=True)
+sleep(2)
+qelasticserver.test_server()
+qelasticserver.kill_server()
 
 print("Testing QFTPServer")
 qftpserver = QFTPServer()
