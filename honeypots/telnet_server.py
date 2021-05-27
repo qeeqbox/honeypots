@@ -72,7 +72,7 @@ class QTelnetServer():
                     self._pass = data
                     self._user = self.check_bytes(self._user)
                     self._pass = self.check_bytes(self._pass)
-                    if self._user== _q_s.username and self._pass == _q_s.password:
+                    if self._user == _q_s.username and self._pass == _q_s.password:
                         _q_s.logs.info(["servers", {'server': 'telnet_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
                     else:
                         _q_s.logs.info(["servers", {'server': 'telnet_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': self._user.decode('utf-8'), 'password': self._pass.decode('utf-8')}])

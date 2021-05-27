@@ -165,7 +165,7 @@ class QHTTPServer():
                         if _q_s.username != '' and _q_s.password != '':
                             form = FieldStorage(fp=request.content, headers=self.headers, environ={'REQUEST_METHOD': 'POST', 'CONTENT_TYPE': self.headers[b'content-type'], })
                             if 'username' in form and 'password' in form:
-                                
+
                                 form['username'].value = self.check_bytes(form['username'].value)
                                 form['password'].value = self.check_bytes(form['password'].value)
 

@@ -47,7 +47,7 @@ class QSOCKS5Server():
                     return string.decode()
                 else:
                     return str(string)
-            
+
             def handle(self):
                 _q_s.logs.info(["servers", {'server': 'socks5_server', 'action': 'connection', 'ip': self.client_address[0], 'port':self.client_address[1]}])
                 v, m = unpack("!BB", self.connection.recv(2))

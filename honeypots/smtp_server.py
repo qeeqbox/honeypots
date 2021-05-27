@@ -44,7 +44,7 @@ class QSMTPServer():
 
     def smtp_server_main(self):
         _q_s = self
-                
+
         class CustomSMTPChannel(SMTPChannel):
 
             def check_bytes(self, string):
@@ -52,7 +52,7 @@ class QSMTPServer():
                     return string.decode()
                 else:
                     return str(string)
-            
+
             def smtp_EHLO(self, arg):
                 _q_s.logs.info(["servers", {'server': 'smtp_server', 'action': 'connection', 'ip': self.addr[0], 'port':self.addr[1]}])
                 if not arg:
