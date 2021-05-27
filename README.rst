@@ -128,6 +128,8 @@ Current Servers/Emulators
 - QSSHServer <- SSH (Server using socket)
 - QTelnetServer <- TELNET (Server using Twisted)
 - QVNCServer <- VNC (Emulator using Twisted)
+- QMSSQLServer <- MSSQL (Emulator using Twisted)
+- QElasticServer <- VNC (Emulator using http.server)
 
 acknowledgement
 ===============
