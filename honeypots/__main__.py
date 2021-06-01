@@ -2,51 +2,45 @@
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
-
-from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, QMSSQLServer, QElasticServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer, get_running_servers
-from time import sleep
-from atexit import register
-from argparse import ArgumentParser
-from sys import stdout
-from subprocess import Popen
-from netifaces import ifaddresses, AF_INET, AF_LINK
-from psutil import Process, net_io_counters
-from uuid import uuid4
-from json import JSONEncoder, dumps, load
-
+filterwarnings('ignore', category=RuntimeWarning, module='runpy')
 
 all_servers = ['QDNSServer', 'QFTPServer', 'QHTTPProxyServer', 'QHTTPServer', 'QHTTPSServer', 'QIMAPServer', 'QMysqlServer', 'QPOP3Server', 'QPostgresServer', 'QRedisServer', 'QSMBServer', 'QSMTPServer', 'QSOCKS5Server', 'QSSHServer', 'QTelnetServer', 'QVNCServer', 'QElasticServer', 'QMSSQLServer']
-
 temp_honeypots = []
-
-
-def exit_handler():
-    print("Cleaning")
-    clean_all()
-    sleep(1)
 
 
 def list_all_honeypots():
     for honeypot in all_servers:
         print(honeypot[1:].replace('Server', '').lower())
 
+def main_logic():
+    
+    from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, QMSSQLServer, QElasticServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer, get_running_servers
+    from time import sleep
+    from atexit import register
+    from argparse import ArgumentParser, SUPPRESS
+    from sys import stdout
+    from subprocess import Popen
+    from netifaces import ifaddresses, AF_INET, AF_LINK
+    from psutil import Process, net_io_counters
+    from uuid import uuid4
+    from json import JSONEncoder, dumps, load
 
-def msg():
-    '''
-    welcome message
-    '''
-    return """\npython3 -m honeypots --setup all\npython3 -m honeypots --setup ssh --logs all --logs_location /tmp/honeypots_logs\n"""
+    def exit_handler():
+        print("Cleaning")
+        clean_all()
+        sleep(1)
 
+    class _ArgumentParser(ArgumentParser):
+        def error(self, message):
+            self.exit(2, 'Error: %s\n' % (message))
 
-ARG_PARSER = ArgumentParser(description="Qeeqbox/honeypots customizable honeypots for monitoring network traffic, bots activities, and username\\password credentials", usage=msg())
-ARG_PARSER.add_argument("--setup", help="target honeypot E.g. ssh or you can have multiple E.g ssh,http,https", metavar="", default="")
-ARG_PARSER.add_argument("--list", action="store_true", help="list all available honeypots")
-ARG_PARSER.add_argument("--kill", action="store_true", help="kill all honeypots")
-ARG_PARSER.add_argument("--chameleon", action="store_true", help="reserved for chameleon project")
-ARG_PARSER.add_argument("--config", help="config file for logs and database", metavar="", default="")
-ARGV = ARG_PARSER.parse_args()
-
-if __name__ == "__main__":
+    ARG_PARSER = _ArgumentParser(description="Qeeqbox/honeypots customizable honeypots for monitoring network traffic, bots activities, and username\\password credentials", usage=SUPPRESS)
+    ARG_PARSER.add_argument("--setup", help="target honeypot E.g. ssh or you can have multiple E.g ssh,http,https", metavar="", default="")
+    ARG_PARSER.add_argument("--list", action="store_true", help="list all available honeypots")
+    ARG_PARSER.add_argument("--kill", action="store_true", help="kill all honeypots")
+    ARG_PARSER.add_argument("--chameleon", action="store_true", help="reserved for chameleon project")
+    ARG_PARSER.add_argument("--config", help="config file for logs and database", metavar="", default="")
+    ARGV = ARG_PARSER.parse_args()
     if ARGV.list:
         list_all_honeypots()
     elif ARGV.kill:
@@ -74,13 +68,13 @@ if __name__ == "__main__":
                     if "port" in honeypots[honeypot]:
                         for _honeypot in all_servers:
                             if 'q{}server'.format(honeypot).lower() == _honeypot.lower():
-                                x = globals()[_honeypot](port=honeypots[honeypot]["port"], config=ARGV.config)
+                                x = locals()[_honeypot](port=honeypots[honeypot]["port"], config=ARGV.config)
                                 x.run_server(process=True)
                                 temp_honeypots.append(x)
                     else:
                         for _honeypot in all_servers:
                             if 'q{}server'.format(honeypot).lower() == _honeypot.lower():
-                                x = globals()[_honeypot](config=ARGV.config)
+                                x = locals()[_honeypot](config=ARGV.config)
                                 x.run_server(process=True)
                                 temp_honeypots.append(x)
             if isinstance(honeypots, []):
@@ -88,22 +82,22 @@ if __name__ == "__main__":
                     if ":" in server:
                         for honeypot in all_servers:
                             if 'q{}server'.format(server.split(':')[0]).lower() == honeypot.lower():
-                                x = globals()[honeypot](port=int(server.split(':')[1]), config=ARGV.config)
+                                x = locals()[honeypot](port=int(server.split(':')[1]), config=ARGV.config)
                                 x.run_server(process=True)
                                 temp_honeypots.append(x)
                     else:
                         for honeypot in all_servers:
                             if 'q{}server'.format(server).lower() == honeypot.lower():
-                                x = globals()[honeypot](config=ARGV.config)
+                                x = locals()[honeypot](config=ARGV.config)
                                 x.run_server(process=True)
                                 temp_honeypots.append(x)
             else:
                 for honeypot in all_servers:
-                    x = globals()[honeypot](config=ARGV.config)
+                    x = locals()[honeypot](config=ARGV.config)
                     x.run_server(process=True)
                     temp_honeypots.append(x)
 
-            x = globals()['QBSniffer'](filter='not port {}'.format(port), interface=interface, config=ARGV.config)
+            x = locals()['QBSniffer'](filter='not port {}'.format(port), interface=interface, config=ARGV.config)
             x.run_sniffer(process=True)
             temp_honeypots.append(x)
             while True:
@@ -121,7 +115,7 @@ if __name__ == "__main__":
         register(exit_handler)
         if ARGV.setup == "all":
             for honeypot in all_servers:
-                x = globals()[honeypot](config=ARGV.config)
+                x = locals()[honeypot](config=ARGV.config)
                 x.run_server(process=True, auto=True)
                 temp_honeypots.append(x)
         else:
@@ -130,13 +124,13 @@ if __name__ == "__main__":
                 if ":" in server:
                     for honeypot in all_servers:
                         if 'q{}server'.format(server.split(':')[0]).lower() == honeypot.lower():
-                            x = globals()[honeypot](port=int(server.split(':')[1]), config=ARGV.config)
+                            x = locals()[honeypot](port=int(server.split(':')[1]), config=ARGV.config)
                             x.run_server(process=True)
                             temp_honeypots.append(x)
                 else:
                     for honeypot in all_servers:
                         if 'q{}server'.format(server).lower() == honeypot.lower():
-                            x = globals()[honeypot](config=ARGV.config)
+                            x = locals()[honeypot](config=ARGV.config)
                             x.run_server(process=True, auto=True)
                             temp_honeypots.append(x)
         if len(temp_honeypots) > 0:
@@ -149,3 +143,6 @@ if __name__ == "__main__":
                     pass
             print("Please wait few seconds")
             sleep(5)
+
+if __name__ == "__main__":
+    main_logic()

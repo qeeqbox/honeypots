@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+from .__main__ import main_logic
 from .dns_server import QDNSServer
 from .ftp_server import QFTPServer
 from .http_proxy_server import QHTTPProxyServer

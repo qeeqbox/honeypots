@@ -9,16 +9,12 @@ setup(
     author_email='gigaqeeq@gmail.com',
     description="Easy to setup honeypots!",
     long_description=long_description,
-    version='0.19',
+    version='0.20',
     license="AGPL-3.0",
     url="https://github.com/qeeqbox/honeypots",
     packages=['honeypots'],
+    scripts=['honeypots/honeypots'],
     include_package_data=True,
-    entry_points={
-        "console_scripts": [
-            "honeypots = honeypots.__main__:main"
-        ]
-    },
     install_requires=[
         'pipenv',
         'twisted',
@@ -40,5 +36,5 @@ setup(
         'elasticsearch',
         'pymssql'
     ],
-    python_requires='>=3.7'
+    python_requires='>=3.5'
 )

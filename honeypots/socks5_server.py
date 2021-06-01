@@ -6,7 +6,7 @@
 //  description   app.py (CLI)
 //  licensee      AGPL-3.0
 //  -------------------------------------------------------------
-//  contributors list qeeqbox/social-analyzer/graphs/contributors
+//  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 """
 

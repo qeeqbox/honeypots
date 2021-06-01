@@ -121,7 +121,8 @@ qsshserver.kill_server()
 - QElasticServer <- Elastic (Emulator using http.server)
 
 ## acknowledgement
-By using this framework, you are accepting the license terms of all these packages: `pipenv twisted psutil psycopg2-binary dnspython requests impacket paramiko redis mysql-connector pycryptodome vncdotool service_identity requests[socks] pygments`
+- By using this framework, you are accepting the license terms of all these packages: `pipenv twisted psutil psycopg2-binary dnspython requests impacket paramiko redis mysql-connector pycryptodome vncdotool service_identity requests[socks] pygments http.server`
+- Let me know if I missed a reference or resource!
 
 ## Some Articles
 [securityonline](https://securityonline.info/honeypots-16-honeypots-in-a-single-pypi-package/)
