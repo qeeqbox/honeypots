@@ -12,8 +12,9 @@ def list_all_honeypots():
     for honeypot in all_servers:
         print(honeypot[1:].replace('Server', '').lower())
 
+
 def main_logic():
-    
+
     from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, QMSSQLServer, QElasticServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer, get_running_servers
     from time import sleep
     from atexit import register
@@ -143,6 +144,7 @@ def main_logic():
                     pass
             print("Please wait few seconds")
             sleep(5)
+
 
 if __name__ == "__main__":
     main_logic()
