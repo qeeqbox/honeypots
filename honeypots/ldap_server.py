@@ -27,6 +27,7 @@ from uuid import uuid4
 from ldap3 import Server, Connection, ALL
 from time import sleep
 
+
 class QLDAPServer():
     def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, dict_=None, config=''):
         self.auto_disabled = None
@@ -66,7 +67,7 @@ class QLDAPServer():
             def parse_ldap_packet(self, data):
 
                 #                 V
-                #30[20] 0201[02] 60[1b] 0201[03] 04[0a] 7379736261636b757031 [80][0a] 7379736261636b757032
+                # 30[20] 0201[02] 60[1b] 0201[03] 04[0a] 7379736261636b757031 [80][0a] 7379736261636b757032
 
                 username = ""
                 password = ""
@@ -77,22 +78,22 @@ class QLDAPServer():
                 try:
                     version = data.find(b"\x02\x01\x03")
                     if version > 0:
-                        username_start = version+5
-                        username_end = unpack("b",data[version+4:username_start])[0] + username_start
+                        username_start = version + 5
+                        username_end = unpack("b", data[version + 4:username_start])[0] + username_start
                         username = data[username_start:username_end]
                         auth_type = data[username_end]
                         if auth_type == 0x80:
-                            if data[username_end+1] == 0x82:
-                                password_start = username_end+4
-                                password_end = unpack(">H",data[username_end+2:username_end+4])[0] + username_end+4
+                            if data[username_end + 1] == 0x82:
+                                password_start = username_end + 4
+                                password_end = unpack(">H", data[username_end + 2:username_end + 4])[0] + username_end + 4
                             else:
-                                password_start = username_end+2
-                                password_end = unpack("b",data[username_end+2:username_end+3])[0] + username_start+2
+                                password_start = username_end + 2
+                                password_end = unpack("b", data[username_end + 2:username_end + 3])[0] + username_start + 2
                             password = data[password_start:password_end]
-                except:
+                except BaseException:
                     pass
 
-                return username,password
+                return username, password
 
             def dataReceived(self, data):
                 if self._state == 1:
