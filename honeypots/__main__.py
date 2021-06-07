@@ -4,7 +4,7 @@ from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 filterwarnings('ignore', category=RuntimeWarning, module='runpy')
 
-all_servers = ['QDNSServer', 'QFTPServer', 'QHTTPProxyServer', 'QHTTPServer', 'QHTTPSServer', 'QIMAPServer', 'QMysqlServer', 'QPOP3Server', 'QPostgresServer', 'QRedisServer', 'QSMBServer', 'QSMTPServer', 'QSOCKS5Server', 'QSSHServer', 'QTelnetServer', 'QVNCServer', 'QElasticServer', 'QMSSQLServer']
+all_servers = ['QDNSServer', 'QFTPServer', 'QHTTPProxyServer', 'QHTTPServer', 'QHTTPSServer', 'QIMAPServer', 'QMysqlServer', 'QPOP3Server', 'QPostgresServer', 'QRedisServer', 'QSMBServer', 'QSMTPServer', 'QSOCKS5Server', 'QSSHServer', 'QTelnetServer', 'QVNCServer', 'QElasticServer', 'QMSSQLServer', 'QLDAPServer']
 temp_honeypots = []
 
 
@@ -15,7 +15,7 @@ def list_all_honeypots():
 
 def main_logic():
 
-    from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, QMSSQLServer, QElasticServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer, get_running_servers
+    from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, QMSSQLServer, QElasticServer, QLDAPServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer, get_running_servers
     from time import sleep
     from atexit import register
     from argparse import ArgumentParser, SUPPRESS
@@ -64,8 +64,8 @@ def main_logic():
             sleep(2)
             uuid = 'honeypotslogger' + '_' + 'main' + '_' + str(uuid4())[:8]
             logs = setup_logger(uuid, ARGV.config, True)
-            if isinstance(honeypots, {}):
-                for honeypot in honeypots.items():
+            if isinstance(honeypots, dict):
+                for honeypot in honeypots:
                     if "port" in honeypots[honeypot]:
                         for _honeypot in all_servers:
                             if 'q{}server'.format(honeypot).lower() == _honeypot.lower():
@@ -78,7 +78,7 @@ def main_logic():
                                 x = locals()[_honeypot](config=ARGV.config)
                                 x.run_server(process=True)
                                 temp_honeypots.append(x)
-            if isinstance(honeypots, []):
+            elif isinstance(honeypots, list):
                 for server in honeypots.split(','):
                     if ":" in server:
                         for honeypot in all_servers:

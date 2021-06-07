@@ -37,7 +37,7 @@ class QElasticServer():
     def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
         self.auto_disabled = None
         self.ip = ip or '0.0.0.0'
-        self.port = port or 1111
+        self.port = port or 9200
         self.key = path.join(gettempdir(), next(_get_candidate_names()))
         self.cert = path.join(gettempdir(), next(_get_candidate_names()))
         self.username = "elastic"

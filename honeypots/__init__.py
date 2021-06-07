@@ -19,4 +19,5 @@ from .mssql_server import QMSSQLServer
 from .elastic_server import QElasticServer
 from .vnc_server import QVNCServer
 from .qbsniffer import QBSniffer
+from .ldap_server import QLDAPServer
 from .helper import server_arguments, clean_all, kill_servers, get_free_port, close_port_wrapper, kill_server_wrapper, setup_logger, disable_logger, postgres_class, get_running_servers, set_local_vars
