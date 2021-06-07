@@ -1,8 +1,8 @@
 <p align="center"> <img src="https://raw.githubusercontent.com/qeeqbox/honeypots/main/readme/honeypots.png"></p>
 
-18 different honeypots in a single PyPI package for monitoring network traffic, bots activities, and username \ password credentials. All honeypots are non-blocking and can be used as objects or called directly with the in-built auto-configure scripts.
+19 different honeypots in a single PyPI package for monitoring network traffic, bots activities, and username \ password credentials. All honeypots are non-blocking and can be used as objects or called directly with the in-built auto-configure scripts.
 
-The current available honeypots are: dns ftp httpproxy http https imap mysql pop3 postgres redis smb smtp socks5 ssh telnet vnc mssql elastic.
+The current available honeypots are: dns ftp httpproxy http https imap mysql pop3 postgres redis smb smtp socks5 ssh telnet vnc mssql elastic ldap.
 
 ## Install
 ```
@@ -17,6 +17,14 @@ honeypot, or multiple honeypots separated by comma or word `all`
 python3 -m honeypots --setup ssh
 ```
 
+## Usage Example - Auto configure with specific ports
+
+Use as honeypot:port or multiple honeypots as honeypot:port,honeypot:port
+
+```
+python3 -m honeypots --setup imap:143,mysql:3306,redis:6379
+```
+
 ## Usage Example - Auto configure with logs location
 
 honeypot, or multiple honeypots separated by comma or word `all`
@@ -28,7 +36,7 @@ python3 -m honeypots --setup ssh --config config.json
 {
     "logs":"file,terminal",
     "logs_location":"/temp/honeypots_logs/"
-} 
+}
 ```
 
 ## Usage Example - Custom configure
@@ -51,14 +59,6 @@ python3 -m honeypots --setup ftp --config config.json
             }
         }
 }
-```
-
-## Usage Example - Auto configure with specific ports
-
-Use as honeypot:port or multiple honeypots as honeypot:port,honeypot:port
-
-```
-python3 -m honeypots --setup imap:143,mysql:3306,redis:6379
 ```
 
 ## Usage Example - Import as object and auto test
@@ -119,6 +119,7 @@ qsshserver.kill_server()
 - QVNCServer <- VNC (Emulator using Twisted)
 - QMSSQLServer <- MSSQL (Emulator using Twisted)
 - QElasticServer <- Elastic (Emulator using http.server)
+- QLDAPServer <- ldap (Emulator using Twisted)
 
 ## acknowledgement
 - By using this framework, you are accepting the license terms of all these packages: `pipenv twisted psutil psycopg2-binary dnspython requests impacket paramiko redis mysql-connector pycryptodome vncdotool service_identity requests[socks] pygments http.server`

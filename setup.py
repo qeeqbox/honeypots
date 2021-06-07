@@ -7,9 +7,9 @@ setup(
     name='honeypots',
     author='QeeqBox',
     author_email='gigaqeeq@gmail.com',
-    description="Easy to setup honeypots!",
+    description="19 honeypots in one package package for monitoring network traffic, bots activities, and username password credentials",
     long_description=long_description,
-    version='0.20',
+    version='0.24',
     license="AGPL-3.0",
     url="https://github.com/qeeqbox/honeypots",
     packages=['honeypots'],
@@ -34,7 +34,8 @@ setup(
         'scapy',
         'netifaces',
         'elasticsearch',
-        'pymssql'
+        'pymssql',
+        'ldap3'
     ],
     python_requires='>=3.5'
 )
