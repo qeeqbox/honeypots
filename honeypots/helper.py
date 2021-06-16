@@ -21,7 +21,7 @@ from sys import stdout
 from pygments import highlight, lexers, formatters
 from datetime import datetime
 from logging import DEBUG, getLogger
-from logging.handlers import RotatingFileHandler
+from logging.handlers import RotatingFileHandler, SysLogHandler
 from tempfile import _get_candidate_names, gettempdir
 from os import path, makedirs
 from psycopg2 import sql, connect
@@ -78,6 +78,8 @@ def setup_logger(temp_name, config, drop=False):
             config_data = load(f)
             logs = config_data['logs']
             logs_location = config_data['logs_location']
+            syslog_address = config_data['syslog_address']
+            syslog_facility = config_data['syslog_facility']
     if logs_location == '' or logs_location is None:
         logs_location = path.join(gettempdir(), 'logs')
     if not path.exists(logs_location):
@@ -95,6 +97,13 @@ def setup_logger(temp_name, config, drop=False):
         file_handler = RotatingFileHandler(path.join(logs_location, temp_name), maxBytes=10000, backupCount=10)
         file_handler.setFormatter(formatter)
         ret_logs_obj.addHandler(file_handler)
+    if 'syslog' in logs:
+        if syslog_address == "":
+            address = ('localhost',514)
+        else:
+            address = (syslog_address.split("//")[1].split(':')[0],int(syslog_address.split("//")[1].split(':')[1]))
+        syslog = SysLogHandler(address = address, facility=syslog_facility)
+        ret_logs_obj.addHandler(syslog)
     return ret_logs_obj
 
 

@@ -4,6 +4,8 @@
 
 The current available honeypots are: dns ftp httpproxy http https imap mysql pop3 postgres redis smb smtp socks5 ssh telnet vnc mssql elastic ldap.
 
+honeypots output can be logged to a database, file, terminal or syslog
+
 ## Install
 ```
 pip3 install honeypots

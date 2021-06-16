@@ -25,10 +25,12 @@ from uuid import uuid4
 
 
 class QDNSServer():
-    def __init__(self, ip=None, port=None, resolver_addresses=None, config=''):
+    def __init__(self, ip=None, port=None, username=None, password=None, resolver_addresses=None, config=''):
         self.auto_disabled = None
         self.ip = ip or '0.0.0.0'
         self.port = port or 53
+        self.username = username or "test"
+        self.password = password or "test"
         self.resolver_addresses = resolver_addresses or [('8.8.8.8', 53)]
         self.process = None
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
