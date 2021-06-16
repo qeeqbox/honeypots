@@ -35,22 +35,26 @@ disable_warnings()
 class QHTTPSServer():
     def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
         self.auto_disabled = None
-        self.ip = ip or '0.0.0.0'
-        self.port = port or 443
-        self.username = username or "test"
-        self.password = password or "test"
         self.mocking = mocking or ''
         self.key = path.join(gettempdir(), next(_get_candidate_names()))
         self.cert = path.join(gettempdir(), next(_get_candidate_names()))
         self.random_servers = ['Apache', 'nginx', 'Microsoft-IIS/7.5', 'Microsoft-HTTPAPI/2.0', 'Apache/2.2.15', 'SmartXFilter', 'Microsoft-IIS/8.5', 'Apache/2.4.6', 'Apache-Coyote/1.1', 'Microsoft-IIS/7.0', 'Apache/2.4.18', 'AkamaiGHost', 'Apache/2.2.25', 'Microsoft-IIS/10.0', 'Apache/2.2.3', 'nginx/1.12.1', 'Apache/2.4.29', 'cloudflare', 'Apache/2.2.22']
         self.process = None
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
+        self.ip = None
+        self.port = None
+        self.username = None
+        self.password = None
         self.config = config
         if config:
             self.logs = setup_logger(self.uuid, config)
             set_local_vars(self, config)
         else:
             self.logs = setup_logger(self.uuid, None)
+        self.ip = ip or self.ip or '0.0.0.0'
+        self.port = port or self.port or 443
+        self.username = username or self.username or 'test'
+        self.password = password or self.password or 'test'
         disable_logger(1, tlog)
 
     def CreateCert(self, host_name, key, cert):

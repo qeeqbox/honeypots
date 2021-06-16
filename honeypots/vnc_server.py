@@ -23,7 +23,7 @@ from twisted.python import log as tlog
 from tempfile import gettempdir, _get_candidate_names
 from subprocess import Popen
 from os import path
-from vncdotool import api as vncapi
+#from vncdotool import api as vncapi
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars
 from uuid import uuid4
 
@@ -31,10 +31,6 @@ from uuid import uuid4
 class QVNCServer():
     def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, dict_=None, config=''):
         self.auto_disabled = None
-        self.ip = ip or '0.0.0.0'
-        self.port = port or 5900
-        self.username = username or "test"
-        self.password = password or "test"
         self.mocking = mocking or ''
         self.random_servers = ['VNC Server']
         self.file_name = dict_ or None
@@ -45,22 +41,21 @@ class QVNCServer():
             self.load_words()
         self.process = None
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
+        self.ip = None
+        self.port = None
+        self.username = None
+        self.password = None
         self.config = config
         if config:
             self.logs = setup_logger(self.uuid, config)
             set_local_vars(self, config)
         else:
             self.logs = setup_logger(self.uuid, None)
+        self.ip = ip or self.ip or '0.0.0.0'
+        self.port = port or self.port or 5900
+        self.username = username or self.username or 'test'
+        self.password = password or self.password or 'test'
         disable_logger(1, tlog)
-
-    def disable_logger(self):
-        temp_name = path.join(gettempdir(), next(_get_candidate_names()))
-        tlog.startLogging(open(temp_name, 'w'), setStdout=False)
-
-    def setup_logger(self, logs):
-        self.logs = getLogger('honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8])
-        self.logs.setLevel(DEBUG)
-        self.logs.addHandler(CustomHandler())
 
     def load_words(self,):
         with open(self.file_name, 'r') as file:
@@ -154,9 +149,9 @@ class QVNCServer():
             port or self.port
             username or self.username
             password or self.password
-            client = vncapi.connect("{}::{}".format(self.ip, self.port), password=password)
-            client.captureScreen('screenshot.png')
-            client.disconnect()
+            #client = vncapi.connect("{}::{}".format(self.ip, self.port), password=password)
+            #client.captureScreen('screenshot.png')
+            #client.disconnect()
         except BaseException:
             pass
 

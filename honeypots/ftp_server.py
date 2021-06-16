@@ -26,20 +26,24 @@ from uuid import uuid4
 class QFTPServer():
     def __init__(self, ip=None, port=None, username=None, password=None, mocking='', config=''):
         self.auto_disabled = None
-        self.ip = ip or '0.0.0.0'
-        self.port = port or 21
-        self.username = username or 'test'
-        self.password = password or 'test'
         self.mocking = mocking or ''
         self.random_servers = ['ProFTPD 1.2.10', 'ProFTPD 1.3.4a', 'FileZilla ftp 0.9.43', 'Gene6 ftpd 3.10.0', 'FileZilla ftp 0.9.33', 'ProFTPD 1.2.8']
         self.process = None
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
+        self.ip = None
+        self.port = None
+        self.username = None
+        self.password = None
         self.config = config
         if config:
             self.logs = setup_logger(self.uuid, config)
             set_local_vars(self, config)
         else:
             self.logs = setup_logger(self.uuid, None)
+        self.ip = ip or self.ip or '0.0.0.0'
+        self.port = port or self.port or 21
+        self.username = username or self.username or 'test'
+        self.password = password or self.password or 'test'
         disable_logger(1, tlog)
 
     def ftp_server_main(self):

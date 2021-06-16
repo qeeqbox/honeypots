@@ -29,6 +29,7 @@ from sys import stdout
 from time import sleep
 from traceback import format_exc
 from collections import Mapping
+from urllib.parse import urlparse
 
 
 def set_local_vars(self, config):
@@ -87,12 +88,11 @@ def setup_logger(temp_name, config, drop=False):
     file_handler = None
     ret_logs_obj = getLogger(temp_name)
     ret_logs_obj.setLevel(DEBUG)
-    if 'terminal' in logs or 'db' in logs or 'all' in logs or logs == '':
-        if 'db' in logs or 'all' in logs:
-            ret_logs_obj.addHandler(CustomHandler(temp_name, logs, config_data, drop))
-        if 'terminal' in logs or 'all' in logs or logs == '':
-            ret_logs_obj.addHandler(CustomHandler(temp_name, logs))
-    if 'file' in logs or 'all' in logs:
+    if 'db' in logs:
+        ret_logs_obj.addHandler(CustomHandler(temp_name, logs, config_data, drop))
+    elif 'terminal' in logs:
+        ret_logs_obj.addHandler(CustomHandler(temp_name, logs))
+    if 'file' in logs:
         formatter = Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s')
         file_handler = RotatingFileHandler(path.join(logs_location, temp_name), maxBytes=10000, backupCount=10)
         file_handler.setFormatter(formatter)
@@ -197,18 +197,19 @@ class CustomHandler(Handler):
         self.logs = logs
         self.uuid = uuid
         if config and config != '':
-            self.db = postgres_class(host=config['host'], port=config['port'], username=config['username'], password=config['password'], db=config['db'], uuid=self.uuid, drop=drop)
+            parsed = urlparse(config["postgres"])
+            self.db = postgres_class(host=parsed.hostname, port=parsed.port, username=parsed.username, password=parsed.password, db=parsed.path[1:], uuid=self.uuid, drop=drop)
         Handler.__init__(self)
 
     def emit(self, record):
         try:
-            if self.logs == 'all' or self.logs == 'db':
+            if 'db' in self.logs:
                 if self.db:
                     self.db.insert_into_data_safe(record.msg[0], dumps(serialize_object(record.msg[1]), cls=ComplexEncoder))
         except Exception as e:
             stdout.write(dumps({"error": repr(e), "logger": repr(record)}, sort_keys=True, cls=ComplexEncoder) + "\n")
         try:
-            if self.logs == 'all' or self.logs == '':
+            if 'terminal' in self.logs or 'syslog' in self.logs:
                 time_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 if record.msg[0] == "servers":
                     if "server" in record.msg[1]:

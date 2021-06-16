@@ -74,11 +74,11 @@ def main_logic():
     ARG_PARSER_SETUP.add_argument('--list', action='store_true', help='list all available honeypots')
     ARG_PARSER_SETUP.add_argument('--kill', action='store_true', help='kill all honeypots')
     ARG_PARSER_OPTIONAL = ARG_PARSER.add_argument_group("Optional")
-    ARG_PARSER_OPTIONAL.add_argument('--ip', help='Change the IP', metavar='', default='')
-    ARG_PARSER_OPTIONAL.add_argument('--port', help='Change the Port', metavar='', default='')
-    ARG_PARSER_OPTIONAL.add_argument('--username', help='Change the username', metavar='', default='')
-    ARG_PARSER_OPTIONAL.add_argument('--password', help='Change the password', metavar='', default='')
-    ARG_PARSER_OPTIONAL.add_argument('--config', help='This config file overrides all honeypots settings', metavar='', default='')
+    ARG_PARSER_OPTIONAL.add_argument('--ip', help='Override the IP', metavar='', default='')
+    ARG_PARSER_OPTIONAL.add_argument('--port', help='Override the Port (Do not use on multiple!)', metavar='', default='')
+    ARG_PARSER_OPTIONAL.add_argument('--username', help='Override the username', metavar='', default='')
+    ARG_PARSER_OPTIONAL.add_argument('--password', help='Override the password', metavar='', default='')
+    ARG_PARSER_OPTIONAL.add_argument('--config', help='Use a config file for honeypots settings', metavar='', default='')
     ARG_PARSER_OPTIONAL.add_argument('--test', action='store_true', help='Test a honeypot')
     ARG_PARSER_CHAMELEON = ARG_PARSER.add_argument_group("Chameleon")
     ARG_PARSER_CHAMELEON.add_argument('--chameleon', action='store_true', help='reserved for chameleon project')
@@ -91,11 +91,11 @@ def main_logic():
         clean_all()
     elif ARGV.chameleon:
         print('[x] Chameleon mode')
-        port = None
+        sniffer_filter = None
         interface = None
         honeypots = None
-        if ARGV.setup != "" or ARGV.ip != "" or ARGV.port != "" or ARGV.username != "" or ARGV.password:
-            print('[!] This mode works with config.json, please remove --setup, --ip, --port, --username, --password')
+        if ARGV.setup != "":
+            print('[!] This mode works with config.json, please remove --setup')
             exit()
         if ARGV.config == '':
             print('[!] You have to pass config.json')
@@ -103,19 +103,14 @@ def main_logic():
         with open(ARGV.config) as f:
             try:
                 config_data = load(f)
-                port = config_data['port']
+                sniffer_filter = config_data['filter']
                 interface = config_data['interface']
                 honeypots = config_data['honeypots']
             except BaseException:
                 print('[!] Unable to load or parse config.json file')
                 exit()
-        if port and interface:
-            if ARGV.test:
-                if ARGV.ip == '':
-                    ARGV.ip = '0.0.0.0'
-                print('[x] Target IP: {}'.format(ARGV.ip))
-                stdout.flush()
-            else:
+        if sniffer_filter and interface:
+            if not ARGV.test:
                 if ARGV.sniffer:
                     current_interfaces = "unknown"
                     try:
@@ -138,22 +133,27 @@ def main_logic():
                     stdout.flush()
                     sleep(2)
 
-            uuid = 'honeypotslogger' + '_' + 'main' + '_' + str(uuid4())[:8]
-            logs = setup_logger(uuid, ARGV.config, True)
-
             if ARGV.config != "":
                 print('[x] Config.json file overrides --ip, --port, --username and --password')
+
+            #Initiate chameleon db for the first time (If db is used)
+            uuid = 'honeypotslogger' + '_' + 'main' + '_' + str(uuid4())[:8]
+            print('[x] Setup Logger {}'.format(uuid))
+            logs = setup_logger(uuid, ARGV.config, True)
 
             if isinstance(honeypots, dict):
                 print('[x] Parsing honeypot [hard]')
                 for honeypot in honeypots:
                     for _honeypot in all_servers:
                         if 'q{}server'.format(honeypot).lower() == _honeypot.lower():
-                            x = locals()[_honeypot](config=ARGV.config)
+                            if ARGV.port != "":
+                                ARGV.port = int(ARGV.port)
+                            x = locals()[_honeypot](ip=ARGV.ip, port=ARGV.port, username=ARGV.username, password=ARGV.password, config=ARGV.config)
                             if not ARGV.test:
                                 x.run_server(process=True)
                             else:
                                 server_timeout(x, _honeypot)
+                                x.kill_server()
                             temp_honeypots.append(x)
             elif isinstance(honeypots, str):
                 print('[x] Parsing honeypot [easy]')
@@ -163,11 +163,14 @@ def main_logic():
                 for server in honeypots.split(','):
                     for honeypot in all_servers:
                         if 'q{}server'.format(server).lower() == honeypot.lower():
-                            x = locals()[honeypot](config=ARGV.config)
+                            if ARGV.port != "":
+                                ARGV.port = int(ARGV.port)
+                            x = locals()[honeypot](ip=ARGV.ip, port=ARGV.port, username=ARGV.username, password=ARGV.password, config=ARGV.config)
                             if not ARGV.test:
                                 x.run_server(process=True)
                             else:
                                 server_timeout(x, honeypot)
+                                x.kill_server()
                             temp_honeypots.append(x)
             else:
                 print('[!] Unable to parse honeypot from config.json file')
@@ -175,7 +178,7 @@ def main_logic():
 
             if ARGV.sniffer:
                 print('[x] Start sniffer')
-                x = locals()['QBSniffer'](filter='not port {}'.format(port), interface=interface, config=ARGV.config)
+                x = locals()['QBSniffer'](filter=sniffer_filter, interface=interface, config=ARGV.config)
                 x.run_sniffer(process=True)
                 temp_honeypots.append(x)
 
@@ -226,6 +229,7 @@ def main_logic():
                                 x.run_server(process=True)
                             else:
                                 server_timeout(x, honeypot)
+                                x.kill_server()
                             temp_honeypots.append(x)
                 elif ARGV.port != "":
                     for honeypot in all_servers:
@@ -234,7 +238,8 @@ def main_logic():
                             if not ARGV.test:
                                 x.run_server(process=True)
                             else:
-                                print('[x] {} was configured with random port, unable to test..'.format(honeypot))
+                                server_timeout(x, honeypot)
+                                x.kill_server()
                             temp_honeypots.append(x)
                 else:
                     for honeypot in all_servers:

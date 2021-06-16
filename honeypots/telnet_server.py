@@ -24,20 +24,24 @@ from uuid import uuid4
 class QTelnetServer():
     def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
         self.auto_disabled = None
-        self.ip = ip or '0.0.0.0'
-        self.port = port or 23
-        self.username = username or "test"
-        self.password = password or "test"
         self.mocking = mocking or ''
         self.random_servers = ['Ubuntu 18.04 LTS', 'Ubuntu 16.04.3 LTS', 'Welcome to Microsoft Telnet Server.']
         self.process = None
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
+        self.ip = None
+        self.port = None
+        self.username = None
+        self.password = None
         self.config = config
         if config:
             self.logs = setup_logger(self.uuid, config)
             set_local_vars(self, config)
         else:
             self.logs = setup_logger(self.uuid, None)
+        self.ip = ip or self.ip or '0.0.0.0'
+        self.port = port or self.port or 23
+        self.username = username or self.username or 'test'
+        self.password = password or self.password or 'test'
         disable_logger(1, tlog)
 
     def telent_server_main(self):
