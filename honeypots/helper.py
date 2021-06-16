@@ -99,10 +99,10 @@ def setup_logger(temp_name, config, drop=False):
         ret_logs_obj.addHandler(file_handler)
     if 'syslog' in logs:
         if syslog_address == "":
-            address = ('localhost',514)
+            address = ('localhost', 514)
         else:
-            address = (syslog_address.split("//")[1].split(':')[0],int(syslog_address.split("//")[1].split(':')[1]))
-        syslog = SysLogHandler(address = address, facility=syslog_facility)
+            address = (syslog_address.split("//")[1].split(':')[0], int(syslog_address.split("//")[1].split(':')[1]))
+        syslog = SysLogHandler(address=address, facility=syslog_facility)
         ret_logs_obj.addHandler(syslog)
     return ret_logs_obj
 

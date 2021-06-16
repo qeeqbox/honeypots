@@ -11,6 +11,7 @@ temp_honeypots = []
 from signal import signal, alarm, SIGALRM, SIG_IGN
 from functools import wraps
 
+
 def timeout(seconds=10):
     def decorator(func):
         @wraps(func)
@@ -28,18 +29,21 @@ def timeout(seconds=10):
         return wrapper
     return decorator
 
+
 def list_all_honeypots():
     for honeypot in all_servers:
         print(honeypot[1:].replace('Server', '').lower())
 
+
 @timeout(5)
-def server_timeout(object,name):
+def server_timeout(object, name):
     try:
         print('[x] Start testing {}'.format(name))
         object.test_server()
-    except:
+    except BaseException:
         print('[x] Timeout {}'.format(name))
     print('[x] Done testing {}'.format(name))
+
 
 def main_logic():
 
@@ -76,7 +80,7 @@ def main_logic():
     ARG_PARSER_OPTIONAL.add_argument('--password', help='Change the password', metavar='', default='')
     ARG_PARSER_OPTIONAL.add_argument('--config', help='This config file overrides all honeypots settings', metavar='', default='')
     ARG_PARSER_OPTIONAL.add_argument('--test', action='store_true', help='Test a honeypot')
-    ARG_PARSER_CHAMELEON= ARG_PARSER.add_argument_group("Chameleon")
+    ARG_PARSER_CHAMELEON = ARG_PARSER.add_argument_group("Chameleon")
     ARG_PARSER_CHAMELEON.add_argument('--chameleon', action='store_true', help='reserved for chameleon project')
     ARG_PARSER_CHAMELEON.add_argument('--sniffer', action='store_true', help='sniffer - reserved for chameleon project')
     ARG_PARSER_CHAMELEON.add_argument('--iptables', action='store_true', help='iptables - reserved for chameleon project')
@@ -102,7 +106,7 @@ def main_logic():
                 port = config_data['port']
                 interface = config_data['interface']
                 honeypots = config_data['honeypots']
-            except:
+            except BaseException:
                 print('[!] Unable to load or parse config.json file')
                 exit()
         if port and interface:
@@ -121,19 +125,19 @@ def main_logic():
                             print('[x] Your MAC: {}'.format(ifaddresses(interface)[AF_LINK][0]['addr']))
                         else:
                             raise Exception()
-                    except:
-                        print('[!] Unable to detect IP or MAC for [{}] interface, current interfaces are [{}]'.format(interface,current_interfaces))
+                    except BaseException:
+                        print('[!] Unable to detect IP or MAC for [{}] interface, current interfaces are [{}]'.format(interface, current_interfaces))
                         exit()
                     if ARGV.iptables:
                         try:
                             print('[x] Fixing iptables')
                             Popen('iptables -A OUTPUT -p tcp -m tcp --tcp-flags RST RST -j DROP', shell=True)
-                        except:
+                        except BaseException:
                             pass
                     print('[x] Wait for 10 seconds..')
                     stdout.flush()
                     sleep(2)
-            
+
             uuid = 'honeypotslogger' + '_' + 'main' + '_' + str(uuid4())[:8]
             logs = setup_logger(uuid, ARGV.config, True)
 
@@ -149,7 +153,7 @@ def main_logic():
                             if not ARGV.test:
                                 x.run_server(process=True)
                             else:
-                                server_timeout(x,_honeypot)
+                                server_timeout(x, _honeypot)
                             temp_honeypots.append(x)
             elif isinstance(honeypots, str):
                 print('[x] Parsing honeypot [easy]')
@@ -163,7 +167,7 @@ def main_logic():
                             if not ARGV.test:
                                 x.run_server(process=True)
                             else:
-                                server_timeout(x,honeypot)
+                                server_timeout(x, honeypot)
                             temp_honeypots.append(x)
             else:
                 print('[!] Unable to parse honeypot from config.json file')
@@ -221,7 +225,7 @@ def main_logic():
                             if not ARGV.test:
                                 x.run_server(process=True)
                             else:
-                                server_timeout(x,honeypot)
+                                server_timeout(x, honeypot)
                             temp_honeypots.append(x)
                 elif ARGV.port != "":
                     for honeypot in all_servers:
@@ -257,6 +261,7 @@ def main_logic():
                     pass
             print('[x] Please wait few seconds')
             sleep(5)
+
 
 if __name__ == '__main__':
     main_logic()
