@@ -136,7 +136,7 @@ def main_logic():
             if ARGV.config != "":
                 print('[x] Config.json file overrides --ip, --port, --username and --password')
 
-            #Initiate chameleon db for the first time (If db is used)
+            # Initiate chameleon db for the first time (If db is used)
             uuid = 'honeypotslogger' + '_' + 'main' + '_' + str(uuid4())[:8]
             print('[x] Setup Logger {}'.format(uuid))
             logs = setup_logger(uuid, ARGV.config, True)
