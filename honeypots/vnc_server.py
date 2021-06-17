@@ -150,8 +150,8 @@ class QVNCServer():
             username or self.username
             password or self.password
             #client = vncapi.connect("{}::{}".format(self.ip, self.port), password=password)
-            # client.captureScreen('screenshot.png')
-            # client.disconnect()
+            #client.captureScreen('screenshot.png')
+            #client.disconnect()
         except BaseException:
             pass
 

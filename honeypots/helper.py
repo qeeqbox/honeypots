@@ -206,10 +206,7 @@ class CustomHandler(Handler):
             if 'db' in self.logs:
                 if self.db:
                     self.db.insert_into_data_safe(record.msg[0], dumps(serialize_object(record.msg[1]), cls=ComplexEncoder))
-        except Exception as e:
-            stdout.write(dumps({"error": repr(e), "logger": repr(record)}, sort_keys=True, cls=ComplexEncoder) + "\n")
-        try:
-            if 'terminal' in self.logs or 'syslog' in self.logs:
+            if 'terminal' in self.logs:
                 time_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 if record.msg[0] == "servers":
                     if "server" in record.msg[1]:
@@ -219,7 +216,7 @@ class CustomHandler(Handler):
                         del temp['server']
                         del temp['action']
                         stdout.write("[{}] [{}] [{}] -> {}\n".format(time_now, server, action, dumps(temp, sort_keys=True, cls=ComplexEncoder)))
-            else:
+            if 'syslog' in self.logs:
                 stdout.write(dumps(record.msg, sort_keys=True, cls=ComplexEncoder) + "\n")
         except Exception as e:
             stdout.write(dumps({"error": repr(e), "logger": repr(record)}, sort_keys=True, cls=ComplexEncoder) + "\n")
