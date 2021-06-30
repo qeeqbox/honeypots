@@ -51,7 +51,7 @@ python3 -m honeypots --setup ftp --config config.json
 #config.json
 {
     "logs":"file,terminal",
-    "logs_location":"/temp/honeypots_logs/"
+    "logs_location":"/temp/honeypots_logs/",
     "honeypots": {
         "ftp": {
             "port": 21,
