@@ -34,7 +34,7 @@ from uuid import uuid4
 
 
 class QSMBServer():
-    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
+    def __init__(self, ip=None, port=None, username=None, password=None, folders=None, mocking=False, config=''):
         self.auto_disabled = None
         self.mocking = mocking or ''
         self.process = None
@@ -44,6 +44,7 @@ class QSMBServer():
         self.port = None
         self.username = None
         self.password = None
+        self.folders = None
         if config:
             self.logs = setup_logger(self.uuid, config)
             set_local_vars(self, config)
@@ -53,6 +54,7 @@ class QSMBServer():
         self.port = port or self.port or 445
         self.username = username or self.username or 'test'
         self.password = password or self.password or 'test'
+        self.folders = folders or self.folders or ''
         self.disable_logger()
 
     def disable_logger(self):
@@ -82,7 +84,14 @@ class QSMBServer():
         dirpath = mkdtemp()
         server = smbserver.SimpleSMBServer(listenAddress=self.ip, listenPort=self.port)
         # server.removeShare("IPC$")
-        server.addShare('C$', dirpath, '', readOnly='yes')
+        if self.folders == '' or self.folders == None:
+            server.addShare('C$', dirpath, '', readOnly='yes')
+        else:
+            for folder in self.folders.split(","):
+                name, d = folder.split(":")
+                if path.isdir(d) and len(name) > 0:
+                    server.addShare(name, d, '', readOnly='yes')
+
         server.setSMB2Support(True)
         server.addCredential(self.username, 0, compute_lmhash(self.password), compute_nthash(self.password))
         server.setSMBChallenge('')
@@ -95,19 +104,19 @@ class QSMBServer():
                 port = get_free_port()
                 if port > 0:
                     self.port = port
-                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
+                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--folders', str(self.folders),'--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                     if self.process.poll() is None:
-                        self.logs.info(["servers", {'server': 'smb_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+                        self.logs.info(["servers", {'server': 'smb_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders)}])
                     else:
-                        self.logs.info(["servers", {'server': 'smb_server', 'action': 'process', 'status': 'error', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+                        self.logs.info(["servers", {'server': 'smb_server', 'action': 'process', 'status': 'error', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders)}])
                 else:
-                    self.logs.info(["servers", {'server': 'smb_server', 'action': 'setup', 'status': 'error', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+                    self.logs.info(["servers", {'server': 'smb_server', 'action': 'setup', 'status': 'error', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders)}])
             elif self.close_port() and self.kill_server():
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--folders', str(self.folders),'--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                 if self.process.poll() is None:
-                    self.logs.info(["servers", {'server': 'smb_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+                    self.logs.info(["servers", {'server': 'smb_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders)}])
                 else:
-                    self.logs.info(["servers", {'server': 'smb_server', 'action': 'process', 'status': 'error', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+                    self.logs.info(["servers", {'server': 'smb_server', 'action': 'process', 'status': 'error', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders)}])
         else:
             self.smb_server_main()
 
@@ -136,5 +145,5 @@ if __name__ == '__main__':
 
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
-        qsmbserver = QSMBServer(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, config=parsed.config)
+        qsmbserver = QSMBServer(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, folders=parsed.folders, mocking=parsed.mocking, config=parsed.config)
         qsmbserver.run_server()
