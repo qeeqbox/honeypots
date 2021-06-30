@@ -84,7 +84,7 @@ class QSMBServer():
         dirpath = mkdtemp()
         server = smbserver.SimpleSMBServer(listenAddress=self.ip, listenPort=self.port)
         # server.removeShare("IPC$")
-        if self.folders == '' or self.folders == None:
+        if self.folders == '' or self.folders is None:
             server.addShare('C$', dirpath, '', readOnly='yes')
         else:
             for folder in self.folders.split(","):
@@ -104,7 +104,7 @@ class QSMBServer():
                 port = get_free_port()
                 if port > 0:
                     self.port = port
-                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--folders', str(self.folders),'--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
+                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--folders', str(self.folders), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                     if self.process.poll() is None:
                         self.logs.info(["servers", {'server': 'smb_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders)}])
                     else:
@@ -112,7 +112,7 @@ class QSMBServer():
                 else:
                     self.logs.info(["servers", {'server': 'smb_server', 'action': 'setup', 'status': 'error', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders)}])
             elif self.close_port() and self.kill_server():
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--folders', str(self.folders),'--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--folders', str(self.folders), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
                 if self.process.poll() is None:
                     self.logs.info(["servers", {'server': 'smb_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders)}])
                 else:
