@@ -73,14 +73,19 @@ def disable_logger(logger_type, object):
 def setup_logger(temp_name, config, drop=False):
     logs = 'terminal'
     logs_location = ''
+    syslog_address = ''
+    syslog_facility = ''
     config_data = None
     if config and config != '':
-        with open(config) as f:
-            config_data = load(f)
-            logs = config_data['logs']
-            logs_location = config_data['logs_location']
-            syslog_address = config_data['syslog_address']
-            syslog_facility = config_data['syslog_facility']
+        try:
+            with open(config) as f:
+                config_data = load(f)
+                logs = config_data['logs']
+                logs_location = config_data['logs_location']
+                syslog_address = config_data['syslog_address']
+                syslog_facility = config_data['syslog_facility']
+        except:
+            pass
     if logs_location == '' or logs_location is None:
         logs_location = path.join(gettempdir(), 'logs')
     if not path.exists(logs_location):
@@ -324,6 +329,7 @@ def server_arguments():
     _server_parsergroupdeq.add_argument('--password', type=str, help="Change password", required=False, metavar='')
     _server_parsergroupdeq.add_argument('--resolver_addresses', type=str, help="Change resolver address", required=False, metavar='')
     _server_parsergroupdeq.add_argument('--domain', type=str, help="A domain to test", required=False, metavar='')
+    _server_parsergroupdeq.add_argument('--folders', type=str, help="folders for smb as ['name:target','name:target']", required=False, metavar='')
     _server_parsergroupdeq.add_argument('--mocking', type=str, help="Random banner", required=False)
     _server_parsergroupdes = _server_parser.add_argument_group('Sinffer options')
     _server_parsergroupdes.add_argument('--filter', type=str, help="setup the Sinffer filter", required=False)
