@@ -84,7 +84,7 @@ def setup_logger(temp_name, config, drop=False):
                 logs_location = config_data['logs_location']
                 syslog_address = config_data['syslog_address']
                 syslog_facility = config_data['syslog_facility']
-        except:
+        except BaseException:
             pass
     if logs_location == '' or logs_location is None:
         logs_location = path.join(gettempdir(), 'logs')
