@@ -108,6 +108,8 @@ def setup_logger(temp_name, config, drop=False):
         else:
             address = (syslog_address.split("//")[1].split(':')[0], int(syslog_address.split("//")[1].split(':')[1]))
         syslog = SysLogHandler(address=address, facility=syslog_facility)
+        formatter = Formatter('[%(name)s] [%(levelname)s] - %(message)s')
+        syslog.setFormatter(formatter)
         ret_logs_obj.addHandler(syslog)
     return ret_logs_obj
 
