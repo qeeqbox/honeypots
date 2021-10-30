@@ -48,7 +48,7 @@ honeypot, or multiple honeypots in a dict
 ```
 python3 -m honeypots --setup ftp --config config.json
 
-#config.json
+#config.json (Output to folder and terminal)
 {
     "logs":"file,terminal",
     "logs_location":"/temp/honeypots_logs/",
@@ -61,6 +61,23 @@ python3 -m honeypots --setup ftp --config config.json
             }
         }
 }
+
+#config.json (Output to syslog)
+{
+    "logs":"syslog",
+    "logs_location":"",
+    "syslog_address": "udp://localhost:514",
+    "syslog_facility": 3,
+    "honeypots": {
+        "ftp": {
+            "port": 21,
+            "ip": "0.0.0.0",
+            "username": "test",
+            "password": "test"
+            }
+        }
+}
+
 ```
 
 ## Usage Example - Import as object and auto test
