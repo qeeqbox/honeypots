@@ -45,10 +45,12 @@ python3 -m honeypots --setup ssh --config config.json
 
 honeypot, or multiple honeypots in a dict
 
-```
+```sh
 python3 -m honeypots --setup ftp --config config.json
+```
 
-#config.json (Output to folder and terminal)
+#### config.json (Output to folder and terminal)
+```json
 {
     "logs":"file,terminal",
     "logs_location":"/temp/honeypots_logs/",
@@ -61,8 +63,10 @@ python3 -m honeypots --setup ftp --config config.json
             }
         }
 }
+```
 
-#config.json (Output to syslog)
+#### config.json (Output to syslog)
+```json
 {
     "logs":"syslog",
     "logs_location":"",
