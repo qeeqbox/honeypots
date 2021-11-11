@@ -4,7 +4,7 @@
 
 The honeypots are: dns ftp httpproxy http https imap mysql pop3 postgres redis smb smtp socks5 ssh telnet vnc mssql elastic ldap.
 
-The honeypots output can be logged to a database, file, terminal or syslog
+The honeypots output can be logged to a postgres database, file, terminal or syslog
 
 ## Install
 ```
