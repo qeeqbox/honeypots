@@ -6,6 +6,8 @@ The honeypots are: dns ftp httpproxy http https imap mysql pop3 postgres redis s
 
 The honeypots output can be logged to a postgres database, file, terminal or syslog
 
+Honeypots now is in the awesome [telekom security T-Pot project!](https://github.com/telekom-security/tpotce)
+
 ## Install
 ```
 pip3 install honeypots
