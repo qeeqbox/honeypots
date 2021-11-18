@@ -84,6 +84,26 @@ python3 -m honeypots --setup ftp --config config.json
 
 ```
 
+#### config.json (Output to db)
+```json
+{
+    "logs": "db",
+    "logs_location": "",
+    "syslog_address":"",
+    "syslog_facility":0,
+    "postgres":"//username:password@172.19.0.2:9999/honeypots",
+    "filter": "",
+    "interface": "",
+    "honeypots": {
+        "ftp": {
+            "port": 21,
+            "username": "test",
+            "password": "test"
+        }
+    }
+}
+```
+
 ## db structure
 ```json
 [
