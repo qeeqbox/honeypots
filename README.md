@@ -120,6 +120,7 @@ python3 -m honeypots --setup ftp --config config.json
       "password": "'test'"
     }
   }
+]
 ```
 
 ## Usage Example - Import as object and auto test
