@@ -101,7 +101,7 @@ def main_logic():
         list_all_honeypots()
     elif ARGV.kill:
         clean_all()
-    elif ARGV.chameleon and config_data != None:
+    elif ARGV.chameleon and config_data is not None:
         print('[x] Chameleon mode')
         if config_data['filter'] and config_data['interface']:
             if not ARGV.test:
