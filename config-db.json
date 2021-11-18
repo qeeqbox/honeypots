@@ -1,0 +1,16 @@
+{
+    "logs": "db",
+    "logs_location": "",
+    "syslog_address":"",
+    "syslog_facility":0,
+    "postgres":"//changeme027a088931d22:changeme0f40773877963@172.19.0.2:9999/chameleon",
+    "filter": "",
+    "interface": "",
+    "honeypots": {
+        "ftp": {
+            "port": 21,
+            "username": "test",
+            "password": "test"
+        }
+    }
+}
