@@ -45,7 +45,7 @@ python3 -m honeypots --setup ssh --config config.json
 
 honeypot, or multiple honeypots in a dict
 
-```sh
+```bash
 python3 -m honeypots --setup ftp --config config.json
 ```
 
@@ -84,6 +84,24 @@ python3 -m honeypots --setup ftp --config config.json
 
 ```
 
+## db structure
+```json
+[
+  {
+    "id": 1,
+    "date": "2021-11-18 06:06:42.304338+00",
+    "data": {
+      "server": "'ftp_server'",
+      "action": "'process'",
+      "status": "'success'",
+      "ip": "'0.0.0.0'",
+      "port": "21",
+      "username": "'test'",
+      "password": "'test'"
+    }
+  }
+```
+
 ## Usage Example - Import as object and auto test
 
 ```
@@ -98,7 +116,7 @@ logs= String E.g db, terminal or all
 always remember to add process=true to run_server() for non-blocking
 ```
 
-```
+```python
 from honeypots import QSSHServer
 qsshserver = QSSHServer(port=9999)
 qsshserver.run_server(process=True)
@@ -108,17 +126,17 @@ qsshserver.kill_server()
 ```
 
 ## Usage Example - Import as object and test with external ssh command
-```
+```python
 #you need higher user permissions for binding\closing some ports
 
 from honeypots import QSSHServer
 qsshserver = QSSHServer(port=9999)
 qsshserver.run_server(process=True)
 ```
-```
+```sh
 ssh test@127.0.0.1
 ```
-```
+```python
 INFO:chameleonlogger:['servers', {'status': 'success', 'username': 'test', 'ip': '127.0.0.1', 'server': 'ssh_server', 'action': 'login', 'password': 'test', 'port': 38696}]
 qsshserver.kill_server()
 ```
