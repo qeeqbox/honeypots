@@ -19,6 +19,14 @@ honeypot, or multiple honeypots separated by comma or word `all`
 python3 -m honeypots --setup ssh
 ```
 
+## Usage Example - Local ports needs higher privileges (use sudo -E)
+
+honeypot, or multiple honeypots separated by comma or word `all`
+
+```
+sudo -E python3 -m honeypots --setup ssh:22
+```
+
 ## Usage Example - Auto configure with specific ports
 
 Use as honeypot:port or multiple honeypots as honeypot:port,honeypot:port
