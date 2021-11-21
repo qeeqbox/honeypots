@@ -195,7 +195,7 @@ def serialize_object(_dict):
     if isinstance(_dict, Mapping):
         return dict((k, serialize_object(v)) for k, v in _dict.items())
     else:
-        return repr(_dict)
+        return repr(_dict)[1:-1] #WTF?! [1:-1]
 
 
 class CustomHandler(Handler):
