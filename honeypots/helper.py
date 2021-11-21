@@ -179,12 +179,7 @@ def close_port_wrapper(server_name, ip, port, logs):
 
 class ComplexEncoder(JSONEncoder):
     def default(self, obj):
-        if isinstance(obj, bytes):
-            return obj.decode(errors='replace')
-        else:
-            return repr(obj)
-        return JSONEncoder.default(self, obj)
-
+        return repr(obj)
 
 class ComplexEncoder_db(JSONEncoder):
     def default(self, obj):
@@ -194,8 +189,16 @@ class ComplexEncoder_db(JSONEncoder):
 def serialize_object(_dict):
     if isinstance(_dict, Mapping):
         return dict((k, serialize_object(v)) for k, v in _dict.items())
+    elif isinstance(_dict, list):
+        return list(serialize_object(v) for v in _dict)
+    elif isinstance(_dict, (int, float)):
+        return str(_dict)
+    elif isinstance(_dict, str):
+        return _dict.replace('\x00',' ')
+    elif isinstance(_dict, bytes):
+        return _dict.decode("utf-8", "ignore").replace('\x00',' ')
     else:
-        return repr(_dict)[1:-1]  # WTF?! [1:-1]
+        return repr(_dict)
 
 
 class CustomHandler(Handler):
@@ -222,9 +225,9 @@ class CustomHandler(Handler):
                         server = temp['server'].replace('server', '').replace('_', '')
                         del temp['server']
                         del temp['action']
-                        stdout.write("[{}] [{}] [{}] -> {}\n".format(time_now, server, action, dumps(temp, sort_keys=True, cls=ComplexEncoder)))
+                        stdout.write("[{}] [{}] [{}] -> {}\n".format(time_now, server, action, dumps(serialize_object(temp), sort_keys=True, cls=ComplexEncoder)))
             if 'syslog' in self.logs:
-                stdout.write(dumps(record.msg, sort_keys=True, cls=ComplexEncoder) + "\n")
+                stdout.write(dumps(serialize_object(record.msg), sort_keys=True, cls=ComplexEncoder) + "\n")
         except Exception as e:
             stdout.write(dumps({"error": repr(e), "logger": repr(record)}, sort_keys=True, cls=ComplexEncoder) + "\n")
         stdout.flush()
@@ -263,6 +266,7 @@ class postgres_class():
             self.con.close()
         self.con = connect(host=self.host, port=self.port, user=self.username, password=self.password, database=self.db)
         self.con.set_isolation_level(0)
+        self.con.set_client_encoding('UTF8')
         self.cur = self.con.cursor()
         self.create_tables()
 
@@ -295,9 +299,7 @@ class postgres_class():
             if self.check_db_if_exists():
                 self.cur.execute(sql.SQL("drop DATABASE IF EXISTS {}").format(sql.Identifier(self.db)))
                 sleep(2)
-                self.cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(self.db)))
-            else:
-                self.cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(self.db)))
+            self.cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(self.db)))
         except BaseException:
             pass
 
