@@ -179,7 +179,7 @@ def close_port_wrapper(server_name, ip, port, logs):
 
 class ComplexEncoder(JSONEncoder):
     def default(self, obj):
-        return repr(obj)
+        return repr(obj).replace('\x00', ' ')
 
 
 class ComplexEncoder_db(JSONEncoder):
@@ -199,7 +199,7 @@ def serialize_object(_dict):
     elif isinstance(_dict, bytes):
         return _dict.decode("utf-8", "ignore").replace('\x00', ' ')
     else:
-        return repr(_dict)
+        return repr(_dict).replace('\x00', ' ')
 
 
 class CustomHandler(Handler):
