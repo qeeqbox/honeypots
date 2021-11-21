@@ -181,6 +181,7 @@ class ComplexEncoder(JSONEncoder):
     def default(self, obj):
         return repr(obj)
 
+
 class ComplexEncoder_db(JSONEncoder):
     def default(self, obj):
         return "Something wrong, deleted.."
@@ -194,9 +195,9 @@ def serialize_object(_dict):
     elif isinstance(_dict, (int, float)):
         return str(_dict)
     elif isinstance(_dict, str):
-        return _dict.replace('\x00',' ')
+        return _dict.replace('\x00', ' ')
     elif isinstance(_dict, bytes):
-        return _dict.decode("utf-8", "ignore").replace('\x00',' ')
+        return _dict.decode("utf-8", "ignore").replace('\x00', ' ')
     else:
         return repr(_dict)
 
