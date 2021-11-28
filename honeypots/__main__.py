@@ -243,7 +243,8 @@ def main_logic():
         if len(temp_honeypots) > 0:
             print('[x] Everything looks good!')
             if not ARGV.test:
-                input('')
+                while True:
+                    sleep(1)
             for server in temp_honeypots:
                 try:
                     if not ARGV.test:
