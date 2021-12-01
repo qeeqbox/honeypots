@@ -13,7 +13,7 @@ from functools import wraps
 
 
 class SignalFence:
-    def __init__(self, signals_to_listen_on, interval=5):
+    def __init__(self, signals_to_listen_on, interval=1):
         self.fence_up = True
         self.interval = interval
 
