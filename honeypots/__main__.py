@@ -11,8 +11,9 @@ from signal import signal, alarm, SIGALRM, SIG_IGN, SIGTERM, SIGINT, SIGTSTP
 from time import sleep
 from functools import wraps
 
+
 class SignalFence:
-    def __init__(self, signals_to_listen_on, interval = 5):
+    def __init__(self, signals_to_listen_on, interval=5):
         self.fence_up = True
         self.interval = interval
 
@@ -26,6 +27,7 @@ class SignalFence:
         while self.fence_up:
             sleep(self.interval)
 
+
 class Termination:
     def __init__(self, strategy):
         self.strategy = strategy
@@ -37,6 +39,7 @@ class Termination:
             SignalFence([SIGTERM, SIGINT, SIGTSTP]).wait_on_fence()
         else:
             raise Exception('Unknown termination strategy: ' + strategy)
+
 
 def timeout(seconds=10):
     def decorator(func):
@@ -223,7 +226,7 @@ def main_logic():
         register(exit_handler)
         if ARGV.termination_strategy == 'input':
             print('[x] Use [Enter] to exit or python3 -m honeypots --kill')
-    
+
         if ARGV.config != "":
             print('[x] config.json file overrides --ip, --port, --username and --password')
 
