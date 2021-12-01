@@ -9,7 +9,7 @@ setup(
     author_email='gigaqeeq@gmail.com',
     description="19 honeypots in one package package for monitoring network traffic, bots activities, and username password credentials",
     long_description=long_description,
-    version='0.33',
+    version='0.34',
     license="AGPL-3.0",
     url="https://github.com/qeeqbox/honeypots",
     packages=['honeypots'],
