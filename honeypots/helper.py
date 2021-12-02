@@ -30,7 +30,8 @@ from collections import Mapping
 from urllib.parse import urlparse
 
 old_stderr = sys.stderr
-sys.stderr = open(devnull, 'w') #supress all stderr
+sys.stderr = open(devnull, 'w')  # supress all stderr
+
 
 def set_local_vars(self, config):
     try:
