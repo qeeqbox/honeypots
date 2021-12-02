@@ -10,27 +10,27 @@
 //  -------------------------------------------------------------
 """
 
+import sys
 from psutil import process_iter
 from signal import SIGTERM
 from argparse import ArgumentParser
-from os import scandir
 from socket import socket, AF_INET, SOCK_STREAM
 from json import JSONEncoder, dumps, load
-from logging import Handler, Formatter
+from logging import Handler, Formatter, DEBUG, getLogger
 from sys import stdout
 from pygments import highlight, lexers, formatters
 from datetime import datetime
-from logging import DEBUG, getLogger
 from logging.handlers import RotatingFileHandler, SysLogHandler
 from tempfile import _get_candidate_names, gettempdir
-from os import path, makedirs
+from os import path, makedirs, devnull, scandir
 from psycopg2 import sql, connect
-from sys import stdout
 from time import sleep
 from traceback import format_exc
 from collections import Mapping
 from urllib.parse import urlparse
 
+old_stderr = sys.stderr
+sys.stderr = open(devnull, 'w') #supress all stderr
 
 def set_local_vars(self, config):
     try:
