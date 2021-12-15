@@ -61,6 +61,7 @@ class QMysqlServer():
         payload_len = list(pack('<I', len(''.join(base))))
         #payload_len[3] = '\x00'
         string_ = chr(payload_len[0]) + chr(payload_len[1]) + chr(payload_len[2]) + '\x00' + ''.join(base)
+        string_ = bytes([ord(c) for c in string_])
         return string_
 
     def too_many(self):
@@ -68,6 +69,7 @@ class QMysqlServer():
         payload_len = list(pack('<I', len(''.join(base))))
         #payload_len[3] = '\x02'
         string_ = chr(payload_len[0]) + chr(payload_len[1]) + chr(payload_len[2]) + '\x02' + ''.join(base)
+        string_ = bytes([ord(c) for c in string_])
         return string_
 
     def parse_data(self, data):
@@ -86,7 +88,6 @@ class QMysqlServer():
         return username, password, False
 
     def decode(self, hash):
-        print(":".join("{:02x}".format((c)) for c in hash))
         try:
             for word in self.words:
                 temp = word
@@ -109,33 +110,40 @@ class QMysqlServer():
             _state = None
 
             def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
+                try:
+                    if isinstance(string, bytes):
+                        return string.decode('utf-8', 'ignore')
+                    else:
+                        return str(string)
+                except Exception as e:
+                    return string
 
             def connectionMade(self):
                 self._state = 1
-                self.transport.write(_q_s.greeting().encode())
+                self.transport.write(_q_s.greeting())
                 _q_s.logs.info(["servers", {'server': 'mysql_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
 
             def dataReceived(self, data):
-                if self._state == 1:
-                    username, password, good = _q_s.parse_data(data)
-                    username = self.check_bytes(username)
-                    password = self.check_bytes(password)
-                    if good:
-                        if password:
-                            _x = _q_s.decode(password)
-                            if _x == _q_s.password and _x is not None:
-                                _q_s.logs.info(["servers", {'server': 'mysql_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
+                try:
+                    if self._state == 1:
+                        username, password, good = _q_s.parse_data(data)
+                        username = self.check_bytes(username)
+                        password = self.check_bytes(password)
+                        if good:
+                            if password:
+                                _x = _q_s.decode(password)
+                                if _x == _q_s.password and _x is not None:
+                                    _q_s.logs.info(["servers", {'server': 'mysql_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
+                                else:
+                                    _q_s.logs.info(["servers", {'server': 'mysql_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password.encode().hex()}])
                             else:
-                                _q_s.logs.info(["servers", {'server': 'mysql_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': ':'.join(hex((c))[2:] for c in password)}])
-                        else:
-                            _q_s.logs.info(["servers", {'server': 'mysql_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': 'UnKnown', 'password': ':'.join(hex((c))[2:] for c in data)}])
+                                _q_s.logs.info(["servers", {'server': 'mysql_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': 'UnKnown', 'password': ':'.join(hex((c))[2:] for c in data)}])
 
+                        self.transport.write(_q_s.too_many())
+                    else:
+                        self.transport.loseConnection()
+                except:
                     self.transport.write(_q_s.too_many())
-                else:
                     self.transport.loseConnection()
 
             def connectionLost(self, reason):
