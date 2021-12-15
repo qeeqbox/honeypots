@@ -142,7 +142,7 @@ class QMysqlServer():
                         self.transport.write(_q_s.too_many())
                     else:
                         self.transport.loseConnection()
-                except:
+                except BaseException:
                     self.transport.write(_q_s.too_many())
                     self.transport.loseConnection()
 
