@@ -74,7 +74,6 @@ class QMysqlServer():
         string_ = bytes([ord(c) for c in string_])
         return string_
 
-
     def access_denied(self):
         base = ['\xff', '\x15\x04', '#28000', 'Access denied..']
         payload_len = list(pack('<I', len(''.join(base))))
@@ -93,7 +92,7 @@ class QMysqlServer():
             rest_ = data[36 + username_len + 2 + password_len:]
             if len(password) == 20:
                 return username, password, True
-        except:
+        except BaseException:
             pass
         return username, password, False
 
@@ -107,7 +106,7 @@ class QMysqlServer():
                 encrypted = [((a) ^ (b)) for a, b in zip(hash1, sha1(b'12345678123456789012' + hash2).digest())]
                 if encrypted == list([(i) for i in hash]):
                     return temp
-        except:
+        except BaseException:
             pass
 
         return None
