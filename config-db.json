@@ -3,7 +3,8 @@
     "logs_location": "",
     "syslog_address":"",
     "syslog_facility":0,
-    "postgres":"//changeme027a088931d22:changeme0f40773877963@172.19.0.2:9999/chameleon",
+    "postgres":"//changeme027a088931d22:changeme0f40773877963@0.0.0.0:9999/chameleon",
+    "db_options":["drop"],
     "filter": "",
     "interface": "",
     "honeypots": {

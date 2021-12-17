@@ -124,8 +124,15 @@ def main_logic():
                 exit()
             if "db" in config_data["logs"]:
                 uuid = 'honeypotslogger' + '_' + 'main' + '_' + str(uuid4())[:8]
-                print('[x] Setup Logger {} with db'.format(uuid))
-                logs = setup_logger(uuid, ARGV.config, True)
+                if "db_options" in config_data:
+                    if "drop" in config_data["db_options"]: 
+                        print('[x] Setup Logger {} with a db, drop is on'.format(uuid))
+                        logs = setup_logger(uuid, ARGV.config, True)
+                    else:
+                        print('[x] Setup Logger {} with a db, drop is off'.format(uuid))
+                        logs = setup_logger(uuid, ARGV.config, False)
+                else:
+                    logs = setup_logger(uuid, ARGV.config, False)
     if ARGV.list:
         list_all_honeypots()
     elif ARGV.kill:

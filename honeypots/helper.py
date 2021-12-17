@@ -298,6 +298,7 @@ class postgres_class():
 
     def drop_db(self):
         try:
+            print("[x] Dropping {} db".format(self.db))
             if self.check_db_if_exists():
                 self.cur.execute(sql.SQL("drop DATABASE IF EXISTS {}").format(sql.Identifier(self.db)))
                 sleep(2)
