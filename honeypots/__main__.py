@@ -125,7 +125,7 @@ def main_logic():
             if "db" in config_data["logs"]:
                 uuid = 'honeypotslogger' + '_' + 'main' + '_' + str(uuid4())[:8]
                 if "db_options" in config_data:
-                    if "drop" in config_data["db_options"]: 
+                    if "drop" in config_data["db_options"]:
                         print('[x] Setup Logger {} with a db, drop is on'.format(uuid))
                         logs = setup_logger(uuid, ARGV.config, True)
                     else:
