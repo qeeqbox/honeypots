@@ -54,13 +54,13 @@ class QNTPServer():
         class CustomDatagramProtocolProtocol(DatagramProtocol):
             def system_time_to_ntp(self, time_):
                 i = (int(time_ + 2208988800.0) << 32)
-                f = int(((time_+ 2208988800.0) - int(time_+ 2208988800.0)) * 4294967296)
-                return i,f
+                f = int(((time_ + 2208988800.0) - int(time_ + 2208988800.0)) * 4294967296)
+                return i, f
 
             def ntp_to_system_time(self, time_):
                 i = float(time_ >> 32) - 2208988800.0
                 f = float(int(i) & 0xffffffff) / (4294967296)
-                return i,f
+                return i, f
 
             def datagramReceived(self, data, addr):
                 version = 0
@@ -72,14 +72,14 @@ class QNTPServer():
                     version = data[0] >> 3 & 0x7
                     mode = data[0] & 0x7
                     unpacked = unpack("!B B B b I I I Q Q Q Q", data)
-                    if unpacked != None:
-                        i,f = self.system_time_to_ntp(time())
-                        response = pack("!B B B b I I I Q Q Q Q", 0 << 6 | 3 << 3 | 2,data[1],data[2],data[3],0,0,0,0,data[10],0,i+f)
+                    if unpacked is not None:
+                        i, f = self.system_time_to_ntp(time())
+                        response = pack("!B B B b I I I Q Q Q Q", 0 << 6 | 3 << 3 | 2, data[1], data[2], data[3], 0, 0, 0, 0, data[10], 0, i + f)
                         self.transport.write(response, addr)
                         success = True
 
                 if success:
-                    _q_s.logs.info(["servers", {'server': 'ntp_server', 'action': 'query', 'status': 'success', 'ip': addr[0], 'port': addr[1], 'version': version, 'mode': mode}]) 
+                    _q_s.logs.info(["servers", {'server': 'ntp_server', 'action': 'query', 'status': 'success', 'ip': addr[0], 'port': addr[1], 'version': version, 'mode': mode}])
                 else:
                     _q_s.logs.info(["servers", {'server': 'ntp_server', 'action': 'query', 'status': 'fail', 'ip': addr[0], 'port': addr[1], 'version': version, 'mode': mode}])
 
