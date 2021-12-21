@@ -1,13 +1,14 @@
 .. image:: https://raw.githubusercontent.com/qeeqbox/honeypots/main/readme/honeypots.png
 
-19 different honeypots in a single PyPI package for monitoring network traffic, bots activities, and username \ password credentials. All honeypots are non-blocking and can be used as objects or called directly with the in-built auto-configure scripts.
+21 different honeypots in a single PyPI package for monitoring network traffic, bots activities, and username \ password credentials. All honeypots are non-blocking and can be used as objects or called directly with the in-built auto-configure scripts. Also, they are easy to setup and customize, it takes 1-2 seconds to spin a honeypot up. The output can be logged to a postgres database, file[s], terminal or syslog for easy integration.
 
-The current available honeypots are: dns ftp httpproxy http https imap mysql pop3 postgres redis smb smtp socks5 ssh telnet vnc mssql elastic ldap
+The honeypots are: dns ftp httpproxy http https imap mysql pop3 postgres redis smb smtp socks5 ssh telnet vnc mssql elastic ldap ntp memecache.
 
-honeypots output can be logged to a database, file, terminal or syslog
+Honeypots now is in the awesome `telekom security T-Pot project! <https://github.com/telekom-security/tpotce>`_
+
 
 Install
-==========
+=======
 
 .. code:: bash
 
@@ -20,6 +21,14 @@ Use a honeypot, or multiple honeypots separated by comma or word all
 .. code:: bash
 
     python3 -m honeypots --setup ssh
+
+Usage Example - Local ports needs higher privileges (use sudo -E)
+=================================================================
+Use as honeypot:port or multiple honeypots as honeypot:port,honeypot:port
+
+.. code:: bash
+
+    python3 -m honeypots --setup ssh:22
 
 Usage Example - Auto configure with specific ports
 ==================================================
@@ -45,12 +54,15 @@ Use a honeypot, or multiple honeypots separated by comma or word all
     }
 
 Usage Example - Custom configure
-=================================================
+================================
 Use a honeypot, or multiple honeypots separated by comma or word all
 
 .. code:: bash
 
     python3 -m honeypots --setup ssh --config config.json
+
+config.json (Output to folder and terminal)
+===========================================
 
 .. code:: json
 
@@ -66,6 +78,70 @@ Use a honeypot, or multiple honeypots separated by comma or word all
                 }
             }
     }
+
+config.json (Output to syslog)
+==============================
+
+.. code:: json
+
+    {
+        "logs":"syslog",
+        "logs_location":"",
+        "syslog_address": "udp://localhost:514",
+        "syslog_facility": 3,
+        "honeypots": {
+            "ftp": {
+                "port": 21,
+                "ip": "0.0.0.0",
+                "username": "test",
+                "password": "test"
+                }
+            }
+    }
+
+config.json (Output to db)
+==========================
+
+.. code:: json
+
+    {
+        "logs": "db",
+        "logs_location": "",
+        "syslog_address":"",
+        "syslog_facility":0,
+        "postgres":"//username:password@172.19.0.2:9999/honeypots",
+        "db_options":["drop"],
+        "filter": "",
+        "interface": "",
+        "honeypots": {
+            "ftp": {
+                "port": 21,
+                "username": "test",
+                "password": "test"
+            }
+        }
+    }
+
+db structure
+============
+
+.. code:: json
+
+    [
+      {
+        "id": 1,
+        "date": "2021-11-18 06:06:42.304338+00",
+        "data": {
+          "server": "'ftp_server'",
+          "action": "'process'",
+          "status": "'success'",
+          "ip": "'0.0.0.0'",
+          "port": "21",
+          "username": "'test'",
+          "password": "'test'"
+        }
+      }
+    ]
 
 Usage Example - Import as object and auto test
 ==============================================
@@ -133,11 +209,17 @@ Current Servers/Emulators
 - QMSSQLServer <- MSSQL (Emulator using Twisted)
 - QElasticServer <- Elastic (Emulator using http.server)
 - QLDAPServer <- ldap (Emulator using Twisted)
+- QNTPServer <- ntp (Emulator using Twisted)
+- QMemcacheServer <- Memcache (Emulator using Twisted)
 
 acknowledgement
 ===============
 - By using this framework, you are accepting the license terms of all these packages: `pipenv twisted psutil psycopg2-binary dnspython requests impacket paramiko redis mysql-connector pycryptodome vncdotool service_identity requests[socks] pygments http.server`
 - Let me know if I missed a reference or resource!
+
+Some Articles
+=============
+- `securityonline <https://securityonline.info/honeypots-16-honeypots-in-a-single-pypi-package/>`_
 
 Notes
 =====

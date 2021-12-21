@@ -4,7 +4,7 @@ from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 filterwarnings('ignore', category=RuntimeWarning, module='runpy')
 
-all_servers = ['QDNSServer', 'QFTPServer', 'QHTTPProxyServer', 'QHTTPServer', 'QHTTPSServer', 'QIMAPServer', 'QMysqlServer', 'QPOP3Server', 'QPostgresServer', 'QRedisServer', 'QSMBServer', 'QSMTPServer', 'QSOCKS5Server', 'QSSHServer', 'QTelnetServer', 'QVNCServer', 'QElasticServer', 'QMSSQLServer', 'QLDAPServer']
+all_servers = ['QDNSServer', 'QFTPServer', 'QHTTPProxyServer', 'QHTTPServer', 'QHTTPSServer', 'QIMAPServer', 'QMysqlServer', 'QPOP3Server', 'QPostgresServer', 'QRedisServer', 'QSMBServer', 'QSMTPServer', 'QSOCKS5Server', 'QSSHServer', 'QTelnetServer', 'QVNCServer', 'QElasticServer', 'QMSSQLServer', 'QLDAPServer', 'QNTPServer', 'QMemcacheServer']
 temp_honeypots = []
 
 from signal import signal, alarm, SIGALRM, SIG_IGN, SIGTERM, SIGINT, SIGTSTP
@@ -76,7 +76,7 @@ def server_timeout(object, name):
 
 def main_logic():
 
-    from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, QMSSQLServer, QElasticServer, QLDAPServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer, get_running_servers
+    from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, QMSSQLServer, QElasticServer, QLDAPServer, QNTPServer, QMemcacheServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer, get_running_servers
     from atexit import register
     from argparse import ArgumentParser, SUPPRESS
     from sys import stdout
@@ -132,7 +132,7 @@ def main_logic():
                         print('[x] Setup Logger {} with a db, drop is off'.format(uuid))
                         logs = setup_logger(uuid, ARGV.config, False)
                 else:
-                    logs = setup_logger(uuid, ARGV.config, False)
+                    logs = setup_logger(uuid, ARGV.config, True)
     if ARGV.list:
         list_all_honeypots()
     elif ARGV.kill:
