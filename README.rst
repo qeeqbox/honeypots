@@ -2,7 +2,7 @@
 
 21 different honeypots in a single PyPI package for monitoring network traffic, bots activities, and username \ password credentials. All honeypots are non-blocking and can be used as objects or called directly with the in-built auto-configure scripts. Also, they are easy to setup and customize, it takes 1-2 seconds to spin a honeypot up. The output can be logged to a postgres database, file[s], terminal or syslog for easy integration.
 
-The honeypots are: dns ftp httpproxy http https imap mysql pop3 postgres redis smb smtp socks5 ssh telnet vnc mssql elastic ldap ntp memecache.
+This honeypots package is the ONLY package on internet that contains all the following: dns, ftp, httpproxy, http, https, imap, mysql, pop3, postgres, redis, smb, smtp, socks5, ssh, telnet, vnc, mssql, elastic, ldap, ntp, memecache, snmp, and oracle.
 
 Honeypots now is in the awesome `telekom security T-Pot project! <https://github.com/telekom-security/tpotce>`_
 
@@ -190,27 +190,121 @@ Close the honeypot
 
 Current Servers/Emulators
 =========================
-- QDNSServer <- DNS (Server using Twisted)
-- QFTPServer <- FTP (Server using Twisted)
-- QHTTPProxyServer <- HTTP Proxy (Server using Twisted)
-- QHTTPServer <- HTTP (Server using Twisted)
-- QHTTPSServer <- HTTPS (Server using Twisted)
-- QIMAPServer <- IMAP (Server using Twisted)
-- QMysqlServer <- Mysql (Emulator using Twisted)
-- QPOP3Server <- POP3 (Server using Twisted)
-- QPostgresServer <- Postgres (Emulator using Twisted)
-- QRedisServer <- Redis (Emulator using Twisted)
-- QSMBServer <- SMB (Server using impacket)
-- QSMTPServer <- STMP (Server using smtpd)
-- QSOCKS5Server <- SOCK5 (Server using socketserver)
-- QSSHServer <- SSH (Server using socket)
-- QTelnetServer <- TELNET (Server using Twisted)
-- QVNCServer <- VNC (Emulator using Twisted)
-- QMSSQLServer <- MSSQL (Emulator using Twisted)
-- QElasticServer <- Elastic (Emulator using http.server)
-- QLDAPServer <- ldap (Emulator using Twisted)
-- QNTPServer <- ntp (Emulator using Twisted)
-- QMemcacheServer <- Memcache (Emulator using Twisted)
+- QDNSServer
+    - Server: DNS 
+    - Port: 53
+    - Lib: Twisted
+    - Logs: ip, port
+- QFTPServer
+    - Server: FTP 
+    - Port: 21
+    - Lib: Twisted
+    - Logs: ip, port, username and password
+- QHTTPProxyServer
+    - Server: HTTP Proxy
+    - Port: 8080
+    - Lib: Twisted
+    - Logs: ip, port and data
+- QHTTPServer
+    - Server: HTTP
+    - Port: 80
+    - Lib: Twisted
+    - Logs: ip, port, username and password
+- QHTTPSServer
+    - Server: HTTPS
+    - Port: 443
+    - Lib: Twisted
+    - Logs: ip, port, username and password
+- QIMAPServer
+    - Server: IMAP
+    - Port: 143
+    - Lib: Twisted
+    - Logs: ip, port, username and password
+- QMysqlServer
+    - Emulator: Mysql
+    - Port: 3306
+    - Lib: Twisted
+    - Logs: ip, port, username and password
+- QPOP3Server
+    - Server: POP3
+    - Port: 110
+    - Lib: Twisted
+    - Logs: ip, port, username and password
+- QPostgresServer
+    - Emulator: Postgres
+    - Port: 5432
+    - Lib: Twisted
+    - Logs: ip, port, username and password
+- QRedisServer
+    - Emulator: Redis
+    - Port: 6379
+    - Lib: Twisted
+    - Logs: ip, port, username and password
+- QSMBServer
+    - Server: Redis
+    - Port: 445
+    - Lib: impacket
+    - Logs: ip, port and username
+- QSMTPServer
+    - Server: SMTP
+    - Port: 25
+    - Lib: smtpd
+    - Logs: ip, port, username and password
+- QSOCKS5Server
+    - Server: SOCK5
+    - Port: 1080
+    - Lib: socketserver
+    - Logs: ip, port, username and password
+- QSSHServer
+    - Server: SSH
+    - Port: 22
+    - Lib: paramiko
+    - Logs: ip, port, username and password
+- QTelnetServer
+    - Server: Telnet
+    - Port: 23
+    - Lib: Twisted
+    - Logs: ip, port, username and password
+- QVNCServer
+    - Emulator: VNC
+    - Port: 5900
+    - Lib: Twisted
+    - Logs: ip, port, username and password
+- QMSSQLServer
+    - Emulator: MSSQL
+    - Port: 1433
+    - Lib: Twisted
+    - Logs: ip, port, username and password or hash
+- QElasticServer
+    - Emulator: Elastic
+    - Port: 9200
+    - Lib: http.server
+    - Logs: ip, port and data
+- QLDAPServer
+    - Emulator: LDAP
+    - Port: 389
+    - Lib: Twisted
+    - Logs: ip, port, username and password
+- QNTPServer
+    - Emulator: NTP
+    - Port: 123
+    - Lib: Twisted
+    - Logs: ip, port and data
+- QMemcacheServer
+    - Emulator: Memcache
+    - Port: 11211
+    - Lib: Twisted
+    - Logs: ip, port and data
+- QOracleServer
+    - Emulator: Oracle
+    - Port: 1521
+    - Lib: Twisted
+    - Logs: ip, port and connet data
+- QSNMPServer
+    - Emulator: SNMP
+    - Port: 161
+    - Lib: Twisted
+    - Logs: ip, port and data
 
 acknowledgement
 ===============

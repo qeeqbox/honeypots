@@ -54,7 +54,7 @@ def set_local_vars(self, config):
 def get_running_servers():
     temp_list = []
     try:
-        honeypots = ['QDNSServer', 'QFTPServer', 'QHTTPProxyServer', 'QHTTPServer', 'QHTTPSServer', 'QIMAPServer', 'QMysqlServer', 'QPOP3Server', 'QPostgresServer', 'QRedisServer', 'QSMBServer', 'QSMTPServer', 'QSOCKS5Server', 'QSSHServer', 'QTelnetServer', 'QVNCServer']
+        honeypots = ['QDNSServer', 'QFTPServer', 'QHTTPProxyServer', 'QHTTPServer', 'QHTTPSServer', 'QIMAPServer', 'QMysqlServer', 'QPOP3Server', 'QPostgresServer', 'QRedisServer', 'QSMBServer', 'QSMTPServer', 'QSOCKS5Server', 'QSSHServer', 'QTelnetServer', 'QVNCServer', 'QElasticServer', 'QMSSQLServer', 'QLDAPServer', 'QNTPServer', 'QMemcacheServer', 'QOracleServer', 'QSNMPServer']
         for process in process_iter():
             cmdline = ' '.join(process.cmdline())
             for honeypot in honeypots:
@@ -132,6 +132,18 @@ def kill_servers(name):
         pass
 
 
+def check_if_server_is_running(uuid):
+    try:
+        for process in process_iter():
+            cmdline = ' '.join(process.cmdline())
+            if '--custom' in cmdline and uuid in cmdline:
+                return True
+    except BaseException:
+        pass
+
+    return False
+
+
 def kill_server_wrapper(server_name, name, process):
     try:
         if process is not None:
@@ -160,6 +172,7 @@ def get_free_port():
 
 
 def close_port_wrapper(server_name, ip, port, logs):
+    ret = False
     sock = socket(AF_INET, SOCK_STREAM)
     sock.settimeout(2)
     if sock.connect_ex((ip, port)) == 0:
@@ -171,7 +184,13 @@ def close_port_wrapper(server_name, ip, port, logs):
                         process.kill()
             except Exception as e:
                 pass
-    if sock.connect_ex((ip, port)) != 0:
+    try:
+        sock.bind((ip, port))
+        ret = True
+    except BaseException:
+        pass
+
+    if sock.connect_ex((ip, port)) != 0 and ret:
         return True
     else:
         logs.error(['errors', {'server': server_name, 'error': 'port_open', 'type': 'Port {} still open..'.format(ip)}])

@@ -22,7 +22,7 @@ from os import path
 from random import randint, uniform
 from time import time
 from socket import socket, AF_INET, SOCK_STREAM
-from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, set_local_vars
+from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
 
 
@@ -108,24 +108,29 @@ class QMemcacheServer():
         reactor.run()
 
     def run_server(self, process=False, auto=False):
+        status = 'error'
+        run = False
         if process:
             if auto and not self.auto_disabled:
                 port = get_free_port()
                 if port > 0:
                     self.port = port
-                    self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
-                    if self.process.poll() is None:
-                        self.logs.info(["servers", {'server': 'memcache_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port}])
-                    else:
-                        self.logs.info(["servers", {'server': 'memcache_server', 'action': 'process', 'status': 'error', 'ip': self.ip, 'port': self.port}])
-                else:
-                    self.logs.info(["servers", {'server': 'memcache_server', 'action': 'setup', 'status': 'error', 'ip': self.ip, 'port': self.port}])
+                    run = True
             elif self.close_port() and self.kill_server():
+                run = True
+
+            if run:
                 self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
-                if self.process.poll() is None:
-                    self.logs.info(["servers", {'server': 'memcache_server', 'action': 'process', 'status': 'success', 'ip': self.ip, 'port': self.port}])
-                else:
-                    self.logs.info(["servers", {'server': 'memcache_server', 'action': 'process', 'status': 'error', 'ip': self.ip, 'port': self.port}])
+                if self.process.poll() is None and check_if_server_is_running(self.uuid):
+                    status = 'success'
+
+            self.logs.info(["servers", {'server': 'memcache_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
+
+            if status == 'success':
+                return True
+            else:
+                self.kill_server()
+                return False
         else:
             self.memcache_server_main()
 

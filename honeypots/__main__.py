@@ -4,7 +4,7 @@ from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 filterwarnings('ignore', category=RuntimeWarning, module='runpy')
 
-all_servers = ['QDNSServer', 'QFTPServer', 'QHTTPProxyServer', 'QHTTPServer', 'QHTTPSServer', 'QIMAPServer', 'QMysqlServer', 'QPOP3Server', 'QPostgresServer', 'QRedisServer', 'QSMBServer', 'QSMTPServer', 'QSOCKS5Server', 'QSSHServer', 'QTelnetServer', 'QVNCServer', 'QElasticServer', 'QMSSQLServer', 'QLDAPServer', 'QNTPServer', 'QMemcacheServer']
+all_servers = ['QDNSServer', 'QFTPServer', 'QHTTPProxyServer', 'QHTTPServer', 'QHTTPSServer', 'QIMAPServer', 'QMysqlServer', 'QPOP3Server', 'QPostgresServer', 'QRedisServer', 'QSMBServer', 'QSMTPServer', 'QSOCKS5Server', 'QSSHServer', 'QTelnetServer', 'QVNCServer', 'QElasticServer', 'QMSSQLServer', 'QLDAPServer', 'QNTPServer', 'QMemcacheServer', 'QOracleServer', 'QSNMPServer']
 temp_honeypots = []
 
 from signal import signal, alarm, SIGALRM, SIG_IGN, SIGTERM, SIGINT, SIGTSTP
@@ -76,7 +76,7 @@ def server_timeout(object, name):
 
 def main_logic():
 
-    from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, QMSSQLServer, QElasticServer, QLDAPServer, QNTPServer, QMemcacheServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer, get_running_servers
+    from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, QMSSQLServer, QElasticServer, QLDAPServer, QNTPServer, QMemcacheServer, QOracleServer, QSNMPServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer, get_running_servers
     from atexit import register
     from argparse import ArgumentParser, SUPPRESS
     from sys import stdout
@@ -238,10 +238,14 @@ def main_logic():
             print('[x] config.json file overrides --ip, --port, --username and --password')
 
         if ARGV.setup == 'all':
-            for honeypot in all_servers:
-                x = locals()[honeypot](ip=ARGV.ip, username=ARGV.username, password=ARGV.password, config=ARGV.config)
-                x.run_server(process=True, auto=True)
-                temp_honeypots.append(x)
+            try:
+                for honeypot in all_servers:
+                    status = False
+                    x = locals()[honeypot](ip=ARGV.ip, username=ARGV.username, password=ARGV.password, config=ARGV.config)
+                    status = x.run_server(process=True, auto=True)
+                    temp_honeypots.append([x, status])
+            except Exception as e:
+                print(e)
         else:
             servers = ARGV.setup.split(',')
             for server in servers:
@@ -251,45 +255,58 @@ def main_logic():
                         if 'q{}server'.format(server.split(':')[0]).lower() == honeypot.lower():
                             ARGV.port = int(server.split(':')[1])
                             x = locals()[honeypot](ip=ARGV.ip, port=ARGV.port, username=ARGV.username, password=ARGV.password, config=ARGV.config)
+                            status = False
                             if not ARGV.test:
-                                x.run_server(process=True)
+                                status = x.run_server(process=True)
                             else:
                                 server_timeout(x, honeypot)
                                 x.kill_server()
-                            temp_honeypots.append(x)
+                            temp_honeypots.append([x, status])
                 elif ARGV.port != "":
                     for honeypot in all_servers:
                         if 'q{}server'.format(server).lower() == honeypot.lower():
                             x = locals()[honeypot](ip=ARGV.ip, port=int(ARGV.port), username=ARGV.username, password=ARGV.password, config=ARGV.config)
+                            status = False
                             if not ARGV.test:
-                                x.run_server(process=True)
+                                status = x.run_server(process=True)
                             else:
                                 server_timeout(x, honeypot)
                                 x.kill_server()
-                            temp_honeypots.append(x)
+                            temp_honeypots.append([x, status])
                 else:
                     for honeypot in all_servers:
                         if 'q{}server'.format(server).lower() == honeypot.lower():
                             x = locals()[honeypot](ip=ARGV.ip, username=ARGV.username, password=ARGV.password, config=ARGV.config)
+                            status = False
                             if not ARGV.test:
-                                x.run_server(process=True, auto=True)
+                                status = x.run_server(process=True, auto=True)
                             else:
                                 print('[x] {} was configured with random port, unable to test..'.format(honeypot))
-                            temp_honeypots.append(x)
+                            temp_honeypots.append([x, status])
 
         if len(temp_honeypots) > 0:
-            print('[x] Everything looks good!')
-            if not ARGV.test:
-                Termination(ARGV.termination_strategy).await_termination()
+            good = True
+            for server in temp_honeypots:
+                if server[1] == False or server[1] == None:
+                    good = False
+            if good:
+                print('[x] Everything looks good!')
+            else:
+                print('[x] Something is wrong!')
+
+            if good:
+                if not ARGV.test:
+                    Termination(ARGV.termination_strategy).await_termination()
 
             for server in temp_honeypots:
                 try:
                     if not ARGV.test:
-                        print('[x] Killing {} honeypot'.format(server.__class__.__name__))
+                        print('[x] Killing {} honeypot'.format(server[0].__class__.__name__))
                     else:
-                        print('[x] Killing {} tester'.format(server.__class__.__name__))
-                    server.kill_server()
-                except BaseException:
+                        print('[x] Killing {} tester'.format(server[0].__class__.__name__))
+                    server[0].kill_server()
+                except Exception as e:
+                    print(e)
                     pass
             print('[x] Please wait few seconds')
             sleep(5)
