@@ -79,7 +79,7 @@ class QTelnetServer():
                     username = self.check_bytes(self._user)
                     password = self.check_bytes(data)
                     status = 'failed'
-                    #may need decode
+                    # may need decode
                     if username == _q_s.username and password == _q_s.password:
                         username = _q_s.username
                         password = _q_s.password
