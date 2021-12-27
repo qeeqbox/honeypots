@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
@@ -130,7 +130,7 @@ class QMysqlServer():
             def connectionMade(self):
                 self._state = 1
                 self.transport.write(_q_s.greeting())
-                _q_s.logs.info(["servers", {'server': 'mysql_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                _q_s.logs.info(['servers', {'server': 'mysql_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
 
             def dataReceived(self, data):
                 try:
@@ -138,18 +138,21 @@ class QMysqlServer():
                         ret_access_denied = False
                         username, password, good = _q_s.parse_data(data)
                         username = self.check_bytes(username)
-                        #password = self.check_bytes(password)
+                        status = 'failed'
                         if good:
                             if password:
-                                _x = _q_s.decode(password)
-                                if _x is not None:
-                                    _x = self.check_bytes(_x)
-                                    _q_s.logs.info(["servers", {'server': 'mysql_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _x}])
+                                password_decoded = _q_s.decode(password)
+                                if password_decoded is not None and username == _q_s.username:
+                                    password = self.check_bytes(password_decoded)
+                                    status = 'success'
                                 else:
+                                    password = password.hex()
                                     ret_access_denied = True
-                                    _q_s.logs.info(["servers", {'server': 'mysql_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password.hex()}])
                             else:
-                                _q_s.logs.info(["servers", {'server': 'mysql_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': 'UnKnown', 'password': ':'.join(hex((c))[2:] for c in data)}])
+                                ret_access_denied = True
+                                password = ':'.join(hex((c))[2:] for c in data)
+                        _q_s.logs.info(['servers', {'server': 'mysql_server', 'action': 'login', 'status': status, 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password}])
+
                         if ret_access_denied:
                             self.transport.write(_q_s.access_denied())
                         else:
@@ -185,7 +188,7 @@ class QMysqlServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'mysql_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info(['servers', {'server': 'mysql_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
 
             if status == 'success':
                 return True

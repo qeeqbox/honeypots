@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*paramiko.*')
@@ -77,16 +77,18 @@ class QSSHServer():
             def check_auth_password(self, username, password):
                 username = self.check_bytes(username)
                 password = self.check_bytes(password)
+                status = 'failed'
                 if username == _q_s.username and password == _q_s.password:
-                    _q_s.logs.info(["servers", {'server': 'ssh_server', 'action': 'login', 'status': 'success', 'ip': self.ip, 'port': self.port, 'username': username, 'password': password}])
-                else:
-                    _q_s.logs.info(["servers", {'server': 'ssh_server', 'action': 'login', 'status': 'failed', 'ip': self.ip, 'port': self.port, 'username': username, 'password': password}])
+                    username = _q_s.username
+                    password = _q_s.password
+                    status = 'success'
+                _q_s.logs.info(['servers', {'server': 'ssh_server', 'action': 'login', 'status': status, 'ip': self.ip, 'port': self.port, 'username': username, 'password': password}])
 
         def ConnectionHandle(client, priv):
             try:
                 t = Transport(client)
                 ip, port = client.getpeername()
-                _q_s.logs.info(["servers", {'server': 'ssh_server', 'action': 'connection', 'ip': ip, 'port': port}])
+                _q_s.logs.info(['servers', {'server': 'ssh_server', 'action': 'connection', 'ip': ip, 'port': port}])
                 t.local_version = 'SSH-2.0-' + choice(self.random_servers)
                 t.add_server_key(RSAKey(file_obj=StringIO(priv)))
                 t.start_server(server=SSHHandle(ip, port))
@@ -125,7 +127,7 @@ class QSSHServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'ssh_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info(['servers', {'server': 'ssh_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
 
             if status == 'success':
                 return True

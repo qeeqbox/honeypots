@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,10 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
+
+from warnings import filterwarnings
+filterwarnings(action='ignore', module='.*OpenSSL.*')
 
 from twisted.mail.pop3 import POP3
 from twisted.internet.protocol import Factory
@@ -59,7 +62,7 @@ class QPOP3Server():
                     return str(string)
 
             def connectionMade(self):
-                _q_s.logs.info(["servers", {'server': 'pop3_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                _q_s.logs.info(['servers', {'server': 'pop3_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
                 self._user = None
                 if isinstance(_q_s.mocking, bool):
                     if _q_s.mocking == True:
@@ -75,12 +78,14 @@ class QPOP3Server():
 
             def do_PASS(self, password):
                 if self._user:
-                    self._user = self.check_bytes(self._user)
+                    username = self.check_bytes(self._user)
                     password = self.check_bytes(password)
-                    if self._user == _q_s.username and password == _q_s.password:
-                        _q_s.logs.info(["servers", {'server': 'pop3_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
-                    else:
-                        _q_s.logs.info(["servers", {'server': 'pop3_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': self._user, 'password': password}])
+                    status = 'failed'
+                    if username == _q_s.username and password == _q_s.password:
+                        username = _q_s.username
+                        password = _q_s.password
+                        status = 'success'
+                    _q_s.logs.info(['servers', {'server': 'pop3_server', 'action': 'login', 'status': status, 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password}])
                     self.failResponse('Authentication failed')
                 else:
                     self.failResponse('USER first, then PASS')
@@ -88,7 +93,7 @@ class QPOP3Server():
                 self._user = None
 
             def lineReceived(self, line):
-                if line.lower().startswith(b"user") or line.lower().startswith(b"pass"):
+                if line.lower().startswith(b'user') or line.lower().startswith(b'pass'):
                     POP3.lineReceived(self, line)
                 else:
                     self.failResponse('Authentication failed')
@@ -124,7 +129,7 @@ class QPOP3Server():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'pop3_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info(['servers', {'server': 'pop3_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
 
             if status == 'success':
                 return True

@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,10 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
+
+from warnings import filterwarnings
+filterwarnings(action='ignore', module='.*OpenSSL.*')
 
 from twisted.mail.imap4 import IMAP4Server
 from twisted.internet.protocol import Factory
@@ -57,7 +60,7 @@ class QIMAPServer():
                     return str(string)
 
             def connectionMade(self):
-                _q_s.logs.info(["servers", {'server': 'imap_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                _q_s.logs.info(['servers', {'server': 'imap_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
 
                 if isinstance(_q_s.mocking, bool):
                     if _q_s.mocking == True:
@@ -68,20 +71,21 @@ class QIMAPServer():
                     self.sendPositiveResponse(message=b'Welcome')
 
             def authenticateLogin(self, user, passwd):
-                user = self.check_bytes(user)
-                passwd = self.check_bytes(user)
-
-                if user == _q_s.username and passwd == _q_s.password:
-                    _q_s.logs.info(["servers", {'server': 'imap_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
-                else:
-                    _q_s.logs.info(["servers", {'server': 'imap_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': user, 'password': passwd}])
+                username = self.check_bytes(user)
+                password = self.check_bytes(passwd)
+                status = 'failed'
+                if username == _q_s.username and password == _q_s.password:
+                    username = _q_s.username
+                    password = _q_s.password
+                    status = 'success'
+                _q_s.logs.info(['servers', {'server': 'imap_server', 'action': 'login', 'status': status, 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password}])
 
                 raise cred.error.UnauthorizedLogin()
 
             def lineReceived(self, line):
                 try:
-                    _line = line.split(b" ")[1]
-                    if _line.lower().startswith(b"login") or _line.lower().startswith(b"capability"):
+                    _line = line.split(b' ')[1]
+                    if _line.lower().startswith(b'login') or _line.lower().startswith(b'capability'):
                         IMAP4Server.lineReceived(self, line)
                 except BaseException:
                     pass
@@ -117,7 +121,7 @@ class QIMAPServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'imap_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info(['servers', {'server': 'imap_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
 
             if status == 'success':
                 return True

@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
@@ -67,21 +67,21 @@ class QNTPServer():
                 mode = 'UnKnown'
                 success = False
                 unpacked = None
-                _q_s.logs.info(["servers", {'server': 'ntp_server', 'action': 'connection', 'ip': addr[0], 'port': addr[1]}])
-                if len(data) == calcsize("!B B B b I I I Q Q Q Q"):
+                _q_s.logs.info(['servers', {'server': 'ntp_server', 'action': 'connection', 'ip': addr[0], 'port': addr[1]}])
+                if len(data) == calcsize('!B B B b I I I Q Q Q Q'):
                     version = data[0] >> 3 & 0x7
                     mode = data[0] & 0x7
-                    unpacked = unpack("!B B B b I I I Q Q Q Q", data)
+                    unpacked = unpack('!B B B b I I I Q Q Q Q', data)
                     if unpacked is not None:
                         i, f = self.system_time_to_ntp(time())
-                        response = pack("!B B B b I I I Q Q Q Q", 0 << 6 | 3 << 3 | 2, data[1], data[2], data[3], 0, 0, 0, 0, data[10], 0, i + f)
+                        response = pack('!B B B b I I I Q Q Q Q', 0 << 6 | 3 << 3 | 2, data[1], data[2], data[3], 0, 0, 0, 0, data[10], 0, i + f)
                         self.transport.write(response, addr)
                         success = True
 
                 if success:
-                    _q_s.logs.info(["servers", {'server': 'ntp_server', 'action': 'query', 'status': 'success', 'ip': addr[0], 'port': addr[1], 'version': version, 'mode': mode}])
+                    _q_s.logs.info(['servers', {'server': 'ntp_server', 'action': 'query', 'status': 'success', 'ip': addr[0], 'port': addr[1], 'version': version, 'mode': mode}])
                 else:
-                    _q_s.logs.info(["servers", {'server': 'ntp_server', 'action': 'query', 'status': 'fail', 'ip': addr[0], 'port': addr[1], 'version': version, 'mode': mode}])
+                    _q_s.logs.info(['servers', {'server': 'ntp_server', 'action': 'query', 'status': 'fail', 'ip': addr[0], 'port': addr[1], 'version': version, 'mode': mode}])
 
                 self.transport.loseConnection()
 
@@ -105,7 +105,7 @@ class QNTPServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'ntp_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
+            self.logs.info(['servers', {'server': 'ntp_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
 
             if status == 'success':
                 return True

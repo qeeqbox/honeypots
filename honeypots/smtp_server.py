@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', category=DeprecationWarning)
@@ -58,7 +58,7 @@ class QSMTPServer():
                     return str(string)
 
             def smtp_EHLO(self, arg):
-                _q_s.logs.info(["servers", {'server': 'smtp_server', 'action': 'connection', 'ip': self.addr[0], 'port':self.addr[1]}])
+                _q_s.logs.info(['servers', {'server': 'smtp_server', 'action': 'connection', 'ip': self.addr[0], 'port':self.addr[1]}])
                 if not arg:
                     self.push('501 Syntax: HELO hostname')
                 if self._SMTPChannel__greeting:
@@ -73,16 +73,19 @@ class QSMTPServer():
             def smtp_AUTH(self, arg):
                 try:
                     if arg.startswith('PLAIN '):
-                        _, username, password = b64decode(arg.split(' ')[1].strip()).decode("utf-8").split('\0')
+                        _, username, password = b64decode(arg.split(' ')[1].strip()).decode('utf-8').split('\0')
                         username = self.check_bytes(username)
                         password = self.check_bytes(password)
+                        status = 'failed'
                         if username == _q_s.username and password == _q_s.password:
-                            _q_s.logs.info(["servers", {'server': 'smtp_server', 'action': 'login', 'status': 'success', 'ip': self.addr[0], 'port':self.addr[1], 'username':_q_s.username, 'password':_q_s.password}])
-                        else:
-                            _q_s.logs.info(["servers", {'server': 'smtp_server', 'action': 'login', 'status': 'faild', 'ip': self.addr[0], 'port':self.addr[1], 'username':username, 'password':password}])
+                            username = _q_s.username
+                            password = _q_s.password
+                            status = 'success'
+                        _q_s.logs.info(['servers', {'server': 'smtp_server', 'action': 'login', 'status': status, 'ip': self.addr[0], 'port':self.addr[1], 'username':username, 'password':password}])
+
                 except Exception as e:
                     print(e)
-                    _q_s.logs.error(["errors", {'server': 'smtp_server', 'error': 'smtp_AUTH', "type": "error -> " + repr(e)}])
+                    _q_s.logs.error(['errors', {'server': 'smtp_server', 'error': 'smtp_AUTH', 'type': 'error -> ' + repr(e)}])
 
                 self.push('235 Authentication successful')
 
@@ -120,7 +123,7 @@ class QSMTPServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'smtp_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info(['servers', {'server': 'smtp_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
 
             if status == 'success':
                 return True
@@ -140,7 +143,7 @@ class QSMTPServer():
             s = SMTP(_ip, _port)
             s.ehlo()
             s.login(_username, _password)
-            s.sendmail("fromtest", "totest", "Nothing")
+            s.sendmail('fromtest', 'totest', 'Nothing')
             s.quit()
         except BaseException:
             pass

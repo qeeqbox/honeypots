@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 import sys
 from psutil import process_iter
@@ -45,8 +45,8 @@ def set_local_vars(self, config):
                 for var in honeypots[honeypot]:
                     if var in vars(self):
                         setattr(self, var, honeypots[honeypot][var])
-                        if var == "port":
-                            setattr(self, "auto_disabled", True)
+                        if var == 'port':
+                            setattr(self, 'auto_disabled', True)
     except BaseException:
         pass
 
@@ -59,7 +59,7 @@ def get_running_servers():
             cmdline = ' '.join(process.cmdline())
             for honeypot in honeypots:
                 if '--custom' in cmdline and honeypot in cmdline:
-                    temp_list.append(cmdline.split(" --custom ")[1])
+                    temp_list.append(cmdline.split(' --custom ')[1])
     except BaseException:
         pass
     return temp_list
@@ -104,10 +104,10 @@ def setup_logger(temp_name, config, drop=False):
         file_handler.setFormatter(formatter)
         ret_logs_obj.addHandler(file_handler)
     if 'syslog' in logs:
-        if syslog_address == "":
+        if syslog_address == '':
             address = ('localhost', 514)
         else:
-            address = (syslog_address.split("//")[1].split(':')[0], int(syslog_address.split("//")[1].split(':')[1]))
+            address = (syslog_address.split('//')[1].split(':')[0], int(syslog_address.split('//')[1].split(':')[1]))
         syslog = SysLogHandler(address=address, facility=syslog_facility)
         formatter = Formatter('[%(name)s] [%(levelname)s] - %(message)s')
         syslog.setFormatter(formatter)
@@ -117,7 +117,7 @@ def setup_logger(temp_name, config, drop=False):
 
 def clean_all():
     for entry in scandir('.'):
-        if entry.is_file() and entry.name.endswith("_server.py"):
+        if entry.is_file() and entry.name.endswith('_server.py'):
             kill_servers(entry.name)
 
 
@@ -204,7 +204,7 @@ class ComplexEncoder(JSONEncoder):
 
 class ComplexEncoder_db(JSONEncoder):
     def default(self, obj):
-        return "Something wrong, deleted.."
+        return 'Something wrong, deleted..'
 
 
 def serialize_object(_dict):
@@ -217,7 +217,7 @@ def serialize_object(_dict):
     elif isinstance(_dict, str):
         return _dict.replace('\x00', ' ')
     elif isinstance(_dict, bytes):
-        return _dict.decode("utf-8", "ignore").replace('\x00', ' ')
+        return _dict.decode('utf-8', 'ignore').replace('\x00', ' ')
     else:
         return repr(_dict).replace('\x00', ' ')
 
@@ -228,7 +228,7 @@ class CustomHandler(Handler):
         self.logs = logs
         self.uuid = uuid
         if config and config != '':
-            parsed = urlparse(config["postgres"])
+            parsed = urlparse(config['postgres'])
             self.db = postgres_class(host=parsed.hostname, port=parsed.port, username=parsed.username, password=parsed.password, db=parsed.path[1:], uuid=self.uuid, drop=drop)
         Handler.__init__(self)
 
@@ -239,24 +239,24 @@ class CustomHandler(Handler):
                     self.db.insert_into_data_safe(record.msg[0], dumps(serialize_object(record.msg[1]), cls=ComplexEncoder))
             if 'terminal' in self.logs:
                 time_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                if record.msg[0] == "servers":
-                    if "server" in record.msg[1]:
+                if record.msg[0] == 'servers':
+                    if 'server' in record.msg[1]:
                         temp = record.msg[1]
                         action = record.msg[1]['action']
                         server = temp['server'].replace('server', '').replace('_', '')
                         del temp['server']
                         del temp['action']
-                        stdout.write("[{}] [{}] [{}] -> {}\n".format(time_now, server, action, dumps(serialize_object(temp), sort_keys=True, cls=ComplexEncoder)))
+                        stdout.write('[{}] [{}] [{}] -> {}\n'.format(time_now, server, action, dumps(serialize_object(temp), sort_keys=True, cls=ComplexEncoder)))
             if 'syslog' in self.logs:
-                stdout.write(dumps(serialize_object(record.msg), sort_keys=True, cls=ComplexEncoder) + "\n")
+                stdout.write(dumps(serialize_object(record.msg), sort_keys=True, cls=ComplexEncoder) + '\n')
         except Exception as e:
-            stdout.write(dumps({"error": repr(e), "logger": repr(record)}, sort_keys=True, cls=ComplexEncoder) + "\n")
+            stdout.write(dumps({'error': repr(e), 'logger': repr(record)}, sort_keys=True, cls=ComplexEncoder) + '\n')
         stdout.flush()
 
     def emit_old(self, record):
         try:
-            if record.msg[0] == "servers":
-                if "server" in record.msg[1]:
+            if record.msg[0] == 'servers':
+                if 'server' in record.msg[1]:
                     temp = record.msg[1]
                     server = temp['server']
                     del temp['server']
@@ -264,7 +264,7 @@ class CustomHandler(Handler):
             else:
                 stdout.write(highlight(dumps(record.msg, sort_keys=True, indent=4, cls=ComplexEncoder), lexers.JsonLexer(), formatters.TerminalFormatter()))
         except Exception as e:
-            stdout.write(highlight(dumps({"error": repr(e), "logger": repr(record)}, sort_keys=True, indent=4, cls=ComplexEncoder), lexers.JsonLexer(), formatters.TerminalFormatter()))
+            stdout.write(highlight(dumps({'error': repr(e), 'logger': repr(record)}, sort_keys=True, indent=4, cls=ComplexEncoder), lexers.JsonLexer(), formatters.TerminalFormatter()))
         stdout.flush()
 
 
@@ -276,7 +276,7 @@ class postgres_class():
         self.password = password
         self.db = db
         self.uuid = uuid
-        self.mapped_tables = ["errors", "servers", "sniffer", "system"]
+        self.mapped_tables = ['errors', 'servers', 'sniffer', 'system']
         self.wait_until_up()
         if drop:
             self.con = connect(host=self.host, port=self.port, user=self.username, password=self.password)
@@ -295,7 +295,7 @@ class postgres_class():
         test = True
         while test:
             try:
-                print("{} - Waiting on postgres connection".format(self.uuid))
+                print('{} - Waiting on postgres connection'.format(self.uuid))
                 stdout.flush()
                 conn = connect(host=self.host, port=self.port, user=self.username, password=self.password, connect_timeout=1)
                 conn.close()
@@ -303,13 +303,13 @@ class postgres_class():
             except Exception as e:
                 pass
             sleep(1)
-        print("{} - postgres connection is good".format(self.uuid))
+        print('{} - postgres connection is good'.format(self.uuid))
 
     def addattr(self, x, val):
         self.__dict__[x] = val
 
     def check_db_if_exists(self):
-        self.cur.execute("SELECT exists(SELECT 1 from pg_catalog.pg_database where datname = %s)", (self.db,))
+        self.cur.execute('SELECT exists(SELECT 1 from pg_catalog.pg_database where datname = %s)', (self.db,))
         if self.cur.fetchall()[0][0]:
             return True
         else:
@@ -317,56 +317,56 @@ class postgres_class():
 
     def drop_db(self):
         try:
-            print("[x] Dropping {} db".format(self.db))
+            print('[x] Dropping {} db'.format(self.db))
             if self.check_db_if_exists():
-                self.cur.execute(sql.SQL("drop DATABASE IF EXISTS {}").format(sql.Identifier(self.db)))
+                self.cur.execute(sql.SQL('drop DATABASE IF EXISTS {}').format(sql.Identifier(self.db)))
                 sleep(2)
-            self.cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(self.db)))
+            self.cur.execute(sql.SQL('CREATE DATABASE {}').format(sql.Identifier(self.db)))
         except BaseException:
             pass
 
     def drop_tables(self,):
         for x in self.mapped_tables:
-            self.cur.execute(sql.SQL("drop TABLE IF EXISTS {}").format(sql.Identifier(x + "_table")))
+            self.cur.execute(sql.SQL('drop TABLE IF EXISTS {}').format(sql.Identifier(x + '_table')))
 
     def create_tables(self):
         for x in self.mapped_tables:
-            self.cur.execute(sql.SQL("CREATE TABLE IF NOT EXISTS {} (id SERIAL NOT NULL,date timestamp with time zone DEFAULT now(),data json)").format(sql.Identifier(x + "_table")))
+            self.cur.execute(sql.SQL('CREATE TABLE IF NOT EXISTS {} (id SERIAL NOT NULL,date timestamp with time zone DEFAULT now(),data json)').format(sql.Identifier(x + '_table')))
 
     def insert_into_data_safe(self, table, obj):
         try:
             # stdout.write(str(table))
             self.cur.execute(
-                sql.SQL("INSERT INTO {} (id,date, data) VALUES (DEFAULT ,now(), %s)")
-                .format(sql.Identifier(table + "_table")),
+                sql.SQL('INSERT INTO {} (id,date, data) VALUES (DEFAULT ,now(), %s)')
+                .format(sql.Identifier(table + '_table')),
                 [obj])
-            #self.cur.execute(sql.SQL("INSERT INTO errors_table (data) VALUES (%s,)"),dumps(serialize_object(obj),cls=ComplexEncoder))
+            #self.cur.execute(sql.SQL('INSERT INTO errors_table (data) VALUES (%s,)'),dumps(serialize_object(obj),cls=ComplexEncoder))
         except Exception:
-            stdout.write(str(format_exc()).replace("\n", " "))
+            stdout.write(str(format_exc()).replace('\n', ' '))
         stdout.flush()
 
 
 def server_arguments():
-    _server_parser = ArgumentParser(prog="Server")
+    _server_parser = ArgumentParser(prog='Server')
     _server_parsergroupdeq = _server_parser.add_argument_group('Initialize Server')
-    _server_parsergroupdeq.add_argument('--ip', type=str, help="Change server ip, current is 0.0.0.0", required=False, metavar='')
-    _server_parsergroupdeq.add_argument('--port', type=int, help="Change port", required=False, metavar='')
-    _server_parsergroupdeq.add_argument('--username', type=str, help="Change username", required=False, metavar='')
-    _server_parsergroupdeq.add_argument('--password', type=str, help="Change password", required=False, metavar='')
-    _server_parsergroupdeq.add_argument('--resolver_addresses', type=str, help="Change resolver address", required=False, metavar='')
-    _server_parsergroupdeq.add_argument('--domain', type=str, help="A domain to test", required=False, metavar='')
-    _server_parsergroupdeq.add_argument('--folders', type=str, help="folders for smb as name:target,name:target", required=False, metavar='')
-    _server_parsergroupdeq.add_argument('--mocking', type=str, help="Random banner", required=False)
+    _server_parsergroupdeq.add_argument('--ip', type=str, help='Change server ip, current is 0.0.0.0', required=False, metavar='')
+    _server_parsergroupdeq.add_argument('--port', type=int, help='Change port', required=False, metavar='')
+    _server_parsergroupdeq.add_argument('--username', type=str, help='Change username', required=False, metavar='')
+    _server_parsergroupdeq.add_argument('--password', type=str, help='Change password', required=False, metavar='')
+    _server_parsergroupdeq.add_argument('--resolver_addresses', type=str, help='Change resolver address', required=False, metavar='')
+    _server_parsergroupdeq.add_argument('--domain', type=str, help='A domain to test', required=False, metavar='')
+    _server_parsergroupdeq.add_argument('--folders', type=str, help='folders for smb as name:target,name:target', required=False, metavar='')
+    _server_parsergroupdeq.add_argument('--mocking', type=str, help='Random banner', required=False)
     _server_parsergroupdes = _server_parser.add_argument_group('Sinffer options')
-    _server_parsergroupdes.add_argument('--filter', type=str, help="setup the Sinffer filter", required=False)
-    _server_parsergroupdes.add_argument('--interface', type=str, help="sinffer interface E.g eth0", required=False)
+    _server_parsergroupdes.add_argument('--filter', type=str, help='setup the Sinffer filter', required=False)
+    _server_parsergroupdes.add_argument('--interface', type=str, help='sinffer interface E.g eth0', required=False)
     _server_parsergroupdef = _server_parser.add_argument_group('Initialize Loging')
-    _server_parsergroupdef.add_argument('--config', type=str, help="config file for logs and database", required=False, default="")
+    _server_parsergroupdef.add_argument('--config', type=str, help='config file for logs and database', required=False, default='')
     _server_parsergroupdea = _server_parser.add_argument_group('Auto Configuration')
-    _server_parsergroupdea.add_argument('--docker', action='store_true', help="Run project in docker", required=False)
-    _server_parsergroupdea.add_argument('--aws', action='store_true', help="Run project in aws", required=False)
-    _server_parsergroupdea.add_argument('--test', action='store_true', help="Test current server", required=False)
-    _server_parsergroupdea.add_argument('--custom', action='store_true', help="Run custom server", required=False)
-    _server_parsergroupdea.add_argument('--auto', action='store_true', help="Run auto configured with random port", required=False)
-    _server_parsergroupdef.add_argument('--uuid', type=str, help="unique id", required=False)
+    _server_parsergroupdea.add_argument('--docker', action='store_true', help='Run project in docker', required=False)
+    _server_parsergroupdea.add_argument('--aws', action='store_true', help='Run project in aws', required=False)
+    _server_parsergroupdea.add_argument('--test', action='store_true', help='Test current server', required=False)
+    _server_parsergroupdea.add_argument('--custom', action='store_true', help='Run custom server', required=False)
+    _server_parsergroupdea.add_argument('--auto', action='store_true', help='Run auto configured with random port', required=False)
+    _server_parsergroupdef.add_argument('--uuid', type=str, help='unique id', required=False)
     return _server_parser.parse_args()

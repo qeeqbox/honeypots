@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,10 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
+
+from warnings import filterwarnings
+filterwarnings(action='ignore', module='.*OpenSSL.*')
 
 from time import sleep
 from socketserver import TCPServer, StreamRequestHandler, ThreadingMixIn
@@ -53,22 +56,25 @@ class QSOCKS5Server():
                     return str(string)
 
             def handle(self):
-                _q_s.logs.info(["servers", {'server': 'socks5_server', 'action': 'connection', 'ip': self.client_address[0], 'port':self.client_address[1]}])
-                v, m = unpack("!BB", self.connection.recv(2))
+                _q_s.logs.info(['servers', {'server': 'socks5_server', 'action': 'connection', 'ip': self.client_address[0], 'port':self.client_address[1]}])
+                v, m = unpack('!BB', self.connection.recv(2))
                 if v == 5:
-                    if 2 in unpack("!" + "B" * m, self.connection.recv(m)):
+                    if 2 in unpack('!' + 'B' * m, self.connection.recv(m)):
                         self.connection.sendall(b'\x05\x02')
-                        if 1 in unpack("B", self.connection.recv(1)):
+                        if 1 in unpack('B', self.connection.recv(1)):
                             _len = ord(self.connection.recv(1))
                             username = self.connection.recv(_len)
                             _len = ord(self.connection.recv(1))
                             password = self.connection.recv(_len)
                             username = self.check_bytes(username)
                             password = self.check_bytes(password)
+                            status = 'failed'
                             if username == _q_s.username and password == _q_s.password:
-                                _q_s.logs.info(["servers", {'server': 'socks5_server', 'action': 'login', 'status': 'success', 'ip': self.client_address[0], 'port':self.client_address[1], 'username':_q_s.username, 'password':_q_s.password}])
-                            else:
-                                _q_s.logs.info(["servers", {'server': 'socks5_server', 'action': 'login', 'status': 'failed', 'ip': self.client_address[0], 'port':self.client_address[1], 'username':username.decode(), 'password':password.decode()}])
+                                username = _q_s.username
+                                password = _q_s.password
+                                status = 'success'
+                            _q_s.logs.info(['servers', {'server': 'socks5_server', 'action': 'login', 'status': status, 'ip': self.client_address[0], 'port':self.client_address[1], 'username':username, 'password':password}])
+
                 self.server.close_request(self.request)
 
         class ThreadingTCPServer(ThreadingMixIn, TCPServer):
@@ -102,7 +108,7 @@ class QSOCKS5Server():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'socks5_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info(['servers', {'server': 'socks5_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
 
             if status == 'success':
                 return True

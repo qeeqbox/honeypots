@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
@@ -62,17 +62,17 @@ class QSNMPServer():
                     parsed_snmp = SNMP(data)
                     community = parsed_snmp.community.val
                     version = parsed_snmp.version.val
-                    oids = " ".join([item.oid.val for item in parsed_snmp.PDU.varbindlist])
+                    oids = ' '.join([item.oid.val for item in parsed_snmp.PDU.varbindlist])
                 except BaseException:
                     pass
                 return version, community, oids
 
             def datagramReceived(self, data, addr):
-                _q_s.logs.info(["servers", {'server': 'snmp_server', 'action': 'connection', 'status': 'fail', 'ip': addr[0], 'port': addr[1]}])
+                _q_s.logs.info(['servers', {'server': 'snmp_server', 'action': 'connection', 'status': 'fail', 'ip': addr[0], 'port': addr[1]}])
                 version, community, oids = self.parse_snmp(data)
                 if version or community or oids:
-                    _q_s.logs.info(["servers", {'server': 'snmp_server', 'action': 'query', 'status': 'success', 'ip': addr[0], 'port': addr[1], 'version': version, 'community': community, 'oids':oids}])
-                    self.transport.write("Error", addr)
+                    _q_s.logs.info(['servers', {'server': 'snmp_server', 'action': 'query', 'status': 'success', 'ip': addr[0], 'port': addr[1], 'version': version, 'community': community, 'oids':oids}])
+                    self.transport.write('Error', addr)
                     success = True
 
                 self.transport.loseConnection()
@@ -97,7 +97,7 @@ class QSNMPServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'snmp_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
+            self.logs.info(['servers', {'server': 'snmp_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
 
             if status == 'success':
                 return True

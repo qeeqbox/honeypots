@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
@@ -58,13 +58,14 @@ class QFTPServer():
                     return str(string)
 
             def ftp_PASS(self, password):
-                self._user = self.check_bytes(self._user)
+                username = self.check_bytes(self._user)
                 password = self.check_bytes(password)
-
-                if self._user == _q_s.username and password == _q_s.password:
-                    _q_s.logs.info(['servers', {'server': 'ftp_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
-                else:
-                    _q_s.logs.info(['servers', {'server': 'ftp_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': self._user, 'password': password}])
+                status = 'failed'
+                if username == _q_s.username and password == _q_s.password:
+                    username = _q_s.username
+                    password = _q_s.password
+                    status = 'success'
+                _q_s.logs.info(['servers', {'server': 'ftp_server', 'action': 'login', 'status': status, 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password}])
                 return AUTH_FAILURE
 
         class CustomFTPFactory(FTPFactory):
@@ -98,7 +99,7 @@ class QFTPServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'ftp_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info(['servers', {'server': 'ftp_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
 
             if status == 'success':
                 return True

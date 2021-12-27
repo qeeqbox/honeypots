@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
@@ -59,50 +59,52 @@ class QRedisServer():
             def get_command(self, data):
                 try:
                     _data = data.decode('utf-8').split('\x0d\x0a')
-                    if _data[0][0] == "*":
+                    if _data[0][0] == '*':
                         _count = int(_data[0][1]) - 1
                         _data.pop(0)
-                        if _data[0::2][0][0] == "$" and len(_data[1::2][0]) == int(_data[0::2][0][1]):
+                        if _data[0::2][0][0] == '$' and len(_data[1::2][0]) == int(_data[0::2][0][1]):
                             return _count, _data[1::2][0]
                 except Exception as e:
                     print(e)
 
-                return 0, ""
+                return 0, ''
 
             def parse_data(self, c, data):
                 _data = data.decode('utf-8').split('\r\n')[3::]
-                user, password = "", ""
+                username, password = '', ''
                 if c == 2:
                     _ = 0
-                    if _data[0::2][_][0] == "$" and len(_data[1::2][_]) == int(_data[0::2][_][1]):
-                        user = (_data[1::2][_])
+                    if _data[0::2][_][0] == '$' and len(_data[1::2][_]) == int(_data[0::2][_][1]):
+                        username = (_data[1::2][_])
                     _ = 1
-                    if _data[0::2][_][0] == "$" and len(_data[1::2][_]) == int(_data[0::2][_][1]):
+                    if _data[0::2][_][0] == '$' and len(_data[1::2][_]) == int(_data[0::2][_][1]):
                         password = (_data[1::2][_])
                 if c == 1:
                     _ = 0
-                    if _data[0::2][_][0] == "$" and len(_data[1::2][_]) == int(_data[0::2][_][1]):
+                    if _data[0::2][_][0] == '$' and len(_data[1::2][_]) == int(_data[0::2][_][1]):
                         password = (_data[1::2][_])
                 if c == 2 or c == 1:
-                    user = self.check_bytes(user)
+                    username = self.check_bytes(username)
                     password = self.check_bytes(password)
-                    if user == _q_s.username and password == _q_s.password:
-                        _q_s.logs.info(["servers", {'server': 'redis_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
-                    else:
-                        _q_s.logs.info(["servers", {'server': 'redis_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': user, 'password': password}])
+                    status = 'failed'
+                    if username == _q_s.username and password == _q_s.password:
+                        username = _q_s.username
+                        password = _q_s.password
+                        status = 'success'
+                    _q_s.logs.info(['servers', {'server': 'redis_server', 'action': 'login', 'status': status, 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password}])
 
             def connectionMade(self):
                 self._state = 1
                 self._variables = {}
-                _q_s.logs.info(["servers", {'server': 'redis_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                _q_s.logs.info(['servers', {'server': 'redis_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
 
             def dataReceived(self, data):
                 c, command = self.get_command(data)
-                if command == "AUTH":
+                if command == 'AUTH':
                     self.parse_data(c, data)
-                    self.transport.write(b"-ERR invalid password\r\n")
+                    self.transport.write(b'-ERR invalid password\r\n')
                 else:
-                    self.transport.write(b"-ERR unknown command '{}'\r\n".format(command))
+                    self.transport.write(b'-ERR unknown command "{}"\r\n'.format(command))
                 self.transport.loseConnection()
 
         factory = Factory()
@@ -127,7 +129,7 @@ class QRedisServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'redis_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info(['servers', {'server': 'redis_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
 
             if status == 'success':
                 return True
@@ -144,7 +146,7 @@ class QRedisServer():
             _username = username or self.username
             _password = password or self.password
             r = StrictRedis.from_url('redis://{}:{}@{}:{}/1'.format(_username, _password, _ip, _port))
-            for key in r.scan_iter("user:*"):
+            for key in r.scan_iter('user:*'):
                 pass
         except BaseException:
             pass

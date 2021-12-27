@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
@@ -60,16 +60,16 @@ class QHTTPProxyServer():
                 try:
                     _, parsed_request = request_string.split(b'\r\n', 1)
                     headers = BytesParser().parsebytes(parsed_request)
-                    host = headers["host"].split(":")
-                    _q_s.logs.info(["servers", {'server': 'http_proxy_server', 'action': 'query', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'payload': host[0]}])
-                    # return "127.0.0.1"
+                    host = headers['host'].split(':')
+                    _q_s.logs.info(['servers', {'server': 'http_proxy_server', 'action': 'query', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'payload': host[0]}])
+                    # return '127.0.0.1'
                     return dsnquery(host[0], 'A')[0].address
                 except Exception as e:
-                    _q_s.logs.error(["errors", {'server': 'http_proxy_server', 'error': 'resolve_domain', "type": "error -> " + repr(e)}])
+                    _q_s.logs.error(['errors', {'server': 'http_proxy_server', 'error': 'resolve_domain', 'type': 'error -> ' + repr(e)}])
                 return None
 
             def dataReceived(self, data):
-                _q_s.logs.info(["servers", {'server': 'http_proxy_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                _q_s.logs.info(['servers', {'server': 'http_proxy_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
                 try:
                     ip = self.resolve_domain(data)
                     if ip:
@@ -122,7 +122,7 @@ class QHTTPProxyServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'http_proxy_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
+            self.logs.info(['servers', {'server': 'http_proxy_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
 
             if status == 'success':
                 return True
@@ -130,14 +130,14 @@ class QHTTPProxyServer():
                 self.kill_server()
                 return False
         else:
-            self.snmp_server_main()
+            self.http_proxy_server_main()
 
     def test_server(self, ip=None, port=None, domain=None):
         try:
             _ip = ip or self.ip
             _port = port or self.port
-            _domain = domain or "http://yahoo.com"
-            get(_domain, proxies={"http": 'http://{}:{}'.format(_ip, _port)}).text.encode('ascii', 'ignore')
+            _domain = domain or 'http://yahoo.com'
+            get(_domain, proxies={'http': 'http://{}:{}'.format(_ip, _port)}).text.encode('ascii', 'ignore')
         except BaseException:
             pass
 

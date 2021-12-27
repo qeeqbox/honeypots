@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
@@ -95,7 +95,7 @@ class QDNSServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'dns_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
+            self.logs.info(['servers', {'server': 'dns_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
 
             if status == 'success':
                 return True
@@ -111,7 +111,7 @@ class QDNSServer():
             res = Resolver(configure=False)
             res.nameservers = [self.ip]
             res.port = self.port
-            temp_domain = domain or "example.org"
+            temp_domain = domain or 'example.org'
             r = res.query(temp_domain, 'a')
         except BaseException:
             pass

@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
@@ -34,9 +34,9 @@ class QVNCServer():
         self.mocking = mocking or ''
         self.random_servers = ['VNC Server']
         self.file_name = dict_ or None
-        self.challenge = unhexlify("00000000901234567890123456789012")
+        self.challenge = unhexlify('00000000901234567890123456789012')
         if not dict_:
-            self.words = ["test"]
+            self.words = ['test']
         else:
             self.load_words()
         self.process = None
@@ -84,10 +84,16 @@ class QVNCServer():
 
             _state = None
 
+            def check_bytes(self, string):
+                if isinstance(string, bytes):
+                    return string.decode()
+                else:
+                    return str(string)
+
             def connectionMade(self):
                 self.transport.write(b'RFB 003.008\n')
                 self._state = 1
-                _q_s.logs.info(["servers", {'server': 'vnc_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                _q_s.logs.info(['servers', {'server': 'vnc_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
 
             def dataReceived(self, data):
                 if self._state == 1:
@@ -99,16 +105,20 @@ class QVNCServer():
                         self._state = 3
                         self.transport.write(_q_s.challenge)
                 elif self._state == 3:
-                    _x = _q_s.decode(_q_s.challenge, data.hex())
-                    if _x:
-                        if _x == _q_s.password:
-                            _q_s.logs.info(["servers", {'server': 'vnc_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': 'UnKnown', 'password': _q_s.password}])
+                    try:
+                        username = self.check_bytes(_q_s.decode(_q_s.challenge, data.hex()))
+                        password = self.check_bytes(data)
+                        status = 'failed'
+                        #may need decode
+                        if username == _q_s.username and password == _q_s.password:
+                            username = _q_s.username
+                            password = _q_s.password
+                            status = 'success'
                         else:
-                            _q_s.logs.info(["servers", {'server': 'vnc_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': 'UnKnown', 'password': _x}])
-                    else:
-                        if len(data) == 16:
-                            # we need to check the lenth check length first
-                            _q_s.logs.info(["servers", {'server': 'vnc_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': 'UnKnown', 'password': data.hex()}])
+                            password = data.hex()
+                        _q_s.logs.info(['servers', {'server': 'vnc_server', 'action': 'login', status: 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password}])
+                    except Exception as e:
+                        print(e)
                     self.transport.loseConnection()
                 else:
                     self.transport.loseConnection()
@@ -138,7 +148,7 @@ class QVNCServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'vnc_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info(['servers', {'server': 'vnc_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
 
             if status == 'success':
                 return True
@@ -154,7 +164,7 @@ class QVNCServer():
             port or self.port
             username or self.username
             password or self.password
-            #client = vncapi.connect("{}::{}".format(self.ip, self.port), password=password)
+            #client = vncapi.connect('{}::{}'.format(self.ip, self.port), password=password)
             # client.captureScreen('screenshot.png')
             # client.disconnect()
         except BaseException:

@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
@@ -70,21 +70,21 @@ class QOracleServer():
                 program = None
                 local_user = None
                 try:
-                    packet_len, packet_checksum, packet_type, packet_reserved_bytes, packet_header_checksum = unpack(">hhbbh", data[0:8])
+                    packet_len, packet_checksum, packet_type, packet_reserved_bytes, packet_header_checksum = unpack('>hhbbh', data[0:8])
 
-                    if b"(DESCRIPTION=" in data:
-                        connect = data[data.index(b"(DESCRIPTION="):].split(b"\0")[0]
-                        found_temp = findall(rb"[^\(\)]+", connect)
+                    if b'(DESCRIPTION=' in data:
+                        connect = data[data.index(b'(DESCRIPTION='):].split(b'\0')[0]
+                        found_temp = findall(rb'[^\(\)]+', connect)
                         if len(found_temp) > 0:
-                            found_fixed = [item for item in found_temp if not item.endswith(b"=")]
+                            found_fixed = [item for item in found_temp if not item.endswith(b'=')]
                             if len(found_fixed) > 0:
                                 for item in found_fixed:
-                                    name, value = item.split(b"=")
-                                    if name.startswith(b"SERVICE_NAME"):
+                                    name, value = item.split(b'=')
+                                    if name.startswith(b'SERVICE_NAME'):
                                         service_name = value.decode()
-                                    elif name.startswith(b"PROGRAM"):
+                                    elif name.startswith(b'PROGRAM'):
                                         program = value.decode()
-                                    elif name.startswith(b"USER"):
+                                    elif name.startswith(b'USER'):
                                         local_user = value.decode()
                 except Exception as e:
                     pass
@@ -92,12 +92,12 @@ class QOracleServer():
                 return service_name, program, local_user
 
             def connectionMade(self):
-                _q_s.logs.info(["servers", {'server': 'oracle_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                _q_s.logs.info(['servers', {'server': 'oracle_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
 
             def dataReceived(self, data):
                 service_name, program, local_user = self.parse_payload(data)
                 if service_name or program or local_user:
-                    _q_s.logs.info(["servers", {'server': 'oracle_server', 'action': 'login', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'local_user': local_user, 'program': program, 'service_name': service_name}])
+                    _q_s.logs.info(['servers', {'server': 'oracle_server', 'action': 'login', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'local_user': local_user, 'program': program, 'service_name': service_name}])
                 self.transport.write(self.refuse_payload())
                 self.transport.loseConnection()
 
@@ -123,7 +123,7 @@ class QOracleServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'oracle_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
+            self.logs.info(['servers', {'server': 'oracle_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
 
             if status == 'success':
                 return True

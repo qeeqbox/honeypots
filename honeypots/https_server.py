@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
@@ -74,8 +74,8 @@ class QHTTPSServer():
         c.set_issuer(c.get_subject())
         c.set_pubkey(pk)
         c.sign(pk, 'sha256')
-        open(cert, "wb").write(crypto.dump_certificate(crypto.FILETYPE_PEM, c))
-        open(key, "wb").write(crypto.dump_privatekey(crypto.FILETYPE_PEM, pk))
+        open(cert, 'wb').write(crypto.dump_certificate(crypto.FILETYPE_PEM, c))
+        open(key, 'wb').write(crypto.dump_privatekey(crypto.FILETYPE_PEM, pk))
 
     def https_server_main(self):
         _q_s = self
@@ -87,18 +87,18 @@ class QHTTPSServer():
 <!DOCTYPE html>
 <html>
 	<head>
-		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" />
-		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
-		<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+		<link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css' />
+		<link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css' />
+		<meta http-equiv='content-type' content='text/html;charset=utf-8' />
 		<title>Login</title>
 		<style>
 			body,html{height: 100%;text-align: center;},
 		</style>
 	</head>
 	<body>
-		<div class="container-fluid h-100">
-			<div class="row justify-content-center h-100 align-items-center">
-			<div class="col col-xl-3">
+		<div class='container-fluid h-100'>
+			<div class='row justify-content-center h-100 align-items-center'>
+			<div class='col col-xl-3'>
 				<b>We'll back soon..</b>
 			</div>
 			</div>
@@ -109,25 +109,25 @@ class QHTTPSServer():
             login_file = b'''<!DOCTYPE html>
 <html>
 	<head>
-		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" />
-		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css" />
-		<meta http-equiv="content-type" content="text/html;charset=utf-8" />
+		<link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css' />
+		<link rel='stylesheet' href='https://stackpath.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css' />
+		<meta http-equiv='content-type' content='text/html;charset=utf-8' />
 		<title>Login</title>
 		<style>body,html {height: 100%;}</style>
 	</head>
 	<body>
-		<div class="container-fluid h-100">
-			<div class="row justify-content-center h-100 align-items-center">
-			<div class="col col-xl-3">
-				<form id="login" action="" method="post">
-					<div class="form-group">
-						<input class="form-control form-control-sm" name="username" type="text" placeholder="username" id="username">
+		<div class='container-fluid h-100'>
+			<div class='row justify-content-center h-100 align-items-center'>
+			<div class='col col-xl-3'>
+				<form id='login' action='' method='post'>
+					<div class='form-group'>
+						<input class='form-control form-control-sm' name='username' type='text' placeholder='username' id='username'>
 					</div>
-					<div class="form-group">
-						<input class="form-control form-control-sm" name="password" type="password" placeholder="password" id="password">
+					<div class='form-group'>
+						<input class='form-control form-control-sm' name='password' type='password' placeholder='password' id='password'>
 					</div>
-					<div class="form-group">
-						<button class="btn btn-default btn-sm btn-block" type="submit">login</button>
+					<div class='form-group'>
+						<button class='btn btn-default btn-sm btn-block' type='submit'>login</button>
 					</div>
 				</form>
 			</div>
@@ -165,43 +165,45 @@ class QHTTPSServer():
                 except BaseException:
                     pass
 
-                _q_s.logs.info(["servers", {'server': 'https_server', 'action': 'connection', 'ip': request.getClientIP(), 'request': headers}])
+                _q_s.logs.info(['servers', {'server': 'https_server', 'action': 'connection', 'ip': request.getClientIP(), 'request': headers}])
 
-                if self.server != "":
-                    request.responseHeaders.removeHeader("Server")
-                    request.responseHeaders.addRawHeader("Server", self.server)
+                if self.server != '':
+                    request.responseHeaders.removeHeader('Server')
+                    request.responseHeaders.addRawHeader('Server', self.server)
 
-                if request.method == b"GET":
-                    _q_s.logs.info(["servers", {'server': 'https_server', 'action': 'get', 'ip': request.getClientIP()}])
-                    if request.uri == b"/login.html":
+                if request.method == b'GET':
+                    _q_s.logs.info(['servers', {'server': 'https_server', 'action': 'get', 'ip': request.getClientIP()}])
+                    if request.uri == b'/login.html':
                         if _q_s.username != '' and _q_s.password != '':
-                            request.responseHeaders.addRawHeader("Content-Type", "text/html; charset=utf-8")
+                            request.responseHeaders.addRawHeader('Content-Type', 'text/html; charset=utf-8')
                             return self.login_file
 
-                    request.responseHeaders.addRawHeader("Content-Type", "text/html; charset=utf-8")
+                    request.responseHeaders.addRawHeader('Content-Type', 'text/html; charset=utf-8')
                     return self.home_file
 
-                elif request.method == b"POST":
+                elif request.method == b'POST':
                     self.headers = request.getAllHeaders()
-                    _q_s.logs.info(["servers", {'server': 'https_server', 'action': 'post', 'ip': request.getClientIP()}])
-                    if request.uri == b"/login.html" or b'/':
+                    _q_s.logs.info(['servers', {'server': 'https_server', 'action': 'post', 'ip': request.getClientIP()}])
+                    if request.uri == b'/login.html' or b'/':
                         if _q_s.username != '' and _q_s.password != '':
                             form = FieldStorage(fp=request.content, headers=self.headers, environ={'REQUEST_METHOD': 'POST', 'CONTENT_TYPE': self.headers[b'content-type'], })
                             if 'username' in form and 'password' in form:
-                                form['username'].value = self.check_bytes(form['username'].value)
-                                form['password'].value = self.check_bytes(form['password'].value)
-                                if form['username'].value == _q_s.username and form['password'].value == _q_s.password:
-                                    _q_s.logs.info(["servers", {'server': 'https_server', 'action': 'login', 'status': 'success', 'ip': request.getClientIP(), 'username': _q_s.username, 'password': _q_s.password}])
-                                else:
-                                    _q_s.logs.info(["servers", {'server': 'https_server', 'action': 'login', 'status': 'failed', 'ip': request.getClientIP(), 'username': form['username'].value, 'password':form['password'].value}])
+                                username = self.check_bytes(form['username'].value)
+                                password = self.check_bytes(form['password'].value)
+                                status = 'failed'
+                                if username == _q_s.username and password == _q_s.password:
+                                    username = _q_s.username
+                                    password = _q_s.password
+                                    status = 'success'
+                                _q_s.logs.info(['servers', {'server': 'https_server', 'action': 'login', 'status': status, 'ip': request.getClientIP(), 'username': username, 'password': password}])
 
-                    request.responseHeaders.addRawHeader("Content-Type", "text/html; charset=utf-8")
+                    request.responseHeaders.addRawHeader('Content-Type', 'text/html; charset=utf-8')
                     return self.home_file
                 else:
-                    request.responseHeaders.addRawHeader("Content-Type", "text/html; charset=utf-8")
+                    request.responseHeaders.addRawHeader('Content-Type', 'text/html; charset=utf-8')
                     return self.home_file
 
-        self.CreateCert("localhost", self.key, self.cert)
+        self.CreateCert('localhost', self.key, self.cert)
         ssl_context = ssl.DefaultOpenSSLContextFactory(self.key, self.cert)
         reactor.listenSSL(self.port, Site(MainResource()), ssl_context)
         reactor.run()
@@ -223,7 +225,7 @@ class QHTTPSServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'https_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info(['servers', {'server': 'https_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
 
             if status == 'success':
                 return True

@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
@@ -66,33 +66,33 @@ class QLDAPServer():
 
             def connectionMade(self):
                 self._state = 1
-                _q_s.logs.info(["servers", {'server': 'ldap_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                _q_s.logs.info(['servers', {'server': 'ldap_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
 
             def parse_ldap_packet(self, data):
 
                 #                 V
                 # 30[20] 0201[02] 60[1b] 0201[03] 04[0a] 7379736261636b757031 [80][0a] 7379736261636b757032
 
-                username = ""
-                password = ""
+                username = ''
+                password = ''
                 username_start = 0
                 username_end = 0
                 password_start = 0
                 password_end = 0
                 try:
-                    version = data.find(b"\x02\x01\x03")
+                    version = data.find(b'\x02\x01\x03')
                     if version > 0:
                         username_start = version + 5
-                        username_end = unpack("b", data[version + 4:username_start])[0] + username_start
+                        username_end = unpack('b', data[version + 4:username_start])[0] + username_start
                         username = data[username_start:username_end]
                         auth_type = data[username_end]
                         if auth_type == 0x80:
                             if data[username_end + 1] == 0x82:
                                 password_start = username_end + 4
-                                password_end = unpack(">H", data[username_end + 2:username_end + 4])[0] + username_end + 4
+                                password_end = unpack('>H', data[username_end + 2:username_end + 4])[0] + username_end + 4
                             else:
                                 password_start = username_end + 2
-                                password_end = unpack("b", data[username_end + 2:username_end + 3])[0] + username_start + 2
+                                password_end = unpack('b', data[username_end + 2:username_end + 3])[0] + username_start + 2
                             password = data[password_start:password_end]
                 except BaseException:
                     pass
@@ -105,23 +105,23 @@ class QLDAPServer():
                     username, password = self.parse_ldap_packet(data)
                     username = self.check_bytes(username)
                     password = self.check_bytes(password)
-                    if username != "" or password != "":
+                    if username != '' or password != '':
                         if username == _q_s.username and password == _q_s.password:
-                            _q_s.logs.info(["servers", {'server': 'ldap_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
+                            _q_s.logs.info(['servers', {'server': 'ldap_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
                         else:
-                            _q_s.logs.info(["servers", {'server': 'ldap_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password}])
-                    self.transport.write(unhexlify(b"300c02010165070a013204000400"))
+                            _q_s.logs.info(['servers', {'server': 'ldap_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password}])
+                    self.transport.write(unhexlify(b'300c02010165070a013204000400'))
                 elif self._state == 2:
                     self._state = 3
                     username, password = self.parse_ldap_packet(data)
                     username = self.check_bytes(username)
                     password = self.check_bytes(password)
-                    if username != "" or password != "":
+                    if username != '' or password != '':
                         if username == _q_s.username and password == _q_s.password:
-                            _q_s.logs.info(["servers", {'server': 'ldap_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
+                            _q_s.logs.info(['servers', {'server': 'ldap_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
                         else:
-                            _q_s.logs.info(["servers", {'server': 'ldap_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password}])
-                    self.transport.write(unhexlify(b"300c02010265070a013204000400"))
+                            _q_s.logs.info(['servers', {'server': 'ldap_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password}])
+                    self.transport.write(unhexlify(b'300c02010265070a013204000400'))
                 else:
                     self.transport.loseConnection()
 
@@ -150,7 +150,7 @@ class QLDAPServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'ldap_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info(['servers', {'server': 'ldap_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
 
             if status == 'success':
                 return True

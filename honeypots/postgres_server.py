@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
@@ -62,18 +62,18 @@ class QPostgresServer():
 
             def read_data_custom(self, data):
                 _data = data.decode('utf-8')
-                length = unpack("!I", data[0:4])
+                length = unpack('!I', data[0:4])
                 encoded_list = (_data[8:-1].split('\x00'))
                 self._variables = dict(zip(*([iter(encoded_list)] * 2)))
 
             def read_password_custom(self, data):
                 data = data.decode('utf-8')
-                self._variables["password"] = data[5:].split('\x00')[0]
+                self._variables['password'] = data[5:].split('\x00')[0]
 
             def connectionMade(self):
                 self._state = 1
                 self._variables = {}
-                _q_s.logs.info(["servers", {'server': 'postgres_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                _q_s.logs.info(['servers', {'server': 'postgres_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
 
             def dataReceived(self, data):
                 if self._state == 1:
@@ -84,14 +84,17 @@ class QPostgresServer():
                     self._state = 3
                     self.transport.write(b'R\x00\x00\x00\x08\x00\x00\x00\x03')
                 elif self._state == 3:
-                    if data[0] == 112 and "user" in self._variables:
+                    if data[0] == 112 and 'user' in self._variables:
                         self.read_password_custom(data)
-                        self._variables["user"] = self.check_bytes(self._variables["user"])
-                        self._variables["password"] = self.check_bytes(self._variables["password"])
-                        if self._variables["user"] == _q_s.username and self._variables["password"] == _q_s.password:
-                            _q_s.logs.info(["servers", {'server': 'postgres_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
-                        else:
-                            _q_s.logs.info(["servers", {'server': 'postgres_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': self._variables["user"], 'password':self._variables["password"]}])
+                        username = self.check_bytes(self._variables['user'])
+                        password = self.check_bytes(self._variables['password'])
+                        status = 'failed'
+                        if username == _q_s.username and password == _q_s.password:
+                            username = _q_s.username
+                            password = _q_s.password
+                            status = 'success'
+                        _q_s.logs.info(['servers', {'server': 'postgres_server', 'action': 'login', 'status': status, 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password}])
+
                     self.transport.loseConnection()
                 else:
                     self.transport.loseConnection()
@@ -122,7 +125,7 @@ class QPostgresServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'postgres_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info(['servers', {'server': 'postgres_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
 
             if status == 'success':
                 return True

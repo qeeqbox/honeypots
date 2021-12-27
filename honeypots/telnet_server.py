@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,10 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
+
+from warnings import filterwarnings
+filterwarnings(action='ignore', module='.*OpenSSL.*')
 
 from twisted.conch.telnet import TelnetProtocol, TelnetTransport
 from twisted.internet.protocol import Factory
@@ -63,23 +66,25 @@ class QTelnetServer():
                 self._user = None
                 self._pass = None
                 self.transport.write(b'PC login: ')
-                self._state = b"Username"
-                _q_s.logs.info(["servers", {'server': 'telnet_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                self._state = b'Username'
+                _q_s.logs.info(['servers', {'server': 'telnet_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
 
             def dataReceived(self, data):
                 data = data.strip()
                 if self._state == b'Username':
                     self._user = data
-                    self._state = b"Password"
+                    self._state = b'Password'
                     self.transport.write(b'Password: ')
                 elif self._state == b'Password':
-                    self._pass = data
-                    self._user = self.check_bytes(self._user)
-                    self._pass = self.check_bytes(self._pass)
-                    if self._user == _q_s.username and self._pass == _q_s.password:
-                        _q_s.logs.info(["servers", {'server': 'telnet_server', 'action': 'login', 'status': 'success', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': _q_s.username, 'password': _q_s.password}])
-                    else:
-                        _q_s.logs.info(["servers", {'server': 'telnet_server', 'action': 'login', 'status': 'failed', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': self._user.decode('utf-8'), 'password': self._pass.decode('utf-8')}])
+                    username = self.check_bytes(self._user)
+                    password = self.check_bytes(data)
+                    status = 'failed'
+                    #may need decode
+                    if username == _q_s.username and password == _q_s.password:
+                        username = _q_s.username
+                        password = _q_s.password
+                        status = 'success'
+                    _q_s.logs.info(['servers', {'server': 'telnet_server', 'action': 'login', 'status': status, 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password}])
                     self.transport.loseConnection()
                 else:
                     self.transport.loseConnection()
@@ -111,7 +116,7 @@ class QTelnetServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'telnet_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info(['servers', {'server': 'telnet_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
 
             if status == 'success':
                 return True
@@ -127,13 +132,13 @@ class QTelnetServer():
             _port = port or self.port
             _username = username or self.username
             _password = password or self.password
-            _username = _username.encode("utf-8")
-            _password = _password.encode("utf-8")
+            _username = _username.encode('utf-8')
+            _password = _password.encode('utf-8')
             t = TTelnet(_ip, _port)
-            t.read_until(b"login: ")
-            t.write(_username + b"\n")
-            t.read_until(b"Password: ")
-            t.write(_password + b"\n")
+            t.read_until(b'login: ')
+            t.write(_username + b'\n')
+            t.read_until(b'Password: ')
+            t.write(_password + b'\n')
         except Exception as e:
             print(e)
             pass

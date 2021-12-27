@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,7 +8,7 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
@@ -57,47 +57,47 @@ class QMemcacheServer():
 
             def get_stats(self):
                 items = randint(80000000, 90000000)
-                ret = ""
+                ret = ''
                 temp = {b'pid': randint(5, 400), b'uptime': randint(1000, 2000), b'time': int(time()), b'version': b'1.5.6', b'libevent': b'2.1.8-stable', b'pointer_size': 64, b'rusage_user': round(uniform(0.1, 0.9), 4), b'rusage_system': round(uniform(0.1, 0.9), 6), b'max_connections': 1024, b'curr_connections': randint(1, 1024), b'total_connections': 5, b'rejected_connections': 0, b'connection_structures': 2, b'reserved_fds': 20, b'cmd_get': 0, b'cmd_set': 40, b'cmd_flush': 0, b'cmd_touch': 0, b'get_hits': 0, b'get_misses': 0, b'get_expired': 0, b'get_flushed': 0, b'delete_misses': 0, b'delete_hits': 0, b'incr_misses': 0, b'incr_hits': 0, b'decr_misses': 0, b'decr_hits': 0, b'cas_misses': 0, b'cas_hits': 0, b'cas_badval': 0, b'touch_hits': 0, b'touch_misses': 0, b'auth_cmds': 0, b'auth_errors': 0, b'bytes_read': randint(7000000, 8000000), b'bytes_written': randint(500000, 1000000), b'limit_maxbytes': 33554432, b'accepting_conns': 1, b'listen_disabled_num': 0, b'time_in_listen_disabled_us': 0, b'threads': randint(4, 9000), b'conn_yields': 0, b'hash_power_level': 16, b'hash_bytes': 524288, b'hash_is_expanding': False, b'slab_reassign_rescues': 0, b'slab_reassign_chunk_rescues': 0, b'slab_reassign_evictions_nomem': 0, b'slab_reassign_inline_reclaim': 0, b'slab_reassign_busy_items': 0, b'slab_reassign_busy_deletes': 0, b'slab_reassign_running': False, b'slabs_moved': 0, b'lru_crawler_running': 0, b'lru_crawler_starts': randint(500000, 700000), b'lru_maintainer_juggles': randint(400000, 500000), b'malloc_fails': 0, b'log_worker_dropped': 0, b'log_worker_written': 0, b'log_watcher_skipped': 0, b'log_watcher_sent': 0, b'bytes': randint(13554432, 33554432), b'curr_items': items, b'total_items': items, b'slab_global_page_pool': 0, b'expired_unfetched': 0, b'evicted_unfetched': 0, b'evicted_active': 0, b'evictions': 0, b'reclaimed': 0, b'crawler_reclaimed': 0, b'crawler_items_checked': randint(5000, 6000), b'lrutail_reflocked': 0, b'moves_to_cold': randint(5000, 6000), b'moves_to_warm': randint(5000, 6000), b'moves_within_lru': 0, b'direct_reclaims': 0, b'lru_bumps_dropped': 0}
 
                 for key, value in temp.items():
                     key = key.decode()
                     if isinstance(value, bytes):
                         value = value.decode()
-                    ret += "STAT {} {}\r\n".format(key, value)
+                    ret += 'STAT {} {}\r\n'.format(key, value)
 
                 ret = ret.encode() + b'END\r\n'
                 return ret
 
             def get_key(self, key):
-                ret = b""
+                ret = b''
                 try:
                     random = randint(80000000, 90000000)
-                    temp = "VALUE {} 0 {}\r\n{}\r\nEND\r\n".format(key.decode(), len(str(random)), random)
+                    temp = 'VALUE {} 0 {}\r\n{}\r\nEND\r\n'.format(key.decode(), len(str(random)), random)
                     ret = temp.encode()
                 except BaseException:
                     pass
                 return ret
 
             def connectionMade(self):
-                _q_s.logs.info(["servers", {'server': 'memcache_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                _q_s.logs.info(['servers', {'server': 'memcache_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
 
             def dataReceived(self, data):
                 try:
-                    _data = data.split(b'\r\n')[0].split(b" ")
-                    if _data[0] == b"stats":
+                    _data = data.split(b'\r\n')[0].split(b' ')
+                    if _data[0] == b'stats':
                         self.transport.write(self.get_stats())
-                    elif _data[0] == b"get":
+                    elif _data[0] == b'get':
                         self.transport.write(self.get_key(_data[1]))
-                    elif _data[0] == b"set":
+                    elif _data[0] == b'set':
                         name = _data[1]
                         size = _data[4]
                         value = data.split(b'\r\n')[1]
                         self.transport.write(b'STORED\r\n')
                     else:
-                        self.transport.write(b"ERROR\r\n")
-                    if _data[0] != b"":
-                        _q_s.logs.info(["servers", {'server': 'memcache_server', 'action': _data[0].decode(), 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                        self.transport.write(b'ERROR\r\n')
+                    if _data[0] != b'':
+                        _q_s.logs.info(['servers', {'server': 'memcache_server', 'action': _data[0].decode(), 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
                 except BaseException:
                     pass
                 self.transport.loseConnection()
@@ -124,7 +124,7 @@ class QMemcacheServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'memcache_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
+            self.logs.info(['servers', {'server': 'memcache_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
 
             if status == 'success':
                 return True

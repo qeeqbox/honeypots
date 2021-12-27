@@ -1,4 +1,4 @@
-"""
+'''
 //  -------------------------------------------------------------
 //  author        Giga
 //  project       qeeqbox/honeypots
@@ -8,12 +8,10 @@
 //  -------------------------------------------------------------
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
-"""
+'''
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', category=DeprecationWarning)
-
-from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*impacket.*')
 
 from logging import StreamHandler, getLogger, DEBUG
@@ -65,30 +63,30 @@ class QSMBServer():
 
         class Logger(object):
             def write(self, message):
-                #sys.stdout.write(str(">>>>" + message))
+                #sys.stdout.write(str('>>>>' + message))
                 # sys.stdout.flush()
                 try:
-                    if "Incoming connection" in message.strip() or "AUTHENTICATE_MESSAGE" in message.strip() or "authenticated successfully" in message.strip():
-                        _q_s.logs.info(["servers", {'server': 'smb_server', 'action': 'connection', 'msg': message.strip()}])
-                    elif ":4141414141414141:" in message.strip():
-                        parsed = message.strip().split(":")
+                    if 'Incoming connection' in message.strip() or 'AUTHENTICATE_MESSAGE' in message.strip() or 'authenticated successfully' in message.strip():
+                        _q_s.logs.info(['servers', {'server': 'smb_server', 'action': 'connection', 'msg': message.strip()}])
+                    elif ':4141414141414141:' in message.strip():
+                        parsed = message.strip().split(':')
                         if len(parsed) > 2:
-                            _q_s.logs.info(["servers", {'server': 'smb_server', 'action': 'login', 'workstation': parsed[0], 'test':parsed[1]}])
+                            _q_s.logs.info(['servers', {'server': 'smb_server', 'action': 'login', 'workstation': parsed[0], 'test':parsed[1]}])
                 except Exception as e:
-                    _q_s.logs.error(["errors", {'server': 'smb_server', 'error': 'write', "type": "error -> " + repr(e)}])
+                    _q_s.logs.error(['errors', {'server': 'smb_server', 'error': 'write', 'type': 'error -> ' + repr(e)}])
 
         handler = StreamHandler(Logger())
-        getLogger("impacket").addHandler(handler)
-        getLogger("impacket").setLevel(DEBUG)
+        getLogger('impacket').addHandler(handler)
+        getLogger('impacket').setLevel(DEBUG)
 
         dirpath = mkdtemp()
         server = smbserver.SimpleSMBServer(listenAddress=self.ip, listenPort=self.port)
-        # server.removeShare("IPC$")
+        # server.removeShare('IPC$')
         if self.folders == '' or self.folders is None:
             server.addShare('C$', dirpath, '', readOnly='yes')
         else:
-            for folder in self.folders.split(","):
-                name, d = folder.split(":")
+            for folder in self.folders.split(','):
+                name, d = folder.split(':')
                 if path.isdir(d) and len(name) > 0:
                     server.addShare(name, d, '', readOnly='yes')
 
@@ -115,7 +113,7 @@ class QSMBServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(["servers", {'server': 'smb_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders)}])
+            self.logs.info(['servers', {'server': 'smb_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders)}])
 
             if status == 'success':
                 return True
@@ -135,7 +133,7 @@ class QSMBServer():
             smb_client = SMBConnection(_ip, _ip, sess_port=_port)
             smb_client.login(_username, _password)
         except Exception as e:
-            self.logs.error(["errors", {'server': 'smb_server', 'error': 'write', "type": "error -> " + repr(e)}])
+            self.logs.error(['errors', {'server': 'smb_server', 'error': 'write', 'type': 'error -> ' + repr(e)}])
 
     def close_port(self):
         ret = close_port_wrapper('smb_server', self.ip, self.port, self.logs)
