@@ -120,13 +120,13 @@ python3 -m honeypots --setup ftp --config config.json
     "id": 1,
     "date": "2021-11-18 06:06:42.304338+00",
     "data": {
-      "server": "'ftp_server'",
-      "action": "'process'",
-      "status": "'success'",
-      "ip": "'0.0.0.0'",
+      "server": "ftp_server",
+      "action": "process",
+      "status": "success",
+      "ip": "0.0.0.0",
       "port": "21",
-      "username": "'test'",
-      "password": "'test'"
+      "username": "test",
+      "password": "test"
     }
   }
 ]
