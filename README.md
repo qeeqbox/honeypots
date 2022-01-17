@@ -6,6 +6,9 @@ This honeypots package is the only package that contains all the following: dns,
 
 Honeypots now is in the awesome [telekom security T-Pot project!](https://github.com/telekom-security/tpotce)
 
+## Easy!
+<img src="https://raw.githubusercontent.com/qeeqbox/honeypots/main/readme/intro.gif" style="max-width:768px"/>
+
 ## Install
 ```
 pip3 install honeypots
