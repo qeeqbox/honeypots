@@ -27,9 +27,8 @@ from traceback import format_exc
 from collections import Mapping
 from urllib.parse import urlparse
 
-#old_stderr = sys.stderr
-# sys.stderr = open(devnull, 'w')  # supress all stderr
-
+old_stderr = sys.stderr
+sys.stderr = open(devnull, 'w')
 
 def set_local_vars(self, config):
     try:
