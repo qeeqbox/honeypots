@@ -10,6 +10,8 @@
 //  -------------------------------------------------------------
 '''
 
+import sys
+
 from psutil import process_iter
 from signal import SIGTERM
 from argparse import ArgumentParser
@@ -20,7 +22,7 @@ from sys import stdout
 from datetime import datetime
 from logging.handlers import RotatingFileHandler, SysLogHandler
 from tempfile import _get_candidate_names, gettempdir
-from os import makedirs, path, scandir
+from os import makedirs, path, scandir, devnull
 from psycopg2 import sql, connect
 from time import sleep
 from traceback import format_exc
