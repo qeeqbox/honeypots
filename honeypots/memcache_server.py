@@ -88,8 +88,8 @@ class QMemcacheServer():
                     elif _data[0] == b'get':
                         self.transport.write(self.get_key(_data[1]))
                     elif _data[0] == b'set':
-                        _data[1]
-                        _data[4]
+                        name = _data[1]
+                        size = _data[4]
                         value = data.split(b'\r\n')[1]
                         self.transport.write(b'STORED\r\n')
                     else:
