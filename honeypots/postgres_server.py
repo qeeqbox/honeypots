@@ -18,7 +18,6 @@ from twisted.internet import reactor
 from struct import unpack
 from twisted.python import log as tlog
 from subprocess import Popen
-from psycopg2 import connect
 from os import path
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
@@ -134,16 +133,6 @@ class QPostgresServer():
                 return False
         else:
             self.postgres_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            x = connect(host=_ip, port=_port, user=_username, password=_password)
-        except BaseException:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('postgres_server', self.ip, self.port, self.logs)

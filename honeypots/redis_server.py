@@ -15,7 +15,6 @@ filterwarnings(action='ignore', module='.*OpenSSL.*')
 
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor
-from redis import StrictRedis
 from twisted.python import log as tlog
 from subprocess import Popen
 from os import path
@@ -138,18 +137,6 @@ class QRedisServer():
                 return False
         else:
             self.redis_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            r = StrictRedis.from_url('redis://{}:{}@{}:{}/1'.format(_username, _password, _ip, _port))
-            for key in r.scan_iter('user:*'):
-                pass
-        except BaseException:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('redis_server', self.ip, self.port, self.logs)

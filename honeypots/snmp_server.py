@@ -13,16 +13,12 @@
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 
-from twisted.internet.protocol import Protocol, Factory, DatagramProtocol
+from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
-from struct import unpack, calcsize, pack
-from time import time
 from twisted.python import log as tlog
 from subprocess import Popen
-from psycopg2 import connect
 from os import path
 from scapy.all import SNMP
-from socket import socket, AF_INET, SOCK_DGRAM
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
 
@@ -57,7 +53,6 @@ class QSNMPServer():
                 version = 'UnKnown'
                 community = 'UnKnown'
                 oids = 'UnKnown'
-                success = False
                 try:
                     parsed_snmp = SNMP(data)
                     community = parsed_snmp.community.val
@@ -73,7 +68,6 @@ class QSNMPServer():
                 if version or community or oids:
                     _q_s.logs.info(['servers', {'server': 'snmp_server', 'action': 'query', 'status': 'success', 'ip': addr[0], 'port': addr[1], 'version': version, 'community': community, 'oids':oids}])
                     self.transport.write('Error', addr)
-                    success = True
 
                 self.transport.loseConnection()
 
@@ -106,12 +100,6 @@ class QSNMPServer():
                 return False
         else:
             self.snmp_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            pass
-        except BaseException:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('snmp_server', self.ip, self.port, self.logs)

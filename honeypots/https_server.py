@@ -15,9 +15,7 @@ filterwarnings(action='ignore', module='.*OpenSSL.*')
 
 from OpenSSL import crypto
 from cgi import FieldStorage
-from requests import get, post
 from requests.packages.urllib3 import disable_warnings
-from time import sleep
 from tempfile import gettempdir, _get_candidate_names
 from twisted.internet import reactor, ssl
 from twisted.web.server import Site
@@ -234,18 +232,6 @@ class QHTTPSServer():
                 return False
         else:
             self.https_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            sleep(2)
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            get('https://{}:{}'.format(_ip, _port), verify=False)
-            post('https://{}:{}'.format(_ip, _port), data={'username': (None, _username), 'password': (None, _password)}, verify=False)
-        except BaseException:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('https_server', self.ip, self.port, self.logs)

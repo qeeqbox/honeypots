@@ -23,12 +23,10 @@ from zlib import compressobj, DEFLATED
 from subprocess import Popen
 from ssl import wrap_socket
 from uuid import uuid4
-from time import sleep
 from os import path
 from OpenSSL import crypto
 from tempfile import gettempdir, _get_candidate_names
-from elasticsearch import Elasticsearch
-from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
+from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 
 disable_warnings()
 
@@ -96,7 +94,7 @@ class QElasticServer():
 
                     for item, value in dict(self.headers).items():
                         headers.update({check_bytes(item): check_bytes(value)})
-                except Exception as e:
+                except Exception:
                     pass
 
                 _q_s.logs.info(['servers', {'server': 'elastic_server', 'action': 'dump', 'line': check_bytes(self.raw_requestline), 'ip': self.client_address[0], 'headers':headers}])
@@ -248,18 +246,6 @@ class QElasticServer():
         else:
             self.elastic_server_main()
         return None
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            sleep(2)
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            es = Elasticsearch(['https://{}:{}'.format(_ip, _port)], http_auth=(_username, _password), verify_certs=False)
-            es.search(index='test', body={}, size=99)
-        except Exception as e:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('elastic_server', self.ip, self.port, self.logs)

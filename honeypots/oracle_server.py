@@ -15,15 +15,11 @@ filterwarnings(action='ignore', module='.*OpenSSL.*')
 
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor
-from redis import StrictRedis
 from twisted.python import log as tlog
 from subprocess import Popen
 from os import path
-from random import randint, uniform
-from time import time
 from struct import unpack
 from re import findall
-from socket import socket, AF_INET, SOCK_STREAM
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running, set_local_vars
 from uuid import uuid4
 
@@ -86,7 +82,7 @@ class QOracleServer():
                                         program = value.decode()
                                     elif name.startswith(b'USER'):
                                         local_user = value.decode()
-                except Exception as e:
+                except Exception:
                     pass
 
                 return service_name, program, local_user
@@ -132,18 +128,6 @@ class QOracleServer():
                 return False
         else:
             self.oracle_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            payload = b'\x00\x00\x03\x04\x00\x06\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00E\x00\x01F\xb9\xd9@\x00@\x06\x81\xd6\x7f\x00\x00\x01\x7f\x00\x00\x01\xbf\xce\x06\x13\xacW\xde\xc0Z\xb5\x0cI\x80\x18\x02\x00\xff:\x00\x00\x01\x01\x08\n\x1bdZ^\x1bdZ^\x01\x12\x00\x00\x01\x00\x00\x00\x01>\x01,\x0cA \x00\xff\xff\x7f\x08\x00\x00\x01\x00\x00\xc8\x00J\x00\x00\x14\x00AA\xa7C\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00 \x00\x00 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x01(DESCRIPTION=(CONNECT_DATA=(SERVICE_NAME=xe)(CID=(PROGRAM=linux_1)(HOST=xxxxxxxxxxxxxx)(USER=xxxxxxxxxxxxxx))(CONNECTION_ID=xxxxxxxxxxxxxxxxxxxxxxxx))(ADDRESS=(PROTOCOL=tcp)(HOST=xxxxxxx)(PORT=xxxx)))'
-            _ip = ip or self.ip
-            _port = port or self.port
-            c = socket(AF_INET, SOCK_STREAM)
-            c.connect((_ip, _port))
-            c.send(payload)
-            data, address = c.recvfrom(10000)
-        except BaseException:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('oracle_server', self.ip, self.port, self.logs)

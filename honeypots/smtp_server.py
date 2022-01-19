@@ -16,11 +16,9 @@ filterwarnings(action='ignore', category=DeprecationWarning)
 from smtpd import SMTPChannel, SMTPServer
 from asyncore import loop
 from base64 import b64decode
-from time import sleep
-from smtplib import SMTP
 from os import path
 from subprocess import Popen
-from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
+from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
 
 
@@ -132,21 +130,6 @@ class QSMTPServer():
                 return False
         else:
             self.smtp_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            sleep(2)
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            s = SMTP(_ip, _port)
-            s.ehlo()
-            s.login(_username, _password)
-            s.sendmail('fromtest', 'totest', 'Nothing')
-            s.quit()
-        except BaseException:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('smtp_server', self.ip, self.port, self.logs)

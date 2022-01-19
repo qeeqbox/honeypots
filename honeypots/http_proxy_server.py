@@ -17,7 +17,6 @@ from dns.resolver import query as dsnquery
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol, ClientFactory, Factory
 from twisted.python import log as tlog
-from requests import get
 from subprocess import Popen
 from email.parser import BytesParser
 from os import path
@@ -131,15 +130,6 @@ class QHTTPProxyServer():
                 return False
         else:
             self.http_proxy_server_main()
-
-    def test_server(self, ip=None, port=None, domain=None):
-        try:
-            _ip = ip or self.ip
-            _port = port or self.port
-            _domain = domain or 'http://yahoo.com'
-            get(_domain, proxies={'http': 'http://{}:{}'.format(_ip, _port)}).text.encode('ascii', 'ignore')
-        except BaseException:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('http_proxy_server', self.ip, self.port, self.logs)

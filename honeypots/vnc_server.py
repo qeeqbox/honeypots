@@ -17,10 +17,7 @@ from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor
 from Crypto.Cipher import DES
 from binascii import unhexlify
-from logging import DEBUG, getLogger
-from logging import DEBUG, getLogger
 from twisted.python import log as tlog
-from tempfile import gettempdir, _get_candidate_names
 from subprocess import Popen
 from os import path
 #from vncdotool import api as vncapi
@@ -157,18 +154,6 @@ class QVNCServer():
                 return False
         else:
             self.vnc_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            ip or self.ip
-            port or self.port
-            username or self.username
-            password or self.password
-            #client = vncapi.connect('{}::{}'.format(self.ip, self.port), password=password)
-            # client.captureScreen('screenshot.png')
-            # client.disconnect()
-        except BaseException:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('vnc_server', self.ip, self.port, self.logs)

@@ -17,7 +17,6 @@ from twisted.mail.pop3 import POP3
 from twisted.internet.protocol import Factory
 from twisted.internet import reactor
 from random import choice
-from poplib import POP3 as poplibPOP3
 from twisted.python import log as tlog
 from subprocess import Popen
 from os import path
@@ -138,18 +137,6 @@ class QPOP3Server():
                 return False
         else:
             self.pop3_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            pp = poplibPOP3(_ip, _port)
-            pp.user(_username)
-            pp.pass_(_password)
-        except BaseException:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('pop3_server', self.ip, self.port, self.logs)

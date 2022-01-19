@@ -18,10 +18,9 @@ from twisted.internet.protocol import Factory
 from twisted.internet import reactor
 from random import choice
 from twisted import cred
-from imaplib import IMAP4
 from subprocess import Popen
 from os import path
-from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
+from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
 
 
@@ -130,17 +129,6 @@ class QIMAPServer():
                 return False
         else:
             self.imap_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            imap_test = IMAP4(_ip, _port)
-            imap_test.login(_username, _password)
-        except BaseException:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('imap_server', self.ip, self.port, self.logs)

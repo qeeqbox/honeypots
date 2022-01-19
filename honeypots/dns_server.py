@@ -19,7 +19,6 @@ from twisted.internet import defer, reactor
 from twisted.python import log as tlog
 from subprocess import Popen
 from os import path
-from dns.resolver import Resolver
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
 
@@ -105,16 +104,6 @@ class QDNSServer():
         else:
             self.dns_server_main()
         return None
-
-    def test_server(self, ip=None, port=None, domain=None):
-        try:
-            res = Resolver(configure=False)
-            res.nameservers = [self.ip]
-            res.port = self.port
-            temp_domain = domain or 'example.org'
-            r = res.query(temp_domain, 'a')
-        except BaseException:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('dns_server', self.ip, self.port, self.logs)

@@ -10,7 +10,6 @@
 //  -------------------------------------------------------------
 '''
 
-import sys
 from psutil import process_iter
 from signal import SIGTERM
 from argparse import ArgumentParser
@@ -18,19 +17,18 @@ from socket import socket, AF_INET, SOCK_STREAM
 from json import JSONEncoder, dumps, load
 from logging import Handler, Formatter, DEBUG, getLogger
 from sys import stdout
-from pygments import highlight, lexers, formatters
 from datetime import datetime
 from logging.handlers import RotatingFileHandler, SysLogHandler
 from tempfile import _get_candidate_names, gettempdir
-from os import path, makedirs, devnull, scandir
+from os import makedirs, path, scandir
 from psycopg2 import sql, connect
 from time import sleep
 from traceback import format_exc
 from collections import Mapping
 from urllib.parse import urlparse
 
-old_stderr = sys.stderr
-sys.stderr = open(devnull, 'w')  # supress all stderr
+#old_stderr = sys.stderr
+#sys.stderr = open(devnull, 'w')  # supress all stderr
 
 
 def set_local_vars(self, config):
@@ -154,7 +152,7 @@ def kill_server_wrapper(server_name, name, process):
                 process.send_signal(SIGTERM)
                 process.kill()
         return True
-    except Exception as e:
+    except Exception:
         pass
     return False
 
@@ -182,7 +180,7 @@ def close_port_wrapper(server_name, ip, port, logs):
                     if port == conn.laddr.port:
                         process.send_signal(SIGTERM)
                         process.kill()
-            except Exception as e:
+            except Exception:
                 pass
     try:
         sock.bind((ip, port))
@@ -253,21 +251,6 @@ class CustomHandler(Handler):
             stdout.write(dumps({'error': repr(e), 'logger': repr(record)}, sort_keys=True, cls=ComplexEncoder) + '\n')
         stdout.flush()
 
-    def emit_old(self, record):
-        try:
-            if record.msg[0] == 'servers':
-                if 'server' in record.msg[1]:
-                    temp = record.msg[1]
-                    server = temp['server']
-                    del temp['server']
-                    stdout.write(highlight(dumps({server: temp}, sort_keys=True, indent=4, cls=ComplexEncoder), lexers.JsonLexer(), formatters.TerminalFormatter()))
-            else:
-                stdout.write(highlight(dumps(record.msg, sort_keys=True, indent=4, cls=ComplexEncoder), lexers.JsonLexer(), formatters.TerminalFormatter()))
-        except Exception as e:
-            stdout.write(highlight(dumps({'error': repr(e), 'logger': repr(record)}, sort_keys=True, indent=4, cls=ComplexEncoder), lexers.JsonLexer(), formatters.TerminalFormatter()))
-        stdout.flush()
-
-
 class postgres_class():
     def __init__(self, host=None, port=None, username=None, password=None, db=None, drop=False, uuid=None):
         self.host = host
@@ -300,7 +283,7 @@ class postgres_class():
                 conn = connect(host=self.host, port=self.port, user=self.username, password=self.password, connect_timeout=1)
                 conn.close()
                 test = False
-            except Exception as e:
+            except Exception:
                 pass
             sleep(1)
         print('{} - postgres connection is good'.format(self.uuid))

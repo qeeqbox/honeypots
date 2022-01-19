@@ -13,13 +13,11 @@
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 
-from time import sleep
 from socketserver import TCPServer, StreamRequestHandler, ThreadingMixIn
 from struct import unpack
-from requests import get
 from os import path
 from subprocess import Popen
-from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
+from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
 
 
@@ -117,17 +115,6 @@ class QSOCKS5Server():
                 return False
         else:
             self.socks5_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            sleep(2)
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            get('https://yahoo.com', proxies=dict(http='socks5://{}:{}@{}:{}'.format(_username, _password, _ip, _port), https='socks5://{}:{}@{}:{}'.format(_username, _password, _ip, _port)))
-        except BaseException:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('socks5_server', self.ip, self.port, self.logs)

@@ -17,12 +17,10 @@ from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor
 from twisted.python import log as tlog
 from struct import pack
-from hashlib import sha1
 from subprocess import Popen
 from os import path
 from struct import unpack, pack
 from binascii import unhexlify, hexlify
-from pymssql import connect as pconnect
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
 
@@ -149,17 +147,6 @@ class QMSSQLServer():
                 return False
         else:
             self.mssql_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            conn = pconnect(host=_ip, port=str(_port), user=_username, password=_password, database='dbname')
-            cursor = conn.cursor()
-        except Exception as e:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('mssql_server', self.ip, self.port, self.logs)

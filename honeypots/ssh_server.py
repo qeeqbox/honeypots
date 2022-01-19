@@ -13,16 +13,14 @@
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*paramiko.*')
 
-from paramiko import ServerInterface, Transport, RSAKey, AutoAddPolicy
+from paramiko import RSAKey, ServerInterface, Transport
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from _thread import start_new_thread
 from io import StringIO
 from random import choice
-from time import sleep
-from paramiko import SSHClient
 from subprocess import Popen
 from os import path
-from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
+from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
 
 
@@ -136,19 +134,6 @@ class QSSHServer():
                 return False
         else:
             self.ssh_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            sleep(2)
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            ssh = SSHClient()
-            ssh.set_missing_host_key_policy(AutoAddPolicy())  # if you have default ones, remove them before using this..
-            ssh.connect(_ip, port=_port, username=_username, password=_password)
-        except BaseException:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('ssh_server', self.ip, self.port, self.logs)

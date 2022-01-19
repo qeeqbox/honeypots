@@ -16,7 +16,6 @@ filterwarnings(action='ignore', module='.*OpenSSL.*')
 from twisted.protocols.ftp import FTPFactory, FTP, AUTH_FAILURE
 from twisted.internet import reactor
 from twisted.python import log as tlog
-from ftplib import FTP as FFTP
 from subprocess import Popen
 from os import path
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
@@ -117,19 +116,6 @@ class QFTPServer():
     def kill_server(self):
         ret = kill_server_wrapper('ftp_server', self.uuid, self.process)
         return ret
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            f = FFTP()
-            f.connect(_ip, _port)
-            f.login(_username, _password)
-        except BaseException:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

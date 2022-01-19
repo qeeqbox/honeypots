@@ -16,16 +16,12 @@ filterwarnings(action='ignore', module='.*OpenSSL.*')
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor
 from twisted.python import log as tlog
-from hashlib import sha1
 from subprocess import Popen
 from os import path
-from struct import unpack, pack
-from binascii import unhexlify, hexlify
-from pymssql import connect as pconnect
+from struct import unpack
+from binascii import unhexlify
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
-from ldap3 import Server, Connection, ALL
-from time import sleep
 
 
 class QLDAPServer():
@@ -159,18 +155,6 @@ class QLDAPServer():
                 return False
         else:
             self.ldap_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            c = Connection(Server(_ip, port=_port, get_info=ALL), authentication='SIMPLE', user=_username, password=_password, check_names=True, lazy=False, client_strategy='SYNC', raise_exceptions=True)
-            c.open()
-            c.bind()
-        except Exception as e:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('ldap_server', self.ip, self.port, self.logs)

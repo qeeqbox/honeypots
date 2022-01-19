@@ -15,13 +15,11 @@ filterwarnings(action='ignore', module='.*OpenSSL.*')
 
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor
-from redis import StrictRedis
 from twisted.python import log as tlog
 from subprocess import Popen
 from os import path
 from random import randint, uniform
 from time import time
-from socket import socket, AF_INET, SOCK_STREAM
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
 
@@ -90,8 +88,8 @@ class QMemcacheServer():
                     elif _data[0] == b'get':
                         self.transport.write(self.get_key(_data[1]))
                     elif _data[0] == b'set':
-                        name = _data[1]
-                        size = _data[4]
+                        _data[1]
+                        _data[4]
                         value = data.split(b'\r\n')[1]
                         self.transport.write(b'STORED\r\n')
                     else:
@@ -133,17 +131,6 @@ class QMemcacheServer():
                 return False
         else:
             self.memcache_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            _ip = ip or self.ip
-            _port = port or self.port
-            c = socket(AF_INET, SOCK_STREAM)
-            c.connect((_ip, _port))
-            c.send(b'stats\r\n')
-            data, address = c.recvfrom(10000)
-        except BaseException:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('memcache_server', self.ip, self.port, self.logs)

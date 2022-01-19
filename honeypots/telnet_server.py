@@ -16,7 +16,6 @@ filterwarnings(action='ignore', module='.*OpenSSL.*')
 from twisted.conch.telnet import TelnetProtocol, TelnetTransport
 from twisted.internet.protocol import Factory
 from twisted.internet import reactor
-from telnetlib import Telnet as TTelnet
 from twisted.python import log as tlog
 from subprocess import Popen
 from os import path
@@ -125,23 +124,6 @@ class QTelnetServer():
                 return False
         else:
             self.telent_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            _username = _username.encode('utf-8')
-            _password = _password.encode('utf-8')
-            t = TTelnet(_ip, _port)
-            t.read_until(b'login: ')
-            t.write(_username + b'\n')
-            t.read_until(b'Password: ')
-            t.write(_password + b'\n')
-        except Exception as e:
-            print(e)
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('telnet_server', self.ip, self.port, self.logs)

@@ -16,15 +16,13 @@ filterwarnings(action='ignore', module='.*impacket.*')
 
 from logging import StreamHandler, getLogger, DEBUG
 from impacket import smbserver
-from impacket.smbconnection import SMBConnection
 from tempfile import mkdtemp
 from shutil import rmtree
 from impacket.ntlm import compute_lmhash, compute_nthash
-from time import sleep
 from logging import DEBUG, getLogger
 from os import path
 from subprocess import Popen
-from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
+from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
 
 #loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
@@ -122,18 +120,6 @@ class QSMBServer():
                 return False
         else:
             self.smb_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            sleep(2)
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            smb_client = SMBConnection(_ip, _ip, sess_port=_port)
-            smb_client.login(_username, _password)
-        except Exception as e:
-            self.logs.error(['errors', {'server': 'smb_server', 'error': 'write', 'type': 'error -> ' + repr(e)}])
 
     def close_port(self):
         ret = close_port_wrapper('smb_server', self.ip, self.port, self.logs)

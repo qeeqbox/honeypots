@@ -18,7 +18,6 @@ from twisted.internet import reactor
 from twisted.python import log as tlog
 from struct import pack
 from hashlib import sha1
-from mysql.connector import connect as mysqlconnect
 from subprocess import Popen
 from os import path
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
@@ -124,7 +123,7 @@ class QMysqlServer():
                         return string.decode('utf-8', 'ignore')
                     else:
                         return str(string)
-                except Exception as e:
+                except Exception:
                     return string
 
             def connectionMade(self):
@@ -159,7 +158,7 @@ class QMysqlServer():
                             self.transport.write(_q_s.too_many())
                     else:
                         self.transport.loseConnection()
-                except BaseException as e:
+                except BaseException:
                     self.transport.write(_q_s.too_many())
                     self.transport.loseConnection()
 
@@ -197,16 +196,6 @@ class QMysqlServer():
                 return False
         else:
             self.mysql_server_main()
-
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            cnx = mysqlconnect(user=_username, password=_password, host=_ip, port=_port, database='test', connect_timeout=1000)
-        except Exception as e:
-            pass
 
     def close_port(self):
         ret = close_port_wrapper('mysql_server', self.ip, self.port, self.logs)
