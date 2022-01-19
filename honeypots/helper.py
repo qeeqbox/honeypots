@@ -32,6 +32,7 @@ from urllib.parse import urlparse
 old_stderr = sys.stderr
 sys.stderr = open(devnull, 'w')
 
+
 def set_local_vars(self, config):
     try:
         honeypot = None
