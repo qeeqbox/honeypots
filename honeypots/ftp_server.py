@@ -117,6 +117,7 @@ class QFTPServer():
         ret = kill_server_wrapper('ftp_server', self.uuid, self.process)
         return ret
 
+
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:

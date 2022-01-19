@@ -28,7 +28,7 @@ from collections import Mapping
 from urllib.parse import urlparse
 
 #old_stderr = sys.stderr
-#sys.stderr = open(devnull, 'w')  # supress all stderr
+# sys.stderr = open(devnull, 'w')  # supress all stderr
 
 
 def set_local_vars(self, config):
@@ -250,6 +250,7 @@ class CustomHandler(Handler):
         except Exception as e:
             stdout.write(dumps({'error': repr(e), 'logger': repr(record)}, sort_keys=True, cls=ComplexEncoder) + '\n')
         stdout.flush()
+
 
 class postgres_class():
     def __init__(self, host=None, port=None, username=None, password=None, db=None, drop=False, uuid=None):
