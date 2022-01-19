@@ -141,6 +141,8 @@ class QHTTPServer():
 
                     for item, value in dict(request.requestHeaders.getAllRawHeaders()).items():
                         headers.update({check_bytes(item): ','.join(map(check_bytes, value))})
+                    headers.update({'method': check_bytes(request.method)})
+                    headers.update({'uri': check_bytes(request.uri)})
                 except BaseException:
                     pass
 
