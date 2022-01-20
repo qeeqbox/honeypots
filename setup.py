@@ -28,8 +28,8 @@ setup(
         'service_identity==21.1.0',
         'netifaces==0.11.0'
     ],
-    extras_require = {
-        'test': ['redis', 'mysql-connector', 'elasticsearch', 'pymssql','ldap3']
+    extras_require={
+        'test': ['redis', 'mysql-connector', 'elasticsearch', 'pymssql', 'ldap3']
     },
     python_requires='>=3.5'
 )

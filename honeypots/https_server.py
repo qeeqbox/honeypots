@@ -255,6 +255,7 @@ class QHTTPSServer():
         except BaseException:
             pass
 
+
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
