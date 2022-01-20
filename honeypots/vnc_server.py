@@ -163,6 +163,17 @@ class QVNCServer():
         ret = kill_server_wrapper('vnc_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            ip or self.ip
+            port or self.port
+            username or self.username
+            password or self.password
+            #client = vncapi.connect('{}::{}'.format(self.ip, self.port), password=password)
+            # client.captureScreen('screenshot.png')
+            # client.disconnect()
+        except BaseException:
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()

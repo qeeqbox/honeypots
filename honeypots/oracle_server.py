@@ -137,6 +137,18 @@ class QOracleServer():
         ret = kill_server_wrapper('oracle_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from socket import socket, AF_INET, SOCK_STREAM
+            payload = b'\x00\x00\x03\x04\x00\x06\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00E\x00\x01F\xb9\xd9@\x00@\x06\x81\xd6\x7f\x00\x00\x01\x7f\x00\x00\x01\xbf\xce\x06\x13\xacW\xde\xc0Z\xb5\x0cI\x80\x18\x02\x00\xff:\x00\x00\x01\x01\x08\n\x1bdZ^\x1bdZ^\x01\x12\x00\x00\x01\x00\x00\x00\x01>\x01,\x0cA \x00\xff\xff\x7f\x08\x00\x00\x01\x00\x00\xc8\x00J\x00\x00\x14\x00AA\xa7C\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00 \x00\x00 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x01(DESCRIPTION=(CONNECT_DATA=(SERVICE_NAME=xe)(CID=(PROGRAM=linux_1)(HOST=xxxxxxxxxxxxxx)(USER=xxxxxxxxxxxxxx))(CONNECTION_ID=xxxxxxxxxxxxxxxxxxxxxxxx))(ADDRESS=(PROTOCOL=tcp)(HOST=xxxxxxx)(PORT=xxxx)))'
+            _ip = ip or self.ip
+            _port = port or self.port
+            c = socket(AF_INET, SOCK_STREAM)
+            c.connect((_ip, _port))
+            c.send(payload)
+            data, address = c.recvfrom(10000)
+        except BaseException:
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()

@@ -139,6 +139,20 @@ class QSMTPServer():
         ret = kill_server_wrapper('smtp_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from smtplib import SMTP
+            _ip = ip or self.ip
+            _port = port or self.port
+            _username = username or self.username
+            _password = password or self.password
+            s = SMTP(_ip, _port)
+            s.ehlo()
+            s.login(_username, _password)
+            s.sendmail('fromtest', 'totest', 'Nothing')
+            s.quit()
+        except BaseException:
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()

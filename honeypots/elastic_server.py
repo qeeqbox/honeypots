@@ -255,6 +255,17 @@ class QElasticServer():
         ret = kill_server_wrapper('elastic_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from elasticsearch import Elasticsearch
+            _ip = ip or self.ip
+            _port = port or self.port
+            _username = username or self.username
+            _password = password or self.password
+            es = Elasticsearch(['https://{}:{}'.format(_ip, _port)], http_auth=(_username, _password), verify_certs=False)
+            es.search(index='test', body={}, size=99)
+        except Exception as e:
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()

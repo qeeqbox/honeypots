@@ -1,7 +1,7 @@
 from setuptools import setup
 
-with open("README.rst", "r") as fh:
-    long_description = fh.read()
+with open("README.rst", "r") as f:
+    long_description = f.read()
 
 setup(
     name='honeypots',
@@ -9,7 +9,7 @@ setup(
     author_email='gigaqeeq@gmail.com',
     description=r"23 different honeypots in a single pypi package! (dns, ftp, httpproxy, http, https, imap, mysql, pop3, postgres, redis, smb, smtp, socks5, ssh, telnet, vnc, mssql, elastic, ldap, ntp, memcache, snmp, and oracle) ",
     long_description=long_description,
-    version='0.36',
+    version='0.37',
     license="AGPL-3.0",
     url="https://github.com/qeeqbox/honeypots",
     packages=['honeypots'],
@@ -28,5 +28,8 @@ setup(
         'service_identity==21.1.0',
         'netifaces==0.11.0'
     ],
+    extras_require = {
+        'test': ['redis', 'mysql-connector', 'elasticsearch', 'pymssql','ldap3']
+    },
     python_requires='>=3.5'
 )

@@ -205,6 +205,16 @@ class QMysqlServer():
         ret = kill_server_wrapper('mysql_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from mysql.connector import connect as mysqlconnect
+            _ip = ip or self.ip
+            _port = port or self.port
+            _username = username or self.username
+            _password = password or self.password
+            cnx = mysqlconnect(user=_username, password=_password, host=_ip, port=_port, database='test', connect_timeout=1000)
+        except Exception as e:
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()

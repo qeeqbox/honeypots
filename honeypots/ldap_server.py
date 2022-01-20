@@ -164,6 +164,19 @@ class QLDAPServer():
         ret = kill_server_wrapper('ldap_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from ldap3 import Server, Connection, ALL
+            _ip = ip or self.ip
+            _port = port or self.port
+            _username = username or self.username
+            _password = password or self.password
+            c = Connection(Server(_ip, port=_port, get_info=ALL), authentication='SIMPLE', user=_username, password=_password, check_names=True, lazy=False, client_strategy='SYNC', raise_exceptions=True)
+            c.open()
+            c.bind()
+        except Exception as e:
+            pass
+
 
 if __name__ == '__main__':
     parsed = server_arguments()

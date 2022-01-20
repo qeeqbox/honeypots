@@ -146,6 +146,18 @@ class QPOP3Server():
         ret = kill_server_wrapper('pop3_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from poplib import POP3 as poplibPOP3
+            _ip = ip or self.ip
+            _port = port or self.port
+            _username = username or self.username
+            _password = password or self.password
+            pp = poplibPOP3(_ip, _port)
+            pp.user(_username)
+            pp.pass_(_password)
+        except BaseException:
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()

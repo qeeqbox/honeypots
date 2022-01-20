@@ -139,6 +139,15 @@ class QHTTPProxyServer():
         ret = kill_server_wrapper('http_proxy_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, domain=None):
+        try:
+            from requests import get
+            _ip = ip or self.ip
+            _port = port or self.port
+            _domain = domain or 'http://yahoo.com'
+            get(_domain, proxies={'http': 'http://{}:{}'.format(_ip, _port)}).text.encode('ascii', 'ignore')
+        except BaseException:
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()

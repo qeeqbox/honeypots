@@ -146,6 +146,18 @@ class QRedisServer():
         ret = kill_server_wrapper('redis_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from redis import StrictRedis
+            _ip = ip or self.ip
+            _port = port or self.port
+            _username = username or self.username
+            _password = password or self.password
+            r = StrictRedis.from_url('redis://{}:{}@{}:{}/1'.format(_username, _password, _ip, _port))
+            for key in r.scan_iter('user:*'):
+                pass
+        except BaseException:
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()

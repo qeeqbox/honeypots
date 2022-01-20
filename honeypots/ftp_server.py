@@ -117,6 +117,19 @@ class QFTPServer():
         ret = kill_server_wrapper('ftp_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from ftplib import FTP as FFTP
+            _ip = ip or self.ip
+            _port = port or self.port
+            _username = username or self.username
+            _password = password or self.password
+            f = FFTP()
+            f.connect(_ip, _port)
+            f.login(_username, _password)
+        except BaseException:
+            pass
+
 
 if __name__ == '__main__':
     parsed = server_arguments()

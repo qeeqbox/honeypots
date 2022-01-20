@@ -222,6 +222,17 @@ class QHTTPServer():
         ret = kill_server_wrapper('http_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from requests import get, post
+            _ip = ip or self.ip
+            _port = port or self.port
+            _username = username or self.username
+            _password = password or self.password
+            get('http://{}:{}'.format(_ip, _port), verify=False)
+            post('http://{}:{}/login.html'.format(_ip, _port), data={'username': (None, _username), 'password': (None, _password)})
+        except BaseException:
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()

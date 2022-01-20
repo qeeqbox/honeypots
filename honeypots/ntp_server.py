@@ -121,6 +121,17 @@ class QNTPServer():
         ret = kill_server_wrapper('ntp_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from socket import socket, AF_INET, SOCK_DGRAM
+            _ip = ip or self.ip
+            _port = port or self.port
+            c = socket(AF_INET, SOCK_DGRAM)
+            c.sendto(b'\x1b' + 47 * b'\0', (_ip, _port))
+            data, address = c.recvfrom(256)
+            ret_time = unpack('!12I', data)[10] - 2208988800
+        except BaseException:
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()

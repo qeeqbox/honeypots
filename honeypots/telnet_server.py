@@ -133,6 +133,23 @@ class QTelnetServer():
         ret = kill_server_wrapper('telnet_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from telnetlib import Telnet as TTelnet
+            _ip = ip or self.ip
+            _port = port or self.port
+            _username = username or self.username
+            _password = password or self.password
+            _username = _username.encode('utf-8')
+            _password = _password.encode('utf-8')
+            t = TTelnet(_ip, _port)
+            t.read_until(b'login: ')
+            t.write(_username + b'\n')
+            t.read_until(b'Password: ')
+            t.write(_password + b'\n')
+        except Exception as e:
+            print(e)
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()

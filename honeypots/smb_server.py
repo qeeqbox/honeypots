@@ -129,6 +129,18 @@ class QSMBServer():
         ret = kill_server_wrapper('smb_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from impacket.smbconnection import SMBConnection
+            _ip = ip or self.ip
+            _port = port or self.port
+            _username = username or self.username
+            _password = password or self.password
+            smb_client = SMBConnection(_ip, _ip, sess_port=_port)
+            smb_client.login(_username, _password)
+        except Exception as e:
+            self.logs.error(['errors', {'server': 'smb_server', 'error': 'write', 'type': 'error -> ' + repr(e)}])
+
 
 if __name__ == '__main__':
 

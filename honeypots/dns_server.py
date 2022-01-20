@@ -113,6 +113,16 @@ class QDNSServer():
         ret = kill_server_wrapper('dns_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, domain=None):
+        try:
+            from dns.resolver import Resolver
+            res = Resolver(configure=False)
+            res.nameservers = [self.ip]
+            res.port = self.port
+            temp_domain = domain or 'example.org'
+            r = res.query(temp_domain, 'a')
+        except BaseException:
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()

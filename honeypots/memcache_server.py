@@ -140,6 +140,17 @@ class QMemcacheServer():
         ret = kill_server_wrapper('memcache_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from socket import socket, AF_INET, SOCK_STREAM
+            _ip = ip or self.ip
+            _port = port or self.port
+            c = socket(AF_INET, SOCK_STREAM)
+            c.connect((_ip, _port))
+            c.send(b'stats\r\n')
+            data, address = c.recvfrom(10000)
+        except BaseException:
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()

@@ -143,6 +143,18 @@ class QSSHServer():
         ret = kill_server_wrapper('ssh_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from paramiko import SSHClient
+            _ip = ip or self.ip
+            _port = port or self.port
+            _username = username or self.username
+            _password = password or self.password
+            ssh = SSHClient()
+            ssh.set_missing_host_key_policy(AutoAddPolicy())  # if you have default ones, remove them before using this..
+            ssh.connect(_ip, port=_port, username=_username, password=_password)
+        except BaseException:
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()

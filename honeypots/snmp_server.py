@@ -109,6 +109,11 @@ class QSNMPServer():
         ret = kill_server_wrapper('snmp_server', self.uuid, self.process)
         return ret
 
+    def test_server(self, ip=None, port=None, username=None, password=None):
+        try:
+            from socket import socket, AF_INET, SOCK_DGRAM
+        except BaseException:
+            pass
 
 if __name__ == '__main__':
     parsed = server_arguments()
