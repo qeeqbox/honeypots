@@ -24,6 +24,7 @@ from re import compile as rcompile
 from honeypots.helper import server_arguments, setup_logger
 from uuid import uuid4
 
+
 class QBSniffer():
     def __init__(self, filter=None, interface=None, config=''):
         self.current_ip = ifaddresses(interface)[AF_INET][0]['addr'].encode('utf-8')
@@ -60,6 +61,7 @@ class QBSniffer():
 
     def scapy_sniffer_main(self):
         _q_s = self
+
         def capture_logic(packet):
             _layers, hex_payloads, raw_payloads, _fields, _raw, _hex = [], {}, {}, {}, 'None', 'None'
             _layers = list(self.get_layers(packet))
@@ -107,15 +109,18 @@ class QBSniffer():
             stdout.flush()
 
         sniff(filter=self.filter, iface=self.interface, prn=capture_logic)
+
     def run_sniffer(self, process=None):
         if process:
             self.process = Process(name='QSniffer_', target=self.scapy_sniffer_main)
             self.process.start()
         else:
             self.scapy_sniffer_main()
+
     def kill_sniffer(self):
         self.process.terminate()
         self.process.join()
+
 
 if __name__ == '__main__':
     from server_options import server_arguments
