@@ -24,7 +24,6 @@ from re import compile as rcompile
 from honeypots.helper import server_arguments, setup_logger
 from uuid import uuid4
 
-
 class QBSniffer():
     def __init__(self, filter=None, interface=None, config=''):
         self.current_ip = ifaddresses(interface)[AF_INET][0]['addr'].encode('utf-8')
@@ -61,7 +60,6 @@ class QBSniffer():
 
     def scapy_sniffer_main(self):
         _q_s = self
-
         def capture_logic(packet):
             _layers, hex_payloads, raw_payloads, _fields, _raw, _hex = [], {}, {}, {}, 'None', 'None'
             _layers = list(self.get_layers(packet))
@@ -74,54 +72,50 @@ class QBSniffer():
                         if rsearch(self.common, raw_payloads[layer]):
                             _q_s.logs.info(['sniffer', {'action': 'creds_check', 'payload': raw_payloads[layer]}])
                 except Exception as e:
-                    print(e)
-                    _q_s.logs.error({'error': 'capture_logic_1', 'type': 'error -> ' + repr(e)})
+                    _q_s.logs.error(['errors', {'error': 'capture_logic_1', 'type': 'error -> ' + repr(e)}])
 
             try:
                 if _q_s.method == 'ALL':
                     try:
-                        _q_s.logs.info(['sniffer', {'action': 'all', 'src_ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'layers': _layers, 'fields': _fields, 'payload': hex_payloads}])
+                        _q_s.logs.info(['sniffer', {'action': 'all', 'ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'layers': _layers, 'fields': _fields, 'payload': hex_payloads}])
                     except Exception as e:
-                        _q_s.logs.error({'error': 'capture_logic_2', 'type': 'error -> ' + repr(e)})
+                        _q_s.logs.error(['errors', {'error': 'capture_logic_2', 'type': 'error -> ' + repr(e)}])
                 elif _q_s.method == 'TCPUDP':
                     if packet.haslayer('IP') and len(hex_payloads) > 0 and packet['IP'].src != _q_s.current_ip:
                         if packet.haslayer('TCP'):
                             try:
-                                _q_s.logs.info(['sniffer', {'action': 'tcppayload', 'src_ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'src_ip': packet['IP'].src, 'src_port':packet['TCP'].sport, 'dst_ip':packet['IP'].dst, 'dst_port':packet['TCP'].dport, 'raw_payload':raw_payloads, 'payload':hex_payloads}])
+                                _q_s.logs.info(['sniffer', {'action': 'tcppayload', 'ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'src_ip': packet['IP'].src, 'src_port':packet['TCP'].sport, 'dst_ip':packet['IP'].dst, 'dst_port':packet['TCP'].dport, 'raw_payload':raw_payloads, 'payload':hex_payloads}])
                             except Exception as e:
-                                _q_s.logs.error({'error': 'capture_logic_3', 'type': 'error -> ' + repr(e)})
+                                _q_s.logs.error(['errors', {'error': 'capture_logic_3', 'type': 'error -> ' + repr(e)}])
                         elif packet.haslayer('UDP'):
                             try:
-                                _q_s.logs.info(['sniffer', {'action': 'udppayload', 'src_ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'src_ip': packet['IP'].src, 'src_port':packet['UDP'].sport, 'dst_ip':packet['IP'].dst, 'dst_port':packet['UDP'].dport, 'raw_payload':raw_payloads, 'payload':hex_payloads}])
+                                _q_s.logs.info(['sniffer', {'action': 'udppayload', 'ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'src_ip': packet['IP'].src, 'src_port':packet['UDP'].sport, 'dst_ip':packet['IP'].dst, 'dst_port':packet['UDP'].dport, 'raw_payload':raw_payloads, 'payload':hex_payloads}])
                             except Exception as e:
-                                _q_s.logs.error({'error': 'capture_logic_4', 'type': 'error -> ' + repr(e)})
+                                _q_s.logs.error(['errors', {'error': 'capture_logic_4', 'type': 'error -> ' + repr(e)}])
 
                 if packet.haslayer('IP') and packet.haslayer('ICMP') and packet['IP'].src != _q_s.current_ip:
-                    _q_s.logs.info(['sniffer', {'action': 'icmp', 'src_ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'src_ip': packet['IP'].src, 'dst_ip':packet['IP'].dst, 'ICMP_Code':packet['ICMP'].code, 'ICMP_Type':packet['ICMP'].type, 'ICMP_MSG':self.find_ICMP(packet['ICMP'].type, packet['ICMP'].code)}])
+                    _q_s.logs.info(['sniffer', {'action': 'icmp', 'ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'src_ip': packet['IP'].src, 'dst_ip':packet['IP'].dst, 'ICMP_Code':packet['ICMP'].code, 'ICMP_Type':packet['ICMP'].type, 'ICMP_MSG':self.find_ICMP(packet['ICMP'].type, packet['ICMP'].code)}])
 
                 if packet.haslayer('IP') and packet.haslayer('TCP') and packet['IP'].src != _q_s.current_ip:
                     if packet['TCP'].flags == 2:
-                        _q_s.logs.info(['sniffer', {'action': 'tcpscan', 'src_ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'src_ip': packet['IP'].src, 'src_port':packet['TCP'].sport, 'dst_ip':packet['IP'].dst, 'dst_port':packet['TCP'].dport, 'raw_payload':raw_payloads, 'payload':hex_payloads}])
+                        _q_s.logs.info(['sniffer', {'action': 'tcpscan', 'ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'src_ip': packet['IP'].src, 'src_port':packet['TCP'].sport, 'dst_ip':packet['IP'].dst, 'dst_port':packet['TCP'].dport, 'raw_payload':raw_payloads, 'payload':hex_payloads}])
                         send(IP(dst=packet['IP'].src, src=packet['IP'].dst) / TCP(dport=packet['TCP'].sport, sport=packet['TCP'].dport, ack=(packet['TCP'].seq + 1), flags='SA'), verbose=False)
 
             except Exception as e:
-                _q_s.logs.error({'error': 'capture_logic_5', 'type': 'error -> ' + repr(e)})
+                _q_s.logs.error(['errors', {'error': 'capture_logic_5', 'type': 'error -> ' + repr(e)}])
 
             stdout.flush()
 
         sniff(filter=self.filter, iface=self.interface, prn=capture_logic)
-
     def run_sniffer(self, process=None):
         if process:
             self.process = Process(name='QSniffer_', target=self.scapy_sniffer_main)
             self.process.start()
         else:
             self.scapy_sniffer_main()
-
     def kill_sniffer(self):
         self.process.terminate()
         self.process.join()
-
 
 if __name__ == '__main__':
     from server_options import server_arguments

@@ -8,8 +8,8 @@
     "filter": "",
     "interface": "",
     "honeypots": {
-        "ftp": {
-            "port": 21,
+        "http": {
+            "port": 2222,
             "username": "test",
             "password": "test"
         }

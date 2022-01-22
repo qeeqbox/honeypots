@@ -261,13 +261,19 @@ class CustomHandler(Handler):
 
     def emit(self, record):
         try:
-            _record = parse_record(record)
             if 'db' in self.logs:
                 if self.db:
-                    self.db.insert_into_data_safe(record.msg[0], dumps(serialize_object(record.msg[1]), cls=ComplexEncoder))
+                    if isinstance(record.msg, list):
+                        if record.msg[0] == "sniffer" or record.msg[0] == "errors":
+                            self.db.insert_into_data_safe(record.msg[0], dumps(serialize_object(record.msg[1]), cls=ComplexEncoder))
+                    elif isinstance(record.msg, Mapping):
+                        if "server" in record.msg:
+                            self.db.insert_into_data_safe("servers", dumps(serialize_object(record.msg), cls=ComplexEncoder))
             if 'terminal' in self.logs:
+                _record = parse_record(record)
                 stdout.write(dumps(_record.msg, sort_keys=True, cls=ComplexEncoder) + '\n')
             if 'syslog' in self.logs:
+                _record = parse_record(record)
                 stdout.write(dumps(_record.msg, sort_keys=True, cls=ComplexEncoder) + '\n')
         except Exception as e:
             stdout.write(dumps({'error': repr(e), 'logger': repr(record)}, sort_keys=True, cls=ComplexEncoder) + '\n')
