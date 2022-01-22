@@ -61,13 +61,13 @@ class QDNSServer():
         class CustomDNSServerFactory(DNSServerFactory):
             def gotResolverResponse(self, response, protocol, message, address):
                 args = (self, response, protocol, message, address)
-                _q_s.logs.info(['servers', {'server': 'dns_server', 'action': 'connection', 'ip': address[0], 'port':address[1]}])
+                _q_s.logs.info({'server': 'dns_server', 'action': 'connection', 'src_ip': address[0], 'src_port':address[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
                 try:
                     for items in response:
                         for item in items:
-                            _q_s.logs.info(['servers', {'server': 'dns_server', 'action': 'query', 'ip': address[0], 'port':address[1], 'payload':item.payload}])
+                            _q_s.logs.info({'server': 'dns_server', 'action': 'query', 'src_ip': address[0], 'src_port':address[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'payload':item.payload})
                 except Exception as e:
-                    _q_s.logs.error(['errors', {'server': 'dns_server', 'error': 'gotResolverResponse', 'type': 'error -> ' + repr(e)}])
+                    pass
                 return DNSServerFactory.gotResolverResponse(*args)
 
         self.resolver = CustomCilentResolver(servers=self.resolver_addresses)
@@ -94,7 +94,7 @@ class QDNSServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(['servers', {'server': 'dns_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
+            self.logs.info({'server': 'dns_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port})
 
             if status == 'success':
                 return True

@@ -17,7 +17,7 @@ from signal import SIGTERM
 from argparse import ArgumentParser
 from socket import socket, AF_INET, SOCK_STREAM
 from json import JSONEncoder, dumps, load
-from logging import Handler, Formatter, DEBUG, getLogger
+from logging import Handler, Formatter, DEBUG, getLogger, addLevelName, INFO
 from sys import stdout
 from datetime import datetime
 from logging.handlers import RotatingFileHandler, SysLogHandler
@@ -26,12 +26,11 @@ from os import makedirs, path, scandir, devnull
 from psycopg2 import sql, connect
 from time import sleep
 from traceback import format_exc
-from collections import Mapping
+from collections.abc import Mapping
 from urllib.parse import urlparse
 
 old_stderr = sys.stderr
 sys.stderr = open(devnull, 'w')
-
 
 def set_local_vars(self, config):
     try:
@@ -45,11 +44,31 @@ def set_local_vars(self, config):
                 for var in honeypots[honeypot]:
                     if var in vars(self):
                         setattr(self, var, honeypots[honeypot][var])
-                        if var == 'port':
+                        if var == 'src_port':
                             setattr(self, 'auto_disabled', True)
     except BaseException:
         pass
 
+def parse_record(record):
+    timestamp = {"timestamp":datetime.utcnow().isoformat()}
+    good = False
+    try:
+        if "server" in record.msg and record.levelno == INFO:
+            record.msg["protocol"] = record.msg["server"].replace("_server","")
+            del record.msg["server"]
+            record.msg = serialize_object({**timestamp,**record.msg})
+            good = True
+        if not good:
+            record.msg = serialize_object(record.msg)
+    except Exception as e:
+        record.msg =  {'name':record.name,'error': repr(e)}
+    return record
+
+class json_file_formatter(Formatter):
+    def __init__(self):
+        super().__init__()
+    def format(self, record):
+        return super().format(parse_record(record))
 
 def get_running_servers():
     temp_list = []
@@ -99,7 +118,10 @@ def setup_logger(temp_name, config, drop=False):
     elif 'terminal' in logs:
         ret_logs_obj.addHandler(CustomHandler(temp_name, logs))
     if 'file' in logs:
-        formatter = Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s')
+        if 'json' in logs:
+            formatter = json_file_formatter()
+        else:
+            formatter = Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s')
         file_handler = RotatingFileHandler(path.join(logs_location, temp_name), maxBytes=10000, backupCount=10)
         file_handler.setFormatter(formatter)
         ret_logs_obj.addHandler(file_handler)
@@ -193,7 +215,7 @@ def close_port_wrapper(server_name, ip, port, logs):
     if sock.connect_ex((ip, port)) != 0 and ret:
         return True
     else:
-        logs.error(['errors', {'server': server_name, 'error': 'port_open', 'type': 'Port {} still open..'.format(ip)}])
+        logs.error({'server': server_name, 'error': 'port_open', 'type': 'Port {} still open..'.format(ip)})
         return False
 
 
@@ -234,21 +256,14 @@ class CustomHandler(Handler):
 
     def emit(self, record):
         try:
+            _record = parse_record(record)
             if 'db' in self.logs:
                 if self.db:
                     self.db.insert_into_data_safe(record.msg[0], dumps(serialize_object(record.msg[1]), cls=ComplexEncoder))
             if 'terminal' in self.logs:
-                time_now = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-                if record.msg[0] == 'servers':
-                    if 'server' in record.msg[1]:
-                        temp = record.msg[1]
-                        action = record.msg[1]['action']
-                        server = temp['server'].replace('server', '').replace('_', '')
-                        del temp['server']
-                        del temp['action']
-                        stdout.write('[{}] [{}] [{}] -> {}\n'.format(time_now, server, action, dumps(serialize_object(temp), sort_keys=True, cls=ComplexEncoder)))
+                stdout.write(dumps(_record.msg, sort_keys=True, cls=ComplexEncoder) + '\n')
             if 'syslog' in self.logs:
-                stdout.write(dumps(serialize_object(record.msg), sort_keys=True, cls=ComplexEncoder) + '\n')
+                stdout.write(dumps(_record.msg, sort_keys=True, cls=ComplexEncoder) + '\n')
         except Exception as e:
             stdout.write(dumps({'error': repr(e), 'logger': repr(record)}, sort_keys=True, cls=ComplexEncoder) + '\n')
         stdout.flush()
@@ -262,7 +277,7 @@ class postgres_class():
         self.password = password
         self.db = db
         self.uuid = uuid
-        self.mapped_tables = ['errors', 'servers', 'sniffer', 'system']
+        self.mapped_tables =  ['errors', 'servers', 'sniffer', 'system']
         self.wait_until_up()
         if drop:
             self.con = connect(host=self.host, port=self.port, user=self.username, password=self.password)

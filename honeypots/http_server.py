@@ -146,25 +146,27 @@ class QHTTPServer():
                 except BaseException:
                     pass
 
-                _q_s.logs.info(['servers', {'server': 'http_server', 'action': 'connection', 'ip': request.getClientIP(), 'request': headers}])
+                _q_s.logs.info({'server': 'http_server', 'action': 'connection', 'src_ip': request.getHost().host, 'src_port':request.getHost().port, 'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'request': headers})
 
                 if self.server != '':
                     request.responseHeaders.removeHeader('Server')
                     request.responseHeaders.addRawHeader('Server', self.server)
 
+
+                if request.method == b'GET' or request.method == b'POST':
+                    _q_s.logs.info({'server': 'http_server', 'action': request.method.decode(), 'src_ip': request.getHost().host, 'src_port':request.getHost().port, 'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
+
                 if request.method == b'GET':
-                    _q_s.logs.info(['servers', {'server': 'http_server', 'action': 'get', 'ip': request.getClientIP()}])
                     if request.uri == b'/login.html':
                         if _q_s.username != '' and _q_s.password != '':
                             request.responseHeaders.addRawHeader('Content-Type', 'text/html; charset=utf-8')
                             return self.login_file
 
                     request.responseHeaders.addRawHeader('Content-Type', 'text/html; charset=utf-8')
-                    return self.home_file
+                    return self.login_file
 
                 elif request.method == b'POST':
                     self.headers = request.getAllHeaders()
-                    _q_s.logs.info(['servers', {'server': 'http_server', 'action': 'post', 'ip': request.getClientIP()}])
                     if request.uri == b'/login.html' or b'/':
                         if _q_s.username != '' and _q_s.password != '':
                             form = FieldStorage(fp=request.content, headers=self.headers, environ={'REQUEST_METHOD': 'POST', 'CONTENT_TYPE': self.headers[b'content-type'], })
@@ -176,7 +178,7 @@ class QHTTPServer():
                                     username = _q_s.username
                                     password = _q_s.password
                                     status = 'success'
-                                _q_s.logs.info(['servers', {'server': 'http_server', 'action': 'login', 'status': status, 'ip': request.getClientIP(), 'username': username, 'password': password}])
+                                _q_s.logs.info({'server': 'http_server', 'action': 'login', 'status': status, 'src_ip': request.getHost().host, 'src_port':request.getHost().port, 'username': username, 'password': password, 'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
 
                     request.responseHeaders.addRawHeader('Content-Type', 'text/html; charset=utf-8')
                     return self.home_file
@@ -204,7 +206,7 @@ class QHTTPServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(['servers', {'server': 'http_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info({'server': 'http_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'username': self.username, 'password': self.password})
 
             if status == 'success':
                 return True

@@ -60,15 +60,15 @@ class QHTTPProxyServer():
                     _, parsed_request = request_string.split(b'\r\n', 1)
                     headers = BytesParser().parsebytes(parsed_request)
                     host = headers['host'].split(':')
-                    _q_s.logs.info(['servers', {'server': 'http_proxy_server', 'action': 'query', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'payload': host[0]}])
+                    _q_s.logs.info({'server': 'http_proxy_server', 'action': 'query', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'payload': host[0]})
                     # return '127.0.0.1'
                     return dsnquery(host[0], 'A')[0].address
                 except Exception as e:
-                    _q_s.logs.error(['errors', {'server': 'http_proxy_server', 'error': 'resolve_domain', 'type': 'error -> ' + repr(e)}])
+                    pass
                 return None
 
             def dataReceived(self, data):
-                _q_s.logs.info(['servers', {'server': 'http_proxy_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                _q_s.logs.info({'server': 'http_proxy_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
                 try:
                     ip = self.resolve_domain(data)
                     if ip:
@@ -121,7 +121,7 @@ class QHTTPProxyServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(['servers', {'server': 'http_proxy_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
+            self.logs.info({'server': 'http_proxy_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port})
 
             if status == 'success':
                 return True

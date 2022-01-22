@@ -25,10 +25,6 @@ from subprocess import Popen
 from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
 
-#loggers = [logging.getLogger(name) for name in logging.root.manager.loggerDict]
-#print([logging.getLogger(name) for name in logging.root.manager.loggerDict])
-
-
 class QSMBServer():
     def __init__(self, ip=None, port=None, username=None, password=None, folders=None, mocking=False, config=''):
         self.auto_disabled = None
@@ -65,13 +61,13 @@ class QSMBServer():
                 # sys.stdout.flush()
                 try:
                     if 'Incoming connection' in message.strip() or 'AUTHENTICATE_MESSAGE' in message.strip() or 'authenticated successfully' in message.strip():
-                        _q_s.logs.info(['servers', {'server': 'smb_server', 'action': 'connection', 'msg': message.strip()}])
+                        _q_s.logs.info({'server': 'smb_server', 'action': 'connection', 'msg': message.strip()})
                     elif ':4141414141414141:' in message.strip():
                         parsed = message.strip().split(':')
                         if len(parsed) > 2:
-                            _q_s.logs.info(['servers', {'server': 'smb_server', 'action': 'login', 'workstation': parsed[0], 'test':parsed[1]}])
+                            _q_s.logs.info({'server': 'smb_server', 'action': 'login', 'workstation': parsed[0], 'test':parsed[1]})
                 except Exception as e:
-                    _q_s.logs.error(['errors', {'server': 'smb_server', 'error': 'write', 'type': 'error -> ' + repr(e)}])
+                    pass
 
         handler = StreamHandler(Logger())
         getLogger('impacket').addHandler(handler)
@@ -111,7 +107,7 @@ class QSMBServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(['servers', {'server': 'smb_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders)}])
+            self.logs.info({'server': 'smb_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders)})
 
             if status == 'success':
                 return True
@@ -139,7 +135,7 @@ class QSMBServer():
             smb_client = SMBConnection(_ip, _ip, sess_port=_port)
             smb_client.login(_username, _password)
         except Exception as e:
-            self.logs.error(['errors', {'server': 'smb_server', 'error': 'write', 'type': 'error -> ' + repr(e)}])
+            pass
 
 
 if __name__ == '__main__':

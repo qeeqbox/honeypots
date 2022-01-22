@@ -72,7 +72,7 @@ class QPostgresServer():
             def connectionMade(self):
                 self._state = 1
                 self._variables = {}
-                _q_s.logs.info(['servers', {'server': 'postgres_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                _q_s.logs.info({'server': 'postgres_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
 
             def dataReceived(self, data):
                 if self._state == 1:
@@ -92,7 +92,7 @@ class QPostgresServer():
                             username = _q_s.username
                             password = _q_s.password
                             status = 'success'
-                        _q_s.logs.info(['servers', {'server': 'postgres_server', 'action': 'login', 'status': status, 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password}])
+                        _q_s.logs.info({'server': 'postgres_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'username': username, 'password': password})
 
                     self.transport.loseConnection()
                 else:
@@ -124,7 +124,7 @@ class QPostgresServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(['servers', {'server': 'postgres_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info({'server': 'postgres_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'username': self.username, 'password': self.password})
 
             if status == 'success':
                 return True

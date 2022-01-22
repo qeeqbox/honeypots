@@ -54,7 +54,7 @@ class QSOCKS5Server():
                     return str(string)
 
             def handle(self):
-                _q_s.logs.info(['servers', {'server': 'socks5_server', 'action': 'connection', 'ip': self.client_address[0], 'port':self.client_address[1]}])
+                _q_s.logs.info({'server': 'socks5_server', 'action': 'connection', 'src_ip': self.client_address[0], 'src_port':self.client_address[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
                 v, m = unpack('!BB', self.connection.recv(2))
                 if v == 5:
                     if 2 in unpack('!' + 'B' * m, self.connection.recv(m)):
@@ -71,7 +71,7 @@ class QSOCKS5Server():
                                 username = _q_s.username
                                 password = _q_s.password
                                 status = 'success'
-                            _q_s.logs.info(['servers', {'server': 'socks5_server', 'action': 'login', 'status': status, 'ip': self.client_address[0], 'port':self.client_address[1], 'username':username, 'password':password}])
+                            _q_s.logs.info({'server': 'socks5_server', 'action': 'login', 'status': status, 'src_ip': self.client_address[0], 'src_port':self.client_address[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'username':username, 'password':password})
 
                 self.server.close_request(self.request)
 
@@ -81,13 +81,6 @@ class QSOCKS5Server():
         TCPServer.allow_reuse_address = True
         server = ThreadingTCPServer((self.ip, self.port), CustomStreamRequestHandler)
         server.serve_forever()
-
-    def run_server(self, process=False, auto=False):
-        if process:
-            if self.close_port() and self.kill_server():
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
-        else:
-            self.socks5_server_main()
 
     def run_server(self, process=False, auto=False):
         status = 'error'
@@ -106,7 +99,7 @@ class QSOCKS5Server():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(['servers', {'server': 'socks5_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info({'server': 'socks5_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'username': self.username, 'password': self.password})
 
             if status == 'success':
                 return True

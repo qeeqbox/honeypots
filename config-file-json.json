@@ -1,0 +1,17 @@
+{
+    "logs": "file,json",
+    "logs_location": "/home/test/Desktop/logs_1/",
+    "syslog_address":"",
+    "syslog_facility":0,
+    "postgres":"",
+    "db_options":[],
+    "filter": "",
+    "interface": "",
+    "honeypots": {
+        "http": {
+            "port": 80,
+            "username": "test",
+            "password": "test"
+        }
+    }
+}

@@ -129,7 +129,7 @@ class QMysqlServer():
             def connectionMade(self):
                 self._state = 1
                 self.transport.write(_q_s.greeting())
-                _q_s.logs.info(['servers', {'server': 'mysql_server', 'action': 'connection', 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port}])
+                _q_s.logs.info({'server': 'mysql_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port})
 
             def dataReceived(self, data):
                 try:
@@ -150,7 +150,7 @@ class QMysqlServer():
                             else:
                                 ret_access_denied = True
                                 password = ':'.join(hex((c))[2:] for c in data)
-                        _q_s.logs.info(['servers', {'server': 'mysql_server', 'action': 'login', 'status': status, 'ip': self.transport.getPeer().host, 'port': self.transport.getPeer().port, 'username': username, 'password': password}])
+                        _q_s.logs.info({'server': 'mysql_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'username': username, 'password': password})
 
                         if ret_access_denied:
                             self.transport.write(_q_s.access_denied())
@@ -187,7 +187,7 @@ class QMysqlServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(['servers', {'server': 'mysql_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port, 'username': self.username, 'password': self.password}])
+            self.logs.info({'server': 'mysql_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'username': self.username, 'password': self.password})
 
             if status == 'success':
                 return True

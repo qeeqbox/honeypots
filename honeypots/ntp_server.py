@@ -65,7 +65,7 @@ class QNTPServer():
                 mode = 'UnKnown'
                 success = False
                 unpacked = None
-                _q_s.logs.info(['servers', {'server': 'ntp_server', 'action': 'connection', 'ip': addr[0], 'port': addr[1]}])
+                _q_s.logs.info({'server': 'ntp_server', 'action': 'connection', 'src_ip': addr[0], 'src_port': addr[1]})
                 if len(data) == calcsize('!B B B b I I I Q Q Q Q'):
                     version = data[0] >> 3 & 0x7
                     mode = data[0] & 0x7
@@ -77,9 +77,9 @@ class QNTPServer():
                         success = True
 
                 if success:
-                    _q_s.logs.info(['servers', {'server': 'ntp_server', 'action': 'query', 'status': 'success', 'ip': addr[0], 'port': addr[1], 'version': version, 'mode': mode}])
+                    _q_s.logs.info({'server': 'ntp_server', 'action': 'query', 'status': 'success', 'src_ip': addr[0], 'src_port': addr[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'version': version, 'mode': mode})
                 else:
-                    _q_s.logs.info(['servers', {'server': 'ntp_server', 'action': 'query', 'status': 'fail', 'ip': addr[0], 'port': addr[1], 'version': version, 'mode': mode}])
+                    _q_s.logs.info({'server': 'ntp_server', 'action': 'query', 'status': 'fail', 'src_ip': addr[0], 'src_port': addr[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'version': version, 'mode': mode})
 
                 self.transport.loseConnection()
 
@@ -103,7 +103,7 @@ class QNTPServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info(['servers', {'server': 'ntp_server', 'action': 'process', 'status': status, 'ip': self.ip, 'port': self.port}])
+            self.logs.info({'server': 'ntp_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port})
 
             if status == 'success':
                 return True
