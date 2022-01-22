@@ -90,12 +90,12 @@ class QRedisServer():
                         username = _q_s.username
                         password = _q_s.password
                         status = 'success'
-                    _q_s.logs.info({'server': 'redis_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'username': username, 'password': password})
+                    _q_s.logs.info({'server': 'redis_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'username': username, 'password': password})
 
             def connectionMade(self):
                 self._state = 1
                 self._variables = {}
-                _q_s.logs.info({'server': 'redis_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
+                _q_s.logs.info({'server': 'redis_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
 
             def dataReceived(self, data):
                 c, command = self.get_command(data)

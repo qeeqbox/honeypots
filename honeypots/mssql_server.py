@@ -84,7 +84,7 @@ class QMSSQLServer():
 
             def connectionMade(self):
                 self._state = 1
-                _q_s.logs.info({'server': 'mssql_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
+                _q_s.logs.info({'server': 'mssql_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
 
             def dataReceived(self, data):
                 if self._state == 1:
@@ -107,7 +107,7 @@ class QMSSQLServer():
                             username = _q_s.username
                             password = _q_s.password
                             status = 'success'
-                        _q_s.logs.info({'server': 'mssql_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'username': username, 'password': password})
+                        _q_s.logs.info({'server': 'mssql_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'username': username, 'password': password})
 
                         self.transport.write(unhexlify(self.create_payload(token_error_msg=b'Login Failed', error_code=18456)))
                 else:

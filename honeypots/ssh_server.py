@@ -80,13 +80,13 @@ class QSSHServer():
                     username = _q_s.username
                     password = _q_s.password
                     status = 'success'
-                _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'status': status, 'src_ip': self.ip, 'src_port': self.port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'username': username, 'password': password})
+                _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'username': username, 'password': password})
 
         def ConnectionHandle(client, priv):
             try:
                 t = Transport(client)
                 ip, port = client.getpeername()
-                _q_s.logs.info({'server': 'ssh_server', 'action': 'connection', 'src_ip': ip, 'src_port': port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
+                _q_s.logs.info({'server': 'ssh_server', 'action': 'connection', 'src_ip': ip, 'src_port': port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
                 t.local_version = 'SSH-2.0-' + choice(self.random_servers)
                 t.add_server_key(RSAKey(file_obj=StringIO(priv)))
                 t.start_server(server=SSHHandle(ip, port))

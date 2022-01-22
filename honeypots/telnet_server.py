@@ -66,7 +66,7 @@ class QTelnetServer():
                 self._pass = None
                 self.transport.write(b'PC login: ')
                 self._state = b'Username'
-                _q_s.logs.info({'server': 'telnet_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
+                _q_s.logs.info({'server': 'telnet_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
 
             def dataReceived(self, data):
                 data = data.strip()
@@ -83,7 +83,7 @@ class QTelnetServer():
                         username = _q_s.username
                         password = _q_s.password
                         status = 'success'
-                    _q_s.logs.info({'server': 'telnet_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'username': username, 'password': password})
+                    _q_s.logs.info({'server': 'telnet_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'username': username, 'password': password})
                     self.transport.loseConnection()
                 else:
                     self.transport.loseConnection()

@@ -32,6 +32,7 @@ from urllib.parse import urlparse
 old_stderr = sys.stderr
 sys.stderr = open(devnull, 'w')
 
+
 def set_local_vars(self, config):
     try:
         honeypot = None
@@ -49,26 +50,30 @@ def set_local_vars(self, config):
     except BaseException:
         pass
 
+
 def parse_record(record):
-    timestamp = {"timestamp":datetime.utcnow().isoformat()}
+    timestamp = {"timestamp": datetime.utcnow().isoformat()}
     good = False
     try:
         if "server" in record.msg and record.levelno == INFO:
-            record.msg["protocol"] = record.msg["server"].replace("_server","")
+            record.msg["protocol"] = record.msg["server"].replace("_server", "")
             del record.msg["server"]
-            record.msg = serialize_object({**timestamp,**record.msg})
+            record.msg = serialize_object({**timestamp, **record.msg})
             good = True
         if not good:
             record.msg = serialize_object(record.msg)
     except Exception as e:
-        record.msg =  {'name':record.name,'error': repr(e)}
+        record.msg = {'name': record.name, 'error': repr(e)}
     return record
+
 
 class json_file_formatter(Formatter):
     def __init__(self):
         super().__init__()
+
     def format(self, record):
         return super().format(parse_record(record))
+
 
 def get_running_servers():
     temp_list = []
@@ -277,7 +282,7 @@ class postgres_class():
         self.password = password
         self.db = db
         self.uuid = uuid
-        self.mapped_tables =  ['errors', 'servers', 'sniffer', 'system']
+        self.mapped_tables = ['errors', 'servers', 'sniffer', 'system']
         self.wait_until_up()
         if drop:
             self.con = connect(host=self.host, port=self.port, user=self.username, password=self.password)

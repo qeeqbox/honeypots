@@ -61,7 +61,7 @@ class QPOP3Server():
                     return str(string)
 
             def connectionMade(self):
-                _q_s.logs.info({'server': 'pop3_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
+                _q_s.logs.info({'server': 'pop3_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
                 self._user = None
                 if isinstance(_q_s.mocking, bool):
                     if _q_s.mocking == True:
@@ -84,7 +84,7 @@ class QPOP3Server():
                         username = _q_s.username
                         password = _q_s.password
                         status = 'success'
-                    _q_s.logs.info({'server': 'pop3_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'username': username, 'password': password})
+                    _q_s.logs.info({'server': 'pop3_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'username': username, 'password': password})
                     self.failResponse('Authentication failed')
                 else:
                     self.failResponse('USER first, then PASS')

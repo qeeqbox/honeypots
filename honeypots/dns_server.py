@@ -61,11 +61,11 @@ class QDNSServer():
         class CustomDNSServerFactory(DNSServerFactory):
             def gotResolverResponse(self, response, protocol, message, address):
                 args = (self, response, protocol, message, address)
-                _q_s.logs.info({'server': 'dns_server', 'action': 'connection', 'src_ip': address[0], 'src_port':address[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
+                _q_s.logs.info({'server': 'dns_server', 'action': 'connection', 'src_ip': address[0], 'src_port': address[1], 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
                 try:
                     for items in response:
                         for item in items:
-                            _q_s.logs.info({'server': 'dns_server', 'action': 'query', 'src_ip': address[0], 'src_port':address[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'payload':item.payload})
+                            _q_s.logs.info({'server': 'dns_server', 'action': 'query', 'src_ip': address[0], 'src_port': address[1], 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'payload': item.payload})
                 except Exception as e:
                     pass
                 return DNSServerFactory.gotResolverResponse(*args)

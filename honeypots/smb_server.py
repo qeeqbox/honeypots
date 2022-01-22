@@ -25,6 +25,7 @@ from subprocess import Popen
 from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
 
+
 class QSMBServer():
     def __init__(self, ip=None, port=None, username=None, password=None, folders=None, mocking=False, config=''):
         self.auto_disabled = None
@@ -65,7 +66,7 @@ class QSMBServer():
                     elif ':4141414141414141:' in message.strip():
                         parsed = message.strip().split(':')
                         if len(parsed) > 2:
-                            _q_s.logs.info({'server': 'smb_server', 'action': 'login', 'workstation': parsed[0], 'test':parsed[1]})
+                            _q_s.logs.info({'server': 'smb_server', 'action': 'login', 'workstation': parsed[0], 'test': parsed[1]})
                 except Exception as e:
                     pass
 

@@ -165,14 +165,14 @@ class QHTTPSServer():
                 except BaseException:
                     pass
 
-                _q_s.logs.info({'server': 'https_server', 'action': 'connection', 'src_ip': request.getHost().host, 'src_port':request.getHost().port, 'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'request': headers})
+                _q_s.logs.info({'server': 'https_server', 'action': 'connection', 'src_ip': request.getHost().host, 'src_port': request.getHost().port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'request': headers})
 
                 if self.server != '':
                     request.responseHeaders.removeHeader('Server')
                     request.responseHeaders.addRawHeader('Server', self.server)
 
                 if request.method == b'GET' or request.method == b'POST':
-                    _q_s.logs.info({'server': 'https_server', 'action': request.method.decode(), 'src_ip': request.getHost().host, 'src_port':request.getHost().port, 'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
+                    _q_s.logs.info({'server': 'https_server', 'action': request.method.decode(), 'src_ip': request.getHost().host, 'src_port': request.getHost().port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
 
                 if request.method == b'GET':
                     if request.uri == b'/login.html':
@@ -196,7 +196,7 @@ class QHTTPSServer():
                                     username = _q_s.username
                                     password = _q_s.password
                                     status = 'success'
-                                _q_s.logs.info({'server': 'https_server', 'action': 'login', 'status': status, 'src_ip': request.getHost().host, 'src_port':request.getHost().port, 'username': username, 'password': password, 'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
+                                _q_s.logs.info({'server': 'https_server', 'action': 'login', 'status': status, 'src_ip': request.getHost().host, 'src_port': request.getHost().port, 'username': username, 'password': password, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
 
                     request.responseHeaders.addRawHeader('Content-Type', 'text/html; charset=utf-8')
                     return self.home_file

@@ -56,7 +56,7 @@ class QSMTPServer():
                     return str(string)
 
             def smtp_EHLO(self, arg):
-                _q_s.logs.info({'server': 'smtp_server', 'action': 'connection', 'src_ip': self.addr[0], 'src_port':self.addr[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
+                _q_s.logs.info({'server': 'smtp_server', 'action': 'connection', 'src_ip': self.addr[0], 'src_port': self.addr[1], 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
                 if not arg:
                     self.push('501 Syntax: HELO hostname')
                 if self._SMTPChannel__greeting:
@@ -79,7 +79,7 @@ class QSMTPServer():
                             username = _q_s.username
                             password = _q_s.password
                             status = 'success'
-                        _q_s.logs.info({'server': 'smtp_server', 'action': 'login', 'status': status, 'src_ip': self.addr[0], 'src_port':self.addr[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'username':username, 'password':password})
+                        _q_s.logs.info({'server': 'smtp_server', 'action': 'login', 'status': status, 'src_ip': self.addr[0], 'src_port': self.addr[1], 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'username': username, 'password': password})
 
                 except Exception as e:
                     pass

@@ -54,7 +54,7 @@ class QSOCKS5Server():
                     return str(string)
 
             def handle(self):
-                _q_s.logs.info({'server': 'socks5_server', 'action': 'connection', 'src_ip': self.client_address[0], 'src_port':self.client_address[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
+                _q_s.logs.info({'server': 'socks5_server', 'action': 'connection', 'src_ip': self.client_address[0], 'src_port': self.client_address[1], 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
                 v, m = unpack('!BB', self.connection.recv(2))
                 if v == 5:
                     if 2 in unpack('!' + 'B' * m, self.connection.recv(m)):
@@ -71,7 +71,7 @@ class QSOCKS5Server():
                                 username = _q_s.username
                                 password = _q_s.password
                                 status = 'success'
-                            _q_s.logs.info({'server': 'socks5_server', 'action': 'login', 'status': status, 'src_ip': self.client_address[0], 'src_port':self.client_address[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'username':username, 'password':password})
+                            _q_s.logs.info({'server': 'socks5_server', 'action': 'login', 'status': status, 'src_ip': self.client_address[0], 'src_port': self.client_address[1], 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'username': username, 'password': password})
 
                 self.server.close_request(self.request)
 

@@ -97,7 +97,7 @@ class QElasticServer():
                 except Exception:
                     pass
 
-                _q_s.logs.info({'server': 'elastic_server', 'action': 'dump', 'line': check_bytes(self.raw_requestline), 'src_ip': self.client_address[0],'src_port': self.client_address[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'headers':headers})
+                _q_s.logs.info({'server': 'elastic_server', 'action': 'dump', 'line': check_bytes(self.raw_requestline), 'src_ip': self.client_address[0], 'src_port': self.client_address[1], 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'headers': headers})
                 return headers
 
             def _remove_headers(self, headers):
@@ -151,12 +151,12 @@ class QElasticServer():
 
                 key = self.server.get_auth_key()
                 if self.headers.get('Authorization') is None:
-                    _q_s.logs.info({'server': 'elastic_server', 'action': 'login', 'status': 'failed', 'src_ip': self.client_address[0],'src_port': self.client_address[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'username': username, 'password':password})
+                    _q_s.logs.info({'server': 'elastic_server', 'action': 'login', 'status': 'failed', 'src_ip': self.client_address[0], 'src_port': self.client_address[1], 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'username': username, 'password': password})
                     auth_paylaod = bytes(dumps({'error': {'root_cause': [{'type': 'security_exception', 'reason': 'unable to authenticate user [{}] for REST request [/]'.format(username), 'header': {'WWW-Authenticate': 'Basic realm=\"security\" charset=\"UTF-8\"'}}], 'type': 'security_exception', 'reason': 'unable to authenticate user [{}] for REST request [/]'.format(username), 'header': {'WWW-Authenticate': 'Basic realm=\"security\" charset=\"UTF-8\"'}}, 'status': 401}), 'utf-8')
                     self.wfile.write(self._set_response_gzip_auth(auth_paylaod, 401))
                 elif self.headers.get('Authorization') == 'Basic ' + str(key):
                     extracted = ''
-                    _q_s.logs.info({'server': 'elastic_server', 'action': 'login', 'status': 'success', 'src_ip': self.client_address[0],'src_port': self.client_address[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'username': _q_s.username, 'password':_q_s.password})
+                    _q_s.logs.info({'server': 'elastic_server', 'action': 'login', 'status': 'success', 'src_ip': self.client_address[0], 'src_port': self.client_address[1], 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'username': _q_s.username, 'password': _q_s.password})
                     try:
                         extracted = urlparse(self.path).path
                     except BaseException:
@@ -182,7 +182,7 @@ class QElasticServer():
                     authorization_string = self.headers.get('Authorization').split(' ')
                     basic = b64decode(authorization_string[1]).decode('utf-8')
                     username, password = basic.split(':')
-                    _q_s.logs.info({'server': 'elastic_server', 'action': 'login', 'status': 'failed', 'src_ip': self.client_address[0],'src_port': self.client_address[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port, 'username': username, 'password':password})
+                    _q_s.logs.info({'server': 'elastic_server', 'action': 'login', 'status': 'failed', 'src_ip': self.client_address[0], 'src_port': self.client_address[1], 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'username': username, 'password': password})
                     auth_paylaod = bytes(dumps({'error': {'root_cause': [{'type': 'security_exception', 'reason': 'missing authentication credentials for REST request [/]', 'header': {'WWW-Authenticate': 'Basic realm=\"security\" charset=\"UTF-8\"'}}], 'type': 'security_exception', 'reason': 'missing authentication credentials for REST request [/]', 'header': {'WWW-Authenticate': 'Basic realm=\"security\" charset=\"UTF-8\"'}}, 'status': 401}), 'utf-8')
                     self.wfile.write(self._set_response_gzip_auth(auth_paylaod, 401))
 
@@ -198,7 +198,7 @@ class QElasticServer():
                 return
 
             def handle_one_request(self):
-                _q_s.logs.info({'server': 'elastic_server', 'action': 'connection', 'src_ip': self.client_address[0],'src_port': self.client_address[1],'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
+                _q_s.logs.info({'server': 'elastic_server', 'action': 'connection', 'src_ip': self.client_address[0], 'src_port': self.client_address[1], 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
                 return SimpleHTTPRequestHandler.handle_one_request(self)
 
         class CustomElasticServer(ThreadingHTTPServer):

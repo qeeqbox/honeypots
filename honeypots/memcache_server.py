@@ -78,7 +78,7 @@ class QMemcacheServer():
                 return ret
 
             def connectionMade(self):
-                _q_s.logs.info({'server': 'memcache_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
+                _q_s.logs.info({'server': 'memcache_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
 
             def dataReceived(self, data):
                 try:
@@ -95,7 +95,7 @@ class QMemcacheServer():
                     else:
                         self.transport.write(b'ERROR\r\n')
                     if _data[0] != b'':
-                        _q_s.logs.info({'server': 'memcache_server', 'action': _data[0].decode(), 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port,'dst_ip':_q_s.ip, 'dst_port':_q_s.port})
+                        _q_s.logs.info({'server': 'memcache_server', 'action': _data[0].decode(), 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
                 except BaseException:
                     pass
                 self.transport.loseConnection()
