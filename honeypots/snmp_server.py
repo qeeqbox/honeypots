@@ -111,7 +111,7 @@ class QSNMPServer():
 
     def test_server(self, ip=None, port=None, username=None, password=None):
         try:
-            from pysnmp.hlapi import *
+            from pysnmp.hlapi import (getCmd, SnmpEngine, CommunityData, UdpTransportTarget, ContextData, ObjectType, ObjectIdentity,)
             g = getCmd(SnmpEngine(), CommunityData('public'), UdpTransportTarget(('0.0.0.0', 33671)), ContextData(), ObjectType(ObjectIdentity('1.3.6.1.4.1.9.9.618.1.4.1.0')))
             errorIndication, errorStatus, errorIndex, varBinds = next(g)
         except BaseException:
