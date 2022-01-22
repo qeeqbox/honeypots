@@ -29,7 +29,7 @@ setup(
         'netifaces==0.11.0'
     ],
     extras_require={
-        'test': ['redis', 'mysql-connector', 'elasticsearch', 'pymssql', 'ldap3','pysnmp']
+        'test': ['redis', 'mysql-connector', 'elasticsearch', 'pymssql', 'ldap3', 'pysnmp']
     },
     python_requires='>=3.5'
 )
