@@ -36,10 +36,10 @@ class QTelnetServer():
         self.password = None
         self.config = config
         if config:
-            self.logs = setup_logger(self.uuid, config)
+            self.logs = setup_logger(__class__.__name__, self.uuid, config)
             set_local_vars(self, config)
         else:
-            self.logs = setup_logger(self.uuid, None)
+            self.logs = setup_logger(__class__.__name__, self.uuid, None)
         self.ip = ip or self.ip or '0.0.0.0'
         self.port = port or self.port or 23
         self.username = username or self.username or 'test'
@@ -66,7 +66,7 @@ class QTelnetServer():
                 self._pass = None
                 self.transport.write(b'PC login: ')
                 self._state = b'Username'
-                _q_s.logs.info({'server': 'telnet_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
+                _q_s.logs.info({'server': 'telnet_server', 'action': 'connection', 'dest_ip': self.transport.getPeer().host, 'dest_port': self.transport.getPeer().port, 'src_ip': _q_s.ip, 'src_port': _q_s.port})
 
             def dataReceived(self, data):
                 data = data.strip()
@@ -83,7 +83,7 @@ class QTelnetServer():
                         username = _q_s.username
                         password = _q_s.password
                         status = 'success'
-                    _q_s.logs.info({'server': 'telnet_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'username': username, 'password': password})
+                    _q_s.logs.info({'server': 'telnet_server', 'action': 'login', 'status': status, 'dest_ip': self.transport.getPeer().host, 'dest_port': self.transport.getPeer().port, 'src_ip': _q_s.ip, 'src_port': _q_s.port, 'username': username, 'password': password})
                     self.transport.loseConnection()
                 else:
                     self.transport.loseConnection()
@@ -115,7 +115,7 @@ class QTelnetServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'telnet_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'username': self.username, 'password': self.password})
+            self.logs.info({'server': 'telnet_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'username': self.username, 'password': self.password})
 
             if status == 'success':
                 return True

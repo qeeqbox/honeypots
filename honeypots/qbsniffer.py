@@ -40,9 +40,9 @@ class QBSniffer():
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
         self.config = config
         if config:
-            self.logs = setup_logger(self.uuid, config)
+            self.logs = setup_logger(__class__.__name__, self.uuid, config)
         else:
-            self.logs = setup_logger(self.uuid, None)
+            self.logs = setup_logger(__class__.__name__, self.uuid, None)
 
     def find_ICMP(self, x1, x2):
         for _ in self.ICMP_codes:

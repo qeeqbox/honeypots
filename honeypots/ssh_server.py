@@ -37,10 +37,10 @@ class QSSHServer():
         self.password = None
         self.config = config
         if config:
-            self.logs = setup_logger(self.uuid, config)
+            self.logs = setup_logger(__class__.__name__, self.uuid, config)
             set_local_vars(self, config)
         else:
-            self.logs = setup_logger(self.uuid, None)
+            self.logs = setup_logger(__class__.__name__, self.uuid, None)
         self.ip = ip or self.ip or '0.0.0.0'
         self.port = port or self.port or 22
         self.username = username or self.username or 'test'
@@ -80,13 +80,13 @@ class QSSHServer():
                     username = _q_s.username
                     password = _q_s.password
                     status = 'success'
-                _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'username': username, 'password': password})
+                _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'src_ip': _q_s.ip, 'src_port': _q_s.port, 'username': username, 'password': password})
 
         def ConnectionHandle(client, priv):
             try:
                 t = Transport(client)
                 ip, port = client.getpeername()
-                _q_s.logs.info({'server': 'ssh_server', 'action': 'connection', 'src_ip': ip, 'src_port': port, 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
+                _q_s.logs.info({'server': 'ssh_server', 'action': 'connection', 'dest_ip': ip, 'dest_port': port, 'src_ip': _q_s.ip, 'src_port': _q_s.port})
                 t.local_version = 'SSH-2.0-' + choice(self.random_servers)
                 t.add_server_key(RSAKey(file_obj=StringIO(priv)))
                 t.start_server(server=SSHHandle(ip, port))
@@ -125,7 +125,7 @@ class QSSHServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'ssh_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'username': self.username, 'password': self.password})
+            self.logs.info({'server': 'ssh_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'username': self.username, 'password': self.password})
 
             if status == 'success':
                 return True

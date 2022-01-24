@@ -11,7 +11,6 @@ from signal import signal, alarm, SIGALRM, SIG_IGN, SIGTERM, SIGINT, SIGTSTP
 from time import sleep
 from functools import wraps
 
-
 class SignalFence:
     def __init__(self, signals_to_listen_on, interval=1):
         self.fence_up = True
@@ -101,6 +100,7 @@ def main_logic():
     ARG_PARSER_SETUP.add_argument('--setup', help='target honeypot E.g. ssh or you can have multiple E.g ssh,http,https', metavar='', default='')
     ARG_PARSER_SETUP.add_argument('--list', action='store_true', help='list all available honeypots')
     ARG_PARSER_SETUP.add_argument('--kill', action='store_true', help='kill all honeypots')
+    ARG_PARSER_SETUP.add_argument('--verbose', action='store_true', help='Print error msgs')
     ARG_PARSER_OPTIONAL = ARG_PARSER.add_argument_group('Optional')
     ARG_PARSER_OPTIONAL.add_argument('--termination-strategy', help='Determines the strategy to terminate by', default='input', choices=['input', 'signal'])
     ARG_PARSER_OPTIONAL.add_argument('--ip', help='Override the IP', metavar='', default='')
@@ -119,20 +119,20 @@ def main_logic():
         with open(ARGV.config) as f:
             try:
                 config_data = load(f)
-            except BaseException:
-                print('[!] Unable to load or parse config.json file')
+            except Exception as e:
+                print('[!] Unable to load or parse config.json file',e)
                 exit()
             if 'db' in config_data['logs']:
                 uuid = 'honeypotslogger' + '_' + 'main' + '_' + str(uuid4())[:8]
                 if 'db_options' in config_data:
                     if 'drop' in config_data['db_options']:
                         print('[x] Setup Logger {} with a db, drop is on'.format(uuid))
-                        logs = setup_logger(uuid, ARGV.config, True)
+                        logs = setup_logger(__class__.__name__uuid, ARGV.config, True)
                     else:
                         print('[x] Setup Logger {} with a db, drop is off'.format(uuid))
-                        logs = setup_logger(uuid, ARGV.config, False)
+                        logs = setup_logger(__class__.__name__uuid, ARGV.config, False)
                 else:
-                    logs = setup_logger(uuid, ARGV.config, True)
+                    logs = setup_logger(__class__.__name__uuid, ARGV.config, True)
     if ARGV.list:
         list_all_honeypots()
     elif ARGV.kill:
@@ -149,16 +149,16 @@ def main_logic():
                             print('[x] Your IP: {}'.format(ifaddresses(config_data['interface'])[AF_INET][0]['addr']))
                             print('[x] Your MAC: {}'.format(ifaddresses(config_data['interface'])[AF_LINK][0]['addr']))
                         else:
-                            raise Exception()
-                    except BaseException:
-                        print('[!] Unable to detect IP or MAC for [{}] interface, current interfaces are [{}]'.format(config_data['interface'], current_interfaces))
+                            exit()
+                    except Exception as e:
+                        print('[!] Unable to detect IP or MAC for [{}] interface, current interfaces are [{}]'.format(config_data['interface'], current_interfaces),e)
                         exit()
                     if ARGV.iptables:
                         try:
                             print('[x] Fixing iptables')
                             Popen('iptables -A OUTPUT -p tcp -m tcp --tcp-flags RST RST -j DROP', shell=True)
-                        except BaseException:
-                            pass
+                        except Exception as e:
+                            print(e)
                     print('[x] Wait for 10 seconds..')
                     stdout.flush()
                     sleep(2)
@@ -217,7 +217,7 @@ def main_logic():
                             _servers[server.__class__.__name__] = {'memory': Process(server.process.pid).memory_percent(), 'cpu': Process(server.process.pid).cpu_percent()}
                         logs.info(['system', _servers])
                     except Exception as e:
-                        pass
+                        print(e)
                     sleep(20)
             else:
                 if len(temp_honeypots) > 0:
@@ -225,8 +225,8 @@ def main_logic():
                         try:
                             print('[x] Killing {} tester'.format(server.__class__.__name__))
                             server.kill_server()
-                        except BaseException:
-                            pass
+                        except Exception as e:
+                            print(e)
                     print('[x] Please wait few seconds')
                     sleep(5)
     elif ARGV.setup != '':
@@ -307,7 +307,6 @@ def main_logic():
                     server[0].kill_server()
                 except Exception as e:
                     print(e)
-                    pass
             print('[x] Please wait few seconds')
             sleep(5)
 

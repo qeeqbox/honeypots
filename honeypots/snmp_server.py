@@ -35,10 +35,10 @@ class QSNMPServer():
         self.username = None
         self.password = None
         if config:
-            self.logs = setup_logger(self.uuid, config)
+            self.logs = setup_logger(__class__.__name__, self.uuid, config)
             set_local_vars(self, config)
         else:
-            self.logs = setup_logger(self.uuid, None)
+            self.logs = setup_logger(__class__.__name__, self.uuid, None)
         self.ip = ip or self.ip or '0.0.0.0'
         self.port = port or self.port or 161
         self.username = username or self.username or 'test'
@@ -63,10 +63,10 @@ class QSNMPServer():
                 return version, community, oids
 
             def datagramReceived(self, data, addr):
-                _q_s.logs.info({'server': 'snmp_server', 'action': 'connection', 'status': 'fail', 'src_ip': addr[0], 'src_port': addr[1], 'dst_ip': _q_s.ip, 'dst_port': _q_s.port})
+                _q_s.logs.info({'server': 'snmp_server', 'action': 'connection', 'status': 'fail', 'dest_ip': addr[0], 'dest_port': addr[1], 'src_ip': _q_s.ip, 'src_port': _q_s.port})
                 version, community, oids = self.parse_snmp(data)
                 if version or community or oids:
-                    _q_s.logs.info({'server': 'snmp_server', 'action': 'query', 'status': 'success', 'src_ip': addr[0], 'src_port': addr[1], 'dst_ip': _q_s.ip, 'dst_port': _q_s.port, 'version': version, 'community': community, 'oids': oids})
+                    _q_s.logs.info({'server': 'snmp_server', 'action': 'query', 'status': 'success', 'dest_ip': addr[0], 'dest_port': addr[1], 'src_ip': _q_s.ip, 'src_port': _q_s.port, 'version': version, 'community': community, 'oids': oids})
                     self.transport.write('Error', addr)
 
                 self.transport.loseConnection()
@@ -91,7 +91,7 @@ class QSNMPServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'snmp_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port})
+            self.logs.info({'server': 'snmp_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port})
 
             if status == 'success':
                 return True

@@ -37,10 +37,10 @@ class QMysqlServer():
         self.username = None
         self.password = None
         if config:
-            self.logs = setup_logger(self.uuid, config)
+            self.logs = setup_logger(__class__.__name__, self.uuid, config)
             set_local_vars(self, config)
         else:
-            self.logs = setup_logger(self.uuid, None)
+            self.logs = setup_logger(__class__.__name__, self.uuid, None)
         self.ip = ip or self.ip or '0.0.0.0'
         self.port = port or self.port or 3306
         self.username = username or self.username or 'test'
@@ -129,7 +129,7 @@ class QMysqlServer():
             def connectionMade(self):
                 self._state = 1
                 self.transport.write(_q_s.greeting())
-                _q_s.logs.info({'server': 'mysql_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port})
+                _q_s.logs.info({'server': 'mysql_server', 'action': 'connection', 'dest_ip': self.transport.getPeer().host, 'dest_port': self.transport.getPeer().port})
 
             def dataReceived(self, data):
                 try:
@@ -150,7 +150,7 @@ class QMysqlServer():
                             else:
                                 ret_access_denied = True
                                 password = ':'.join(hex((c))[2:] for c in data)
-                        _q_s.logs.info({'server': 'mysql_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'username': username, 'password': password})
+                        _q_s.logs.info({'server': 'mysql_server', 'action': 'login', 'status': status, 'dest_ip': self.transport.getPeer().host, 'dest_port': self.transport.getPeer().port, 'username': username, 'password': password})
 
                         if ret_access_denied:
                             self.transport.write(_q_s.access_denied())
@@ -187,7 +187,7 @@ class QMysqlServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'mysql_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'username': self.username, 'password': self.password})
+            self.logs.info({'server': 'mysql_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'username': self.username, 'password': self.password})
 
             if status == 'success':
                 return True

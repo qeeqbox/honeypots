@@ -32,7 +32,6 @@ from urllib.parse import urlparse
 old_stderr = sys.stderr
 sys.stderr = open(devnull, 'w')
 
-
 def set_local_vars(self, config):
     try:
         honeypot = None
@@ -45,11 +44,10 @@ def set_local_vars(self, config):
                 for var in honeypots[honeypot]:
                     if var in vars(self):
                         setattr(self, var, honeypots[honeypot][var])
-                        if var == 'src_port':
+                        if var == 'port':
                             setattr(self, 'auto_disabled', True)
-    except BaseException:
-        pass
-
+    except Exception as e:
+        print(e)
 
 def parse_record(record):
     timestamp = {"timestamp": datetime.utcnow().isoformat()}
@@ -95,7 +93,7 @@ def disable_logger(logger_type, object):
         object.startLogging(open(temp_name, 'w'), setStdout=False)
 
 
-def setup_logger(temp_name, config, drop=False):
+def setup_logger(name, temp_name, config, drop=False):
     logs = 'terminal'
     logs_location = ''
     syslog_address = ''
@@ -123,11 +121,26 @@ def setup_logger(temp_name, config, drop=False):
     elif 'terminal' in logs:
         ret_logs_obj.addHandler(CustomHandler(temp_name, logs))
     if 'file' in logs:
+        max_bytes = 10000
+        backup_count = 10
+        try:
+            if config_data != None:
+                if "honeypots" in config_data:
+                    temp_server_name = name[1:].lower().replace('server', '')
+                    if temp_server_name in config_data["honeypots"]:
+                        if "log_file_name" in config_data["honeypots"][temp_server_name]:
+                            temp_name = config_data["honeypots"][temp_server_name]["log_file_name"]
+                        if "max_bytes" in config_data["honeypots"][temp_server_name]:
+                            max_bytes = config_data["honeypots"][temp_server_name]["max_bytes"]
+                        if "backup_count" in config_data["honeypots"][temp_server_name]:
+                            backup_count = config_data["honeypots"][temp_server_name]["backup_count"]
+        except Exception as e:
+            print(e)
         if 'json' in logs:
             formatter = json_file_formatter()
         else:
             formatter = Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s')
-        file_handler = RotatingFileHandler(path.join(logs_location, temp_name), maxBytes=10000, backupCount=10)
+        file_handler = RotatingFileHandler(path.join(logs_location, temp_name), maxBytes=max_bytes, backupCount=backup_count)
         file_handler.setFormatter(formatter)
         ret_logs_obj.addHandler(file_handler)
     if 'syslog' in logs:
