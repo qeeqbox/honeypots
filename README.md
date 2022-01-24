@@ -44,23 +44,6 @@ python3 -m honeypots --setup imap:143,mysql:3306,redis:6379
 
 honeypot, or multiple honeypots separated by comma or word `all`
 
-```
-python3 -m honeypots --setup ssh --config config.json
-
-#config.json
-{
-  "logs": "file,terminal,json",
-  "logs_location": "/var/log/honeypots/",
-  "syslog_address": "",
-  "syslog_facility": 0,
-  "postgres": "",
-  "db_options": [],
-  "filter": "",
-  "interface": "",
-  "honeypots": {}
-}
-```
-
 ## Usage Example - Custom configure
 
 honeypot, or multiple honeypots in a dict
