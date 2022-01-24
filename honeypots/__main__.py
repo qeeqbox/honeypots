@@ -11,6 +11,7 @@ from signal import signal, alarm, SIGALRM, SIG_IGN, SIGTERM, SIGINT, SIGTSTP
 from time import sleep
 from functools import wraps
 
+
 class SignalFence:
     def __init__(self, signals_to_listen_on, interval=1):
         self.fence_up = True
@@ -120,7 +121,7 @@ def main_logic():
             try:
                 config_data = load(f)
             except Exception as e:
-                print('[!] Unable to load or parse config.json file',e)
+                print('[!] Unable to load or parse config.json file', e)
                 exit()
             if 'db' in config_data['logs']:
                 uuid = 'honeypotslogger' + '_' + 'main' + '_' + str(uuid4())[:8]
@@ -151,7 +152,7 @@ def main_logic():
                         else:
                             exit()
                     except Exception as e:
-                        print('[!] Unable to detect IP or MAC for [{}] interface, current interfaces are [{}]'.format(config_data['interface'], current_interfaces),e)
+                        print('[!] Unable to detect IP or MAC for [{}] interface, current interfaces are [{}]'.format(config_data['interface'], current_interfaces), e)
                         exit()
                     if ARGV.iptables:
                         try:
