@@ -11,7 +11,6 @@ from signal import signal, alarm, SIGALRM, SIG_IGN, SIGTERM, SIGINT, SIGTSTP
 from time import sleep
 from functools import wraps
 
-
 class SignalFence:
     def __init__(self, signals_to_listen_on, interval=1):
         self.fence_up = True
@@ -121,19 +120,19 @@ def main_logic():
             try:
                 config_data = load(f)
             except Exception as e:
-                print('[!] Unable to load or parse config.json file', e)
+                print('[!] Unable to load or parse config.json file',e)
                 exit()
             if 'db' in config_data['logs']:
                 uuid = 'honeypotslogger' + '_' + 'main' + '_' + str(uuid4())[:8]
                 if 'db_options' in config_data:
                     if 'drop' in config_data['db_options']:
                         print('[x] Setup Logger {} with a db, drop is on'.format(uuid))
-                        logs = setup_logger(__class__.__name__uuid, ARGV.config, True)
+                        logs = setup_logger(main, uuid, ARGV.config, True)
                     else:
                         print('[x] Setup Logger {} with a db, drop is off'.format(uuid))
-                        logs = setup_logger(__class__.__name__uuid, ARGV.config, False)
+                        logs = setup_logger(main, uuid, ARGV.config, False)
                 else:
-                    logs = setup_logger(__class__.__name__uuid, ARGV.config, True)
+                    logs = setup_logger(main, uuid, ARGV.config, True)
     if ARGV.list:
         list_all_honeypots()
     elif ARGV.kill:
@@ -152,7 +151,7 @@ def main_logic():
                         else:
                             exit()
                     except Exception as e:
-                        print('[!] Unable to detect IP or MAC for [{}] interface, current interfaces are [{}]'.format(config_data['interface'], current_interfaces), e)
+                        print('[!] Unable to detect IP or MAC for [{}] interface, current interfaces are [{}]'.format(config_data['interface'], current_interfaces),e)
                         exit()
                     if ARGV.iptables:
                         try:
