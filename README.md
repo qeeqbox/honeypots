@@ -49,8 +49,15 @@ python3 -m honeypots --setup ssh --config config.json
 
 #config.json
 {
-    "logs":"file,terminal",
-    "logs_location":"/temp/honeypots_logs/"
+  "logs": "file,terminal,json",
+  "logs_location": "/var/log/honeypots/",
+  "syslog_address": "",
+  "syslog_facility": 0,
+  "postgres": "",
+  "db_options": [],
+  "filter": "",
+  "interface": "",
+  "honeypots": {}
 }
 ```
 
@@ -65,34 +72,47 @@ python3 -m honeypots --setup ftp --config config.json
 #### config.json (Output to folder and terminal)
 ```json
 {
-    "logs":"file,terminal",
-    "logs_location":"/temp/honeypots_logs/",
-    "honeypots": {
-        "ftp": {
-            "port": 21,
-            "ip": "0.0.0.0",
-            "username": "test",
-            "password": "test"
-            }
-        }
+  "logs": "file,terminal,json",
+  "logs_location": "/var/log/honeypots/",
+  "syslog_address": "",
+  "syslog_facility": 0,
+  "postgres": "",
+  "db_options": [],
+  "filter": "",
+  "interface": "",
+  "honeypots": {
+    "ftp": {
+      "port": 21,
+      "ip": "0.0.0.0",
+      "username": "ftp",
+      "password": "anonymous",
+      "log_file_name": "ftp.log",
+      "max_bytes": 10000,
+      "backup_count": 10
+    }
+  }
 }
 ```
 
 #### config.json (Output to syslog)
 ```json
 {
-    "logs":"syslog",
-    "logs_location":"",
-    "syslog_address": "udp://localhost:514",
-    "syslog_facility": 3,
-    "honeypots": {
-        "ftp": {
-            "port": 21,
-            "ip": "0.0.0.0",
-            "username": "test",
-            "password": "test"
-            }
-        }
+  "logs": "syslog",
+  "logs_location": "",
+  "syslog_address": "udp://localhost:514",
+  "syslog_facility": 3,
+  "postgres": "",
+  "db_options": [],
+  "filter": "",
+  "interface": "",
+  "honeypots": {
+    "ftp": {
+      "port": 21,
+      "ip": "0.0.0.0",
+      "username": "test",
+      "password": "test"
+    }
+  }
 }
 
 ```
