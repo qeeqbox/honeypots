@@ -32,6 +32,7 @@ from urllib.parse import urlparse
 old_stderr = sys.stderr
 sys.stderr = open(devnull, 'w')
 
+
 def set_local_vars(self, config):
     try:
         honeypot = None
@@ -48,6 +49,7 @@ def set_local_vars(self, config):
                             setattr(self, 'auto_disabled', True)
     except Exception as e:
         print(e)
+
 
 def parse_record(record):
     timestamp = {"timestamp": datetime.utcnow().isoformat()}
@@ -124,7 +126,7 @@ def setup_logger(name, temp_name, config, drop=False):
         max_bytes = 10000
         backup_count = 10
         try:
-            if config_data != None:
+            if config_data is not None:
                 if "honeypots" in config_data:
                     temp_server_name = name[1:].lower().replace('server', '')
                     if temp_server_name in config_data["honeypots"]:
