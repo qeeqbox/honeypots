@@ -221,7 +221,7 @@
          "change":{
             "server":"protocol"
          },
-         "keep":[
+         "contains":[
             "protocol",
             "action",
             "status",
@@ -230,6 +230,7 @@
             "dest_ip",
             "dest_port"
          ],
+         "remove":[],
          "options":[
             "remove_errors",
             "remove_init"
