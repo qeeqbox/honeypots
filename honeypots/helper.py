@@ -69,7 +69,7 @@ def parse_record(record):
 
 
 class json_file_formatter(Formatter):
-    def __init__(self,_type):
+    def __init__(self, _type):
         self._type = _type
         super().__init__()
 

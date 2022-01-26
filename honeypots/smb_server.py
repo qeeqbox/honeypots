@@ -30,6 +30,7 @@ from threading import current_thread
 from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
 
+
 class QSMBServer():
     def __init__(self, ip=None, port=None, username=None, password=None, folders=None, mocking=False, config=''):
         self.auto_disabled = None
@@ -59,6 +60,7 @@ class QSMBServer():
 
     def smb_server_main(self):
         _q_s = self
+
         class Logger(object):
             def write(self, message):
                 try:
@@ -67,11 +69,11 @@ class QSMBServer():
                         ip = temp.split('_')[1]
                         port = temp.split('_')[2]
                         if 'Incoming connection' in message.strip() or 'AUTHENTICATE_MESSAGE' in message.strip() or 'authenticated successfully' in message.strip():
-                            _q_s.logs.info({'server': 'smb_server', 'action': 'connection', 'msg': message.strip(),'dest_ip': ip, 'dest_port': port,'src_ip': _q_s.ip, 'src_port': _q_s.port})
+                            _q_s.logs.info({'server': 'smb_server', 'action': 'connection', 'msg': message.strip(), 'dest_ip': ip, 'dest_port': port, 'src_ip': _q_s.ip, 'src_port': _q_s.port})
                         elif ':4141414141414141:' in message.strip():
                             parsed = message.strip().split(':')
                             if len(parsed) > 2:
-                                _q_s.logs.info({'server': 'smb_server', 'action': 'login', 'workstation': parsed[0], 'test': parsed[1],'dest_ip': ip, 'dest_port': port,'src_ip': _q_s.ip, 'src_port': _q_s.port})
+                                _q_s.logs.info({'server': 'smb_server', 'action': 'login', 'workstation': parsed[0], 'test': parsed[1], 'dest_ip': ip, 'dest_port': port, 'src_ip': _q_s.ip, 'src_port': _q_s.port})
                 except Exception as e:
                     print(e)
                     pass
@@ -83,13 +85,13 @@ class QSMBServer():
                 self.__request = request
                 self.__select_poll = select_poll
                 self.__ip, self.__port = client_address[:2]
-                self.__connId = "thread_{}_{}_{}".format(self.__ip,self.__port,randint(1000,9999))
+                self.__connId = "thread_{}_{}_{}".format(self.__ip, self.__port, randint(1000, 9999))
                 current_thread().name = self.__connId
                 socketserver.BaseRequestHandler.__init__(self, request, client_address, server)
 
         class SMBSERVER(smbserver.SMBSERVER):
             def __init__(self, server_address, handler_class=SMBSERVERHandler, config_parser=None):
-                super().__init__(server_address,handler_class,config_parser)
+                super().__init__(server_address, handler_class, config_parser)
 
             def processRequest(self, connId, data):
                 x = super().processRequest(connId, data)
@@ -97,9 +99,9 @@ class QSMBServer():
 
         class SimpleSMBServer(smbserver.SimpleSMBServer):
             def __init__(self, listenAddress='0.0.0.0', listenPort=445, configFile=''):
-                super().__init__(listenAddress,listenPort,configFile)
+                super().__init__(listenAddress, listenPort, configFile)
                 self.__server.server_close()
-                sleep(randint(1,2))
+                sleep(randint(1, 2))
                 self.__server = SMBSERVER((listenAddress, listenPort), config_parser=self.__smbConfig)
                 self.__server.processConfigFile()
 
