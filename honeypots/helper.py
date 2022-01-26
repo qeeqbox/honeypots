@@ -50,15 +50,16 @@ def set_local_vars(self, config):
     except Exception as e:
         print(e)
 
+
 def parse_record(record, custom_filter):
     timestamp = {'timestamp': datetime.utcnow().isoformat()}
     try:
-        if custom_filter != None:
+        if custom_filter is not None:
             if 'remove_errors' in custom_filter['honeypots']['options']:
                 if 'error' in record.msg:
                     return None
             if 'remove_init' in custom_filter['honeypots']['options']:
-                if record.msg.get('action',None) == 'process':
+                if record.msg.get('action', None) == 'process':
                     return None
             if isinstance(record.msg, Mapping):
                 try:
@@ -111,11 +112,11 @@ def setup_logger(name, temp_name, config, drop=False):
         try:
             with open(config) as f:
                 config_data = load(f)
-                logs = config_data.get('logs',logs)
-                logs_location = config_data.get('logs_location',logs_location)
-                syslog_address = config_data.get('syslog_address',syslog_address)
-                syslog_facility = config_data.get('syslog_facility',syslog_facility)
-                custom_filter = config_data.get('custom_filter',custom_filter)
+                logs = config_data.get('logs', logs)
+                logs_location = config_data.get('logs_location', logs_location)
+                syslog_address = config_data.get('syslog_address', syslog_address)
+                syslog_facility = config_data.get('syslog_facility', syslog_facility)
+                custom_filter = config_data.get('custom_filter', custom_filter)
         except BaseException:
             pass
     if logs_location == '' or logs_location is None:
@@ -145,7 +146,7 @@ def setup_logger(name, temp_name, config, drop=False):
                             backup_count = config_data['honeypots'][temp_server_name]['backup_count']
         except Exception as e:
             print(e)
-        file_handler = CustomHandlerFileRotate(temp_name, logs,custom_filter, path.join(logs_location, temp_name), maxBytes=max_bytes, backupCount=backup_count)
+        file_handler = CustomHandlerFileRotate(temp_name, logs, custom_filter, path.join(logs_location, temp_name), maxBytes=max_bytes, backupCount=backup_count)
         ret_logs_obj.addHandler(file_handler)
     if 'syslog' in logs:
         if syslog_address == '':
@@ -267,15 +268,16 @@ def serialize_object(_dict):
 
 
 class CustomHandlerFileRotate(RotatingFileHandler):
-    def __init__(self, uuid='', logs='',custom_filter=None, filename='', mode='a', maxBytes=0, backupCount=0, encoding=None, delay=False, errors=None):
+    def __init__(self, uuid='', logs='', custom_filter=None, filename='', mode='a', maxBytes=0, backupCount=0, encoding=None, delay=False, errors=None):
         self.logs = logs
         self.custom_filter = custom_filter
         RotatingFileHandler.__init__(self, filename, mode, maxBytes, backupCount, encoding, delay)
 
     def emit(self, record):
         _record = parse_record(record, self.custom_filter)
-        if _record != None:
+        if _record is not None:
             super().emit(_record)
+
 
 class CustomHandler(Handler):
     def __init__(self, uuid='', logs='', custom_filter=None, config=None, drop=False):
@@ -299,7 +301,7 @@ class CustomHandler(Handler):
                         if 'server' in record.msg:
                             self.db.insert_into_data_safe('servers', dumps(serialize_object(record.msg), cls=ComplexEncoder))
             if 'terminal' in self.logs:
-                _record = parse_record(record,self.custom_filter)
+                _record = parse_record(record, self.custom_filter)
                 if _record:
                     stdout.write(dumps(_record.msg, sort_keys=True, cls=ComplexEncoder) + '\n')
             if 'syslog' in self.logs:
