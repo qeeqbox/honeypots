@@ -64,11 +64,13 @@ def parse_record(record):
             record.msg = serialize_object(record.msg)
     except Exception as e:
         record.msg = {'name': record.name, 'error': repr(e)}
+
     return record
 
 
 class json_file_formatter(Formatter):
-    def __init__(self):
+    def __init__(self,_type):
+        self._type = _type
         super().__init__()
 
     def format(self, record):
@@ -139,7 +141,7 @@ def setup_logger(name, temp_name, config, drop=False):
         except Exception as e:
             print(e)
         if 'json' in logs:
-            formatter = json_file_formatter()
+            formatter = json_file_formatter(logs)
         else:
             formatter = Formatter('[%(asctime)s] [%(name)s] [%(levelname)s] - %(message)s')
         file_handler = RotatingFileHandler(path.join(logs_location, temp_name), maxBytes=max_bytes, backupCount=backup_count)

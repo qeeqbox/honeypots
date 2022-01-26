@@ -91,7 +91,7 @@ class QSNMPServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'snmp_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port})
+            self.logs.info({'server': 'snmp_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'src_ip': '0.0.0.0', 'src_port': 0})
 
             if status == 'success':
                 return True
@@ -111,10 +111,13 @@ class QSNMPServer():
 
     def test_server(self, ip=None, port=None, username=None, password=None):
         try:
+
             from pysnmp.hlapi import (getCmd, SnmpEngine, CommunityData, UdpTransportTarget, ContextData, ObjectType, ObjectIdentity,)
-            g = getCmd(SnmpEngine(), CommunityData('public'), UdpTransportTarget(('0.0.0.0', 33671)), ContextData(), ObjectType(ObjectIdentity('1.3.6.1.4.1.9.9.618.1.4.1.0')))
+            _ip = ip or self.ip
+            _port = port or self.port
+            g = getCmd(SnmpEngine(), CommunityData('public'), UdpTransportTarget((_ip, _port)), ContextData(), ObjectType(ObjectIdentity('1.3.6.1.4.1.9.9.618.1.4.1.0')))
             errorIndication, errorStatus, errorIndex, varBinds = next(g)
-        except BaseException:
+        except Exception as e:
             pass
 
 

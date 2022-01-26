@@ -121,7 +121,7 @@ class QHTTPProxyServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'http_proxy_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port})
+            self.logs.info({'server': 'http_proxy_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'src_ip': '0.0.0.0', 'src_port': 0})
 
             if status == 'success':
                 return True

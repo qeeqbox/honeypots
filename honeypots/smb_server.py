@@ -18,13 +18,17 @@ from logging import StreamHandler, getLogger, DEBUG
 from impacket import smbserver
 from tempfile import mkdtemp
 from shutil import rmtree
+from time import sleep
 from impacket.ntlm import compute_lmhash, compute_nthash
 from logging import DEBUG, getLogger
 from os import path
 from subprocess import Popen
+from six.moves import configparser, socketserver
+from threading import enumerate as threading_enumerate
+from random import randint
+from threading import current_thread
 from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
-
 
 class QSMBServer():
     def __init__(self, ip=None, port=None, username=None, password=None, folders=None, mocking=False, config=''):
@@ -55,27 +59,61 @@ class QSMBServer():
 
     def smb_server_main(self):
         _q_s = self
-
         class Logger(object):
             def write(self, message):
-                #sys.stdout.write(str('>>>>' + message))
-                # sys.stdout.flush()
                 try:
-                    if 'Incoming connection' in message.strip() or 'AUTHENTICATE_MESSAGE' in message.strip() or 'authenticated successfully' in message.strip():
-                        _q_s.logs.info({'server': 'smb_server', 'action': 'connection', 'msg': message.strip()})
-                    elif ':4141414141414141:' in message.strip():
-                        parsed = message.strip().split(':')
-                        if len(parsed) > 2:
-                            _q_s.logs.info({'server': 'smb_server', 'action': 'login', 'workstation': parsed[0], 'test': parsed[1]})
+                    temp = current_thread().name
+                    if temp.startswith('thread_'):
+                        ip = temp.split('_')[1]
+                        port = temp.split('_')[2]
+                        if 'Incoming connection' in message.strip() or 'AUTHENTICATE_MESSAGE' in message.strip() or 'authenticated successfully' in message.strip():
+                            _q_s.logs.info({'server': 'smb_server', 'action': 'connection', 'msg': message.strip(),'dest_ip': ip, 'dest_port': port,'src_ip': _q_s.ip, 'src_port': _q_s.port})
+                        elif ':4141414141414141:' in message.strip():
+                            parsed = message.strip().split(':')
+                            if len(parsed) > 2:
+                                _q_s.logs.info({'server': 'smb_server', 'action': 'login', 'workstation': parsed[0], 'test': parsed[1],'dest_ip': ip, 'dest_port': port,'src_ip': _q_s.ip, 'src_port': _q_s.port})
                 except Exception as e:
+                    print(e)
                     pass
+
+        class SMBSERVERHandler(smbserver.SMBSERVERHandler):
+            def __init__(self, request, client_address, server, select_poll=False):
+                self.__SMB = server
+                self.__timeOut = 60 * 10
+                self.__request = request
+                self.__select_poll = select_poll
+                self.__ip, self.__port = client_address[:2]
+                self.__connId = "thread_{}_{}_{}".format(self.__ip,self.__port,randint(1000,9999))
+                current_thread().name = self.__connId
+                socketserver.BaseRequestHandler.__init__(self, request, client_address, server)
+
+        class SMBSERVER(smbserver.SMBSERVER):
+            def __init__(self, server_address, handler_class=SMBSERVERHandler, config_parser=None):
+                super().__init__(server_address,handler_class,config_parser)
+
+            def processRequest(self, connId, data):
+                x = super().processRequest(connId, data)
+                return x
+
+        class SimpleSMBServer(smbserver.SimpleSMBServer):
+            def __init__(self, listenAddress='0.0.0.0', listenPort=445, configFile=''):
+                super().__init__(listenAddress,listenPort,configFile)
+                self.__server.server_close()
+                sleep(randint(1,2))
+                self.__server = SMBSERVER((listenAddress, listenPort), config_parser=self.__smbConfig)
+                self.__server.processConfigFile()
+
+            def start(self):
+                self.__srvsServer.start()
+                self.__wkstServer.start()
+                self.__server.serve_forever()
 
         handler = StreamHandler(Logger())
         getLogger('impacket').addHandler(handler)
         getLogger('impacket').setLevel(DEBUG)
 
         dirpath = mkdtemp()
-        server = smbserver.SimpleSMBServer(listenAddress=self.ip, listenPort=self.port)
+        server = SimpleSMBServer(listenAddress=self.ip, listenPort=self.port)
         # server.removeShare('IPC$')
         if self.folders == '' or self.folders is None:
             server.addShare('C$', dirpath, '', readOnly='yes')
@@ -108,7 +146,7 @@ class QSMBServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'smb_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders)})
+            self.logs.info({'server': 'smb_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders), 'src_ip': '0.0.0.0', 'src_port': 0})
 
             if status == 'success':
                 return True

@@ -226,7 +226,7 @@ class QHTTPSServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'https_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'username': self.username, 'password': self.password})
+            self.logs.info({'server': 'https_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'username': self.username, 'password': self.password, 'src_ip': '0.0.0.0', 'src_port': 0})
 
             if status == 'success':
                 return True
