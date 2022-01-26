@@ -86,21 +86,21 @@ class QBSniffer():
                     if packet.haslayer('IP') and len(hex_payloads) > 0 and packet['IP'].src != _q_s.current_ip:
                         if packet.haslayer('TCP'):
                             try:
-                                _q_s.logs.info(['sniffer', {'action': 'tcppayload', 'ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'src_ip': packet['IP'].src, 'src_port':packet['TCP'].sport, 'dst_ip':packet['IP'].dst, 'dst_port':packet['TCP'].dport, 'raw_payload':raw_payloads, 'payload':hex_payloads}])
+                                _q_s.logs.info(['sniffer', {'action': 'tcppayload', 'ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'dest_ip': packet['IP'].src, 'dest_port':packet['TCP'].sport, 'dst_ip':packet['IP'].dst, 'dst_port':packet['TCP'].dport, 'raw_payload':raw_payloads, 'payload':hex_payloads}])
                             except Exception as e:
                                 _q_s.logs.error(['errors', {'error': 'capture_logic_3', 'type': 'error -> ' + repr(e)}])
                         elif packet.haslayer('UDP'):
                             try:
-                                _q_s.logs.info(['sniffer', {'action': 'udppayload', 'ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'src_ip': packet['IP'].src, 'src_port':packet['UDP'].sport, 'dst_ip':packet['IP'].dst, 'dst_port':packet['UDP'].dport, 'raw_payload':raw_payloads, 'payload':hex_payloads}])
+                                _q_s.logs.info(['sniffer', {'action': 'udppayload', 'ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'dest_ip': packet['IP'].src, 'dest_port':packet['UDP'].sport, 'dst_ip':packet['IP'].dst, 'dst_port':packet['UDP'].dport, 'raw_payload':raw_payloads, 'payload':hex_payloads}])
                             except Exception as e:
                                 _q_s.logs.error(['errors', {'error': 'capture_logic_4', 'type': 'error -> ' + repr(e)}])
 
                 if packet.haslayer('IP') and packet.haslayer('ICMP') and packet['IP'].src != _q_s.current_ip:
-                    _q_s.logs.info(['sniffer', {'action': 'icmp', 'ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'src_ip': packet['IP'].src, 'dst_ip':packet['IP'].dst, 'ICMP_Code':packet['ICMP'].code, 'ICMP_Type':packet['ICMP'].type, 'ICMP_MSG':self.find_ICMP(packet['ICMP'].type, packet['ICMP'].code)}])
+                    _q_s.logs.info(['sniffer', {'action': 'icmp', 'ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'dest_ip': packet['IP'].src, 'dst_ip':packet['IP'].dst, 'ICMP_Code':packet['ICMP'].code, 'ICMP_Type':packet['ICMP'].type, 'ICMP_MSG':self.find_ICMP(packet['ICMP'].type, packet['ICMP'].code)}])
 
                 if packet.haslayer('IP') and packet.haslayer('TCP') and packet['IP'].src != _q_s.current_ip:
                     if packet['TCP'].flags == 2:
-                        _q_s.logs.info(['sniffer', {'action': 'tcpscan', 'ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'src_ip': packet['IP'].src, 'src_port':packet['TCP'].sport, 'dst_ip':packet['IP'].dst, 'dst_port':packet['TCP'].dport, 'raw_payload':raw_payloads, 'payload':hex_payloads}])
+                        _q_s.logs.info(['sniffer', {'action': 'tcpscan', 'ip': _q_s.current_ip, 'mac': _q_s.current_mac, 'dest_ip': packet['IP'].src, 'dest_port':packet['TCP'].sport, 'dst_ip':packet['IP'].dst, 'dst_port':packet['TCP'].dport, 'raw_payload':raw_payloads, 'payload':hex_payloads}])
                         send(IP(dst=packet['IP'].src, src=packet['IP'].dst) / TCP(dport=packet['TCP'].sport, sport=packet['TCP'].dport, ack=(packet['TCP'].seq + 1), flags='SA'), verbose=False)
 
             except Exception as e:

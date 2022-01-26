@@ -69,11 +69,11 @@ class QSMBServer():
                         ip = temp.split('_')[1]
                         port = temp.split('_')[2]
                         if 'Incoming connection' in message.strip() or 'AUTHENTICATE_MESSAGE' in message.strip() or 'authenticated successfully' in message.strip():
-                            _q_s.logs.info({'server': 'smb_server', 'action': 'connection', 'msg': message.strip(), 'dest_ip': ip, 'dest_port': port, 'src_ip': _q_s.ip, 'src_port': _q_s.port})
+                            _q_s.logs.info({'server': 'smb_server', 'action': 'connection', 'msg': message.strip(), 'src_ip': ip, 'src_port': port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
                         elif ':4141414141414141:' in message.strip():
                             parsed = message.strip().split(':')
                             if len(parsed) > 2:
-                                _q_s.logs.info({'server': 'smb_server', 'action': 'login', 'workstation': parsed[0], 'test': parsed[1], 'dest_ip': ip, 'dest_port': port, 'src_ip': _q_s.ip, 'src_port': _q_s.port})
+                                _q_s.logs.info({'server': 'smb_server', 'action': 'login', 'workstation': parsed[0], 'test': parsed[1], 'src_ip': ip, 'src_port': port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
                 except Exception as e:
                     print(e)
                     pass
@@ -148,7 +148,7 @@ class QSMBServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'smb_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders), 'src_ip': '0.0.0.0', 'src_port': 0})
+            self.logs.info({'server': 'smb_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'username': self.username, 'password': self.password, 'folders': str(self.folders), 'dest_ip': self.ip, 'dest_port': self.port})
 
             if status == 'success':
                 return True

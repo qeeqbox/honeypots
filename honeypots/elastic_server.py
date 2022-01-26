@@ -97,7 +97,7 @@ class QElasticServer():
                 except Exception:
                     pass
 
-                _q_s.logs.info({'server': 'elastic_server', 'action': 'dump', 'line': check_bytes(self.raw_requestline), 'dest_ip': self.client_address[0], 'dest_port': self.client_address[1], 'src_ip': _q_s.ip, 'src_port': _q_s.port, 'headers': headers})
+                _q_s.logs.info({'server': 'elastic_server', 'action': 'dump', 'line': check_bytes(self.raw_requestline), 'src_ip': self.client_address[0], 'src_port': self.client_address[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'headers': headers})
                 return headers
 
             def _remove_headers(self, headers):
@@ -151,12 +151,12 @@ class QElasticServer():
 
                 key = self.server.get_auth_key()
                 if self.headers.get('Authorization') is None:
-                    _q_s.logs.info({'server': 'elastic_server', 'action': 'login', 'status': 'failed', 'dest_ip': self.client_address[0], 'dest_port': self.client_address[1], 'src_ip': _q_s.ip, 'src_port': _q_s.port, 'username': username, 'password': password})
+                    _q_s.logs.info({'server': 'elastic_server', 'action': 'login', 'status': 'failed', 'src_ip': self.client_address[0], 'src_port': self.client_address[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': username, 'password': password})
                     auth_paylaod = bytes(dumps({'error': {'root_cause': [{'type': 'security_exception', 'reason': 'unable to authenticate user [{}] for REST request [/]'.format(username), 'header': {'WWW-Authenticate': 'Basic realm=\"security\" charset=\"UTF-8\"'}}], 'type': 'security_exception', 'reason': 'unable to authenticate user [{}] for REST request [/]'.format(username), 'header': {'WWW-Authenticate': 'Basic realm=\"security\" charset=\"UTF-8\"'}}, 'status': 401}), 'utf-8')
                     self.wfile.write(self._set_response_gzip_auth(auth_paylaod, 401))
                 elif self.headers.get('Authorization') == 'Basic ' + str(key):
                     extracted = ''
-                    _q_s.logs.info({'server': 'elastic_server', 'action': 'login', 'status': 'success', 'dest_ip': self.client_address[0], 'dest_port': self.client_address[1], 'src_ip': _q_s.ip, 'src_port': _q_s.port, 'username': _q_s.username, 'password': _q_s.password})
+                    _q_s.logs.info({'server': 'elastic_server', 'action': 'login', 'status': 'success', 'src_ip': self.client_address[0], 'src_port': self.client_address[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': _q_s.username, 'password': _q_s.password})
                     try:
                         extracted = urlparse(self.path).path
                     except BaseException:
@@ -165,7 +165,7 @@ class QElasticServer():
                         normal_payload = bytes(dumps({'name': e_name, 'cluster_name': e_cluster_name, 'cluster_uuid': '09cf5BKcTCG2U8z2ndwGEw', 'version': {'number': '7.12.1', 'build_flavor': 'default', 'build_type': e_build_type, 'build_hash': '3186837139b9c6b6d23c3200870651f10d3343b7', 'build_date': '2021-04-20T20:56:39.040728659Z', 'build_snapshot': False, 'lucene_version': '8.8.0', 'minimum_wire_compatibility_version': '6.8.0', 'minimum_index_compatibility_version': '6.0.0-beta1'}, 'tagline': 'You Know, for Search'}), 'utf-8')
                         self.wfile.write(self._set_response_gzip(normal_payload, 200))
                     elif extracted.startswith('/_nodes'):
-                        _nodes_payload = bytes(dumps({'_nodes': {'total': 1, 'successful': 1, 'failed': 0}, 'cluster_name': e_cluster_name, 'nodes': {'rvyTV3xvTgyt74ti4u12bw': {'name': e_name, 'transport_address': e_transport_address, 'host': e_host, 'dest_ip': e_host, 'version': '7.12.1', 'build_flavor': 'default', 'build_type': e_build_type, 'build_hash': '3186837139b9c6b6d23c3200870651f10d3343b7', 'roles': ['data', 'data_cold', 'data_content', 'data_frozen', 'data_hot', 'data_warm', 'ingest', 'master', 'ml', 'remote_cluster_client', 'transform'], 'attributes': {'ml.machine_memory': '16685318144', 'xpack.installed': 'true', 'transform.node': 'true', 'ml.max_open_jobs': '20', 'ml.max_jvm_size': '8342470656'}, 'process': {'refresh_interval_in_millis': 1000, 'id': 7, 'mlockall': False}}, 'os': {'refresh_interval_in_millis': 1000, 'name': e_os_name, 'pretty_name': e_os_pretty_name, 'arch': 'amd64', 'version': e_os_version, 'available_processors': 32, 'allocated_processors': 8}, 'process': {'refresh_interval_in_millis': 1000, 'id': 7, 'mlockall': False}}}), 'utf-8')
+                        _nodes_payload = bytes(dumps({'_nodes': {'total': 1, 'successful': 1, 'failed': 0}, 'cluster_name': e_cluster_name, 'nodes': {'rvyTV3xvTgyt74ti4u12bw': {'name': e_name, 'transport_address': e_transport_address, 'host': e_host, 'src_ip': e_host, 'version': '7.12.1', 'build_flavor': 'default', 'build_type': e_build_type, 'build_hash': '3186837139b9c6b6d23c3200870651f10d3343b7', 'roles': ['data', 'data_cold', 'data_content', 'data_frozen', 'data_hot', 'data_warm', 'ingest', 'master', 'ml', 'remote_cluster_client', 'transform'], 'attributes': {'ml.machine_memory': '16685318144', 'xpack.installed': 'true', 'transform.node': 'true', 'ml.max_open_jobs': '20', 'ml.max_jvm_size': '8342470656'}, 'process': {'refresh_interval_in_millis': 1000, 'id': 7, 'mlockall': False}}, 'os': {'refresh_interval_in_millis': 1000, 'name': e_os_name, 'pretty_name': e_os_pretty_name, 'arch': 'amd64', 'version': e_os_version, 'available_processors': 32, 'allocated_processors': 8}, 'process': {'refresh_interval_in_millis': 1000, 'id': 7, 'mlockall': False}}}), 'utf-8')
                         self.wfile.write(self._set_response_gzip(_nodes_payload, 200))
                     elif extracted.startswith('/_cluster/health'):
                         _cluster_health_payload = bytes(dumps({'cluster_name': e_cluster_name, 'status': 'green', 'timed_out': False, 'number_of_nodes': 1, 'number_of_data_nodes': 1, 'active_primary_shards': 0, 'active_shards': 0, 'relocating_shards': 0, 'initializing_shards': 0, 'unassigned_shards': 0, 'delayed_unassigned_shards': 0, 'number_of_pending_tasks': 0, 'number_of_in_flight_fetch': 0, 'task_max_waiting_in_queue_millis': 0, 'active_shards_percent_as_number': 100.0}), 'utf-8')
@@ -182,7 +182,7 @@ class QElasticServer():
                     authorization_string = self.headers.get('Authorization').split(' ')
                     basic = b64decode(authorization_string[1]).decode('utf-8')
                     username, password = basic.split(':')
-                    _q_s.logs.info({'server': 'elastic_server', 'action': 'login', 'status': 'failed', 'dest_ip': self.client_address[0], 'dest_port': self.client_address[1], 'src_ip': _q_s.ip, 'src_port': _q_s.port, 'username': username, 'password': password})
+                    _q_s.logs.info({'server': 'elastic_server', 'action': 'login', 'status': 'failed', 'src_ip': self.client_address[0], 'src_port': self.client_address[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': username, 'password': password})
                     auth_paylaod = bytes(dumps({'error': {'root_cause': [{'type': 'security_exception', 'reason': 'missing authentication credentials for REST request [/]', 'header': {'WWW-Authenticate': 'Basic realm=\"security\" charset=\"UTF-8\"'}}], 'type': 'security_exception', 'reason': 'missing authentication credentials for REST request [/]', 'header': {'WWW-Authenticate': 'Basic realm=\"security\" charset=\"UTF-8\"'}}, 'status': 401}), 'utf-8')
                     self.wfile.write(self._set_response_gzip_auth(auth_paylaod, 401))
 
@@ -198,7 +198,7 @@ class QElasticServer():
                 return
 
             def handle_one_request(self):
-                _q_s.logs.info({'server': 'elastic_server', 'action': 'connection', 'dest_ip': self.client_address[0], 'dest_port': self.client_address[1], 'src_ip': _q_s.ip, 'src_port': _q_s.port})
+                _q_s.logs.info({'server': 'elastic_server', 'action': 'connection', 'src_ip': self.client_address[0], 'src_port': self.client_address[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
                 return SimpleHTTPRequestHandler.handle_one_request(self)
 
         class CustomElasticServer(ThreadingHTTPServer):
@@ -236,7 +236,7 @@ class QElasticServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'elastic_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'username': self.username, 'password': self.password, 'src_ip': '0.0.0.0', 'src_port': 0})
+            self.logs.info({'server': 'elastic_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'username': self.username, 'password': self.password, 'dest_ip': self.ip, 'dest_port': self.port})
 
             if status == 'success':
                 return True

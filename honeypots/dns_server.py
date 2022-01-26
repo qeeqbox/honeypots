@@ -61,11 +61,11 @@ class QDNSServer():
         class CustomDNSServerFactory(DNSServerFactory):
             def gotResolverResponse(self, response, protocol, message, address):
                 args = (self, response, protocol, message, address)
-                _q_s.logs.info({'server': 'dns_server', 'action': 'connection', 'dest_ip': address[0], 'dest_port': address[1], 'src_ip': _q_s.ip, 'src_port': _q_s.port})
+                _q_s.logs.info({'server': 'dns_server', 'action': 'connection', 'src_ip': address[0], 'src_port': address[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
                 try:
                     for items in response:
                         for item in items:
-                            _q_s.logs.info({'server': 'dns_server', 'action': 'query', 'dest_ip': address[0], 'dest_port': address[1], 'src_ip': _q_s.ip, 'src_port': _q_s.port, 'payload': item.payload})
+                            _q_s.logs.info({'server': 'dns_server', 'action': 'query', 'src_ip': address[0], 'src_port': address[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'payload': item.payload})
                 except Exception as e:
                     pass
                 return DNSServerFactory.gotResolverResponse(*args)
@@ -94,7 +94,7 @@ class QDNSServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'dns_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'src_ip': '0.0.0.0', 'src_port': 0})
+            self.logs.info({'server': 'dns_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': self.ip, 'dest_port': self.port})
 
             if status == 'success':
                 return True

@@ -165,14 +165,14 @@ class QHTTPSServer():
                 except BaseException:
                     pass
 
-                _q_s.logs.info({'server': 'https_server', 'action': 'connection', 'dest_ip': request.getHost().host, 'dest_port': request.getHost().port, 'src_ip': _q_s.ip, 'src_port': _q_s.port, 'request': headers})
+                _q_s.logs.info({'server': 'https_server', 'action': 'connection', 'src_ip': request.getHost().host, 'src_port': request.getHost().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'request': headers})
 
                 if self.server != '':
                     request.responseHeaders.removeHeader('Server')
                     request.responseHeaders.addRawHeader('Server', self.server)
 
                 if request.method == b'GET' or request.method == b'POST':
-                    _q_s.logs.info({'server': 'https_server', 'action': request.method.decode(), 'dest_ip': request.getHost().host, 'dest_port': request.getHost().port, 'src_ip': _q_s.ip, 'src_port': _q_s.port})
+                    _q_s.logs.info({'server': 'https_server', 'action': request.method.decode(), 'src_ip': request.getHost().host, 'src_port': request.getHost().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
 
                 if request.method == b'GET':
                     if request.uri == b'/login.html':
@@ -196,7 +196,7 @@ class QHTTPSServer():
                                     username = _q_s.username
                                     password = _q_s.password
                                     status = 'success'
-                                _q_s.logs.info({'server': 'https_server', 'action': 'login', 'status': status, 'dest_ip': request.getHost().host, 'dest_port': request.getHost().port, 'username': username, 'password': password, 'src_ip': _q_s.ip, 'src_port': _q_s.port})
+                                _q_s.logs.info({'server': 'https_server', 'action': 'login', 'status': status, 'src_ip': request.getHost().host, 'src_port': request.getHost().port, 'username': username, 'password': password, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
 
                     request.responseHeaders.addRawHeader('Content-Type', 'text/html; charset=utf-8')
                     return self.home_file
@@ -226,7 +226,7 @@ class QHTTPSServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'https_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'username': self.username, 'password': self.password, 'src_ip': '0.0.0.0', 'src_port': 0})
+            self.logs.info({'server': 'https_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'username': self.username, 'password': self.password, 'dest_ip': self.ip, 'dest_port': self.port})
 
             if status == 'success':
                 return True

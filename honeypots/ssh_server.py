@@ -80,13 +80,13 @@ class QSSHServer():
                     username = _q_s.username
                     password = _q_s.password
                     status = 'success'
-                _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'src_ip': _q_s.ip, 'src_port': _q_s.port, 'username': username, 'password': password})
+                _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': username, 'password': password})
 
         def ConnectionHandle(client, priv):
             try:
                 t = Transport(client)
                 ip, port = client.getpeername()
-                _q_s.logs.info({'server': 'ssh_server', 'action': 'connection', 'dest_ip': ip, 'dest_port': port, 'src_ip': _q_s.ip, 'src_port': _q_s.port})
+                _q_s.logs.info({'server': 'ssh_server', 'action': 'connection', 'src_ip': ip, 'src_port': port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
                 t.local_version = 'SSH-2.0-' + choice(self.random_servers)
                 t.add_server_key(RSAKey(file_obj=StringIO(priv)))
                 t.start_server(server=SSHHandle(ip, port))
@@ -125,7 +125,7 @@ class QSSHServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'ssh_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'username': self.username, 'password': self.password, 'src_ip': '0.0.0.0', 'src_port': 0})
+            self.logs.info({'server': 'ssh_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'username': self.username, 'password': self.password, 'dest_ip': self.ip, 'dest_port': self.port})
 
             if status == 'success':
                 return True

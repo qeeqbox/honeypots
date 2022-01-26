@@ -60,7 +60,7 @@ class QHTTPProxyServer():
                     _, parsed_request = request_string.split(b'\r\n', 1)
                     headers = BytesParser().parsebytes(parsed_request)
                     host = headers['host'].split(':')
-                    _q_s.logs.info({'server': 'http_proxy_server', 'action': 'query', 'dest_ip': self.transport.getPeer().host, 'dest_port': self.transport.getPeer().port, 'src_ip': _q_s.ip, 'src_port': _q_s.port, 'payload': host[0]})
+                    _q_s.logs.info({'server': 'http_proxy_server', 'action': 'query', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'payload': host[0]})
                     # return '127.0.0.1'
                     return dsnquery(host[0], 'A')[0].address
                 except Exception as e:
@@ -68,7 +68,7 @@ class QHTTPProxyServer():
                 return None
 
             def dataReceived(self, data):
-                _q_s.logs.info({'server': 'http_proxy_server', 'action': 'connection', 'dest_ip': self.transport.getPeer().host, 'dest_port': self.transport.getPeer().port, 'src_ip': _q_s.ip, 'src_port': _q_s.port})
+                _q_s.logs.info({'server': 'http_proxy_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
                 try:
                     ip = self.resolve_domain(data)
                     if ip:
@@ -121,7 +121,7 @@ class QHTTPProxyServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'http_proxy_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'src_ip': '0.0.0.0', 'src_port': 0})
+            self.logs.info({'server': 'http_proxy_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': self.ip, 'dest_port': self.port})
 
             if status == 'success':
                 return True

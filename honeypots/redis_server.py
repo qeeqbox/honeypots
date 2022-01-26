@@ -90,12 +90,12 @@ class QRedisServer():
                         username = _q_s.username
                         password = _q_s.password
                         status = 'success'
-                    _q_s.logs.info({'server': 'redis_server', 'action': 'login', 'status': status, 'dest_ip': self.transport.getPeer().host, 'dest_port': self.transport.getPeer().port, 'src_ip': _q_s.ip, 'src_port': _q_s.port, 'username': username, 'password': password})
+                    _q_s.logs.info({'server': 'redis_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': username, 'password': password})
 
             def connectionMade(self):
                 self._state = 1
                 self._variables = {}
-                _q_s.logs.info({'server': 'redis_server', 'action': 'connection', 'dest_ip': self.transport.getPeer().host, 'dest_port': self.transport.getPeer().port, 'src_ip': _q_s.ip, 'src_port': _q_s.port})
+                _q_s.logs.info({'server': 'redis_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
 
             def dataReceived(self, data):
                 c, command = self.get_command(data)
@@ -128,7 +128,7 @@ class QRedisServer():
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
-            self.logs.info({'server': 'redis_server', 'action': 'process', 'status': status, 'dest_ip': self.ip, 'dest_port': self.port, 'username': self.username, 'password': self.password, 'src_ip': '0.0.0.0', 'src_port': 0})
+            self.logs.info({'server': 'redis_server', 'action': 'process', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'username': self.username, 'password': self.password, 'dest_ip': self.ip, 'dest_port': self.port})
 
             if status == 'success':
                 return True
