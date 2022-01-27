@@ -310,11 +310,11 @@ class CustomHandler(Handler):
                         if 'server' in record.msg:
                             self.db.insert_into_data_safe('servers', dumps(serialize_object(record.msg), cls=ComplexEncoder))
             if 'terminal' in self.logs:
-                _record = parse_record(record, self.custom_filter,'terminal')
+                _record = parse_record(record, self.custom_filter, 'terminal')
                 if _record:
                     stdout.write(_record.msg + '\n')
             if 'syslog' in self.logs:
-                _record = parse_record(record, self.custom_filter,'terminal')
+                _record = parse_record(record, self.custom_filter, 'terminal')
                 if _record:
                     stdout.write(_record.msg + '\n')
         except Exception as e:
