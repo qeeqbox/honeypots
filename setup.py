@@ -9,7 +9,7 @@ setup(
     author_email='gigaqeeq@gmail.com',
     description=r"23 different honeypots in a single pypi package! (dns, ftp, httpproxy, http, https, imap, mysql, pop3, postgres, redis, smb, smtp, socks5, ssh, telnet, vnc, mssql, elastic, ldap, ntp, memcache, snmp, and oracle) ",
     long_description=long_description,
-    version='0.44',
+    version='0.45',
     license="AGPL-3.0",
     url="https://github.com/qeeqbox/honeypots",
     packages=['honeypots'],
