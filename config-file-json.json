@@ -38,9 +38,7 @@
          ],
          "remove":[],
          "options":[
-            "remove_errors",
-            "remove_init",
-            "remove_word_server"
+
          ]
       }
    }

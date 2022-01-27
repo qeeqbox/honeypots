@@ -51,20 +51,20 @@ def set_local_vars(self, config):
         print(e)
 
 
-def parse_record(record, custom_filter):
+def parse_record(record, custom_filter, type_):
     timestamp = {'timestamp': datetime.utcnow().isoformat()}
     try:
         if custom_filter is not None:
             if 'remove_errors' in custom_filter['honeypots']['options']:
                 if 'error' in record.msg:
                     return None
-            if 'remove_init' in custom_filter['honeypots']['options']:
-                if record.msg.get('action', None) == 'process':
-                    return None
-            if 'remove_word_server' in custom_filter['honeypots']['options']:
-                if 'server' in record.msg:
-                    record.msg['server'] = record.msg['server'].replace('_server', '')
             if isinstance(record.msg, Mapping):
+                if 'remove_init' in custom_filter['honeypots']['options']:
+                    if record.msg.get('action', None) == 'process':
+                        return None
+                if 'remove_word_server' in custom_filter['honeypots']['options']:
+                    if 'server' in record.msg:
+                        record.msg['server'] = record.msg['server'].replace('_server', '')
                 if 'honeypots' in custom_filter:
                     for key in record.msg.copy():
                         if key in custom_filter['honeypots']['change']:
@@ -80,7 +80,13 @@ def parse_record(record, custom_filter):
         else:
             record.msg = serialize_object(record.msg)
     except Exception as e:
-        record.msg = {'name': record.name, 'error': repr(e)}
+        record.msg = serialize_object({'name': record.name, 'error': repr(e)})
+    if type_ == 'file':
+        if custom_filter is not None:
+            if 'dump_json_to_file' in custom_filter['honeypots']['options']:
+                record.msg = dumps(record.msg, sort_keys=True, cls=ComplexEncoder)
+    else:
+        record.msg = dumps(record.msg, sort_keys=True, cls=ComplexEncoder)
     return record
 
 
@@ -277,7 +283,7 @@ class CustomHandlerFileRotate(RotatingFileHandler):
         RotatingFileHandler.__init__(self, filename, mode, maxBytes, backupCount, encoding, delay)
 
     def emit(self, record):
-        _record = parse_record(record, self.custom_filter)
+        _record = parse_record(record, self.custom_filter, 'file')
         if _record is not None:
             super().emit(_record)
 
@@ -304,13 +310,13 @@ class CustomHandler(Handler):
                         if 'server' in record.msg:
                             self.db.insert_into_data_safe('servers', dumps(serialize_object(record.msg), cls=ComplexEncoder))
             if 'terminal' in self.logs:
-                _record = parse_record(record, self.custom_filter)
+                _record = parse_record(record, self.custom_filter,'terminal')
                 if _record:
-                    stdout.write(dumps(_record.msg, sort_keys=True, cls=ComplexEncoder) + '\n')
+                    stdout.write(_record.msg + '\n')
             if 'syslog' in self.logs:
-                _record = parse_record(record, self.custom_filter)
+                _record = parse_record(record, self.custom_filter,'terminal')
                 if _record:
-                    stdout.write(dumps(_record.msg, sort_keys=True, cls=ComplexEncoder) + '\n')
+                    stdout.write(_record.msg + '\n')
         except Exception as e:
             if self.custom_filter is not None:
                 if 'honeypots' in self.custom_filter:
