@@ -16,33 +16,30 @@ filterwarnings(action='ignore', module='.*OpenSSL.*')
 from twisted.protocols.ftp import FTPFactory, FTP, AUTH_FAILURE
 from twisted.internet import reactor
 from twisted.python import log as tlog
+from random import choice
 from subprocess import Popen
-from os import path
+from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
 
 
 class QFTPServer():
-    def __init__(self, ip=None, port=None, username=None, password=None, mocking='', config=''):
+    def __init__(self, **kwargs):
         self.auto_disabled = None
-        self.mocking = mocking or ''
-        self.random_servers = ['ProFTPD 1.2.10', 'ProFTPD 1.3.4a', 'FileZilla ftp 0.9.43', 'Gene6 ftpd 3.10.0', 'FileZilla ftp 0.9.33', 'ProFTPD 1.2.8']
+        self.mocking_server = choice(['ProFTPD 1.2.10', 'ProFTPD 1.3.4a', 'FileZilla ftp 0.9.43', 'Gene6 ftpd 3.10.0', 'FileZilla ftp 0.9.33', 'ProFTPD 1.2.8'])
         self.process = None
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
-        self.ip = None
-        self.port = None
-        self.username = None
-        self.password = None
-        self.config = config
-        if config:
-            self.logs = setup_logger(__class__.__name__, self.uuid, config)
-            set_local_vars(self, config)
+        self.config = kwargs.get('config', '')
+        if self.config:
+            self.logs = setup_logger(__class__.__name__, self.uuid, self.config)
+            set_local_vars(self, self.config)
         else:
             self.logs = setup_logger(__class__.__name__, self.uuid, None)
-        self.ip = ip or self.ip or '0.0.0.0'
-        self.port = port or self.port or 21
-        self.username = username or self.username or 'test'
-        self.password = password or self.password or 'test'
+        self.ip = kwargs.get('ip', None) or (hasattr(self, 'ip') and self.ip) or '0.0.0.0'
+        self.port = kwargs.get('port', None) or (hasattr(self, 'port') and self.port) or 21
+        self.username = kwargs.get('username', None) or (hasattr(self, 'username') and self.username) or 'test'
+        self.password = kwargs.get('password', None) or (hasattr(self, 'password') and self.password) or 'test'
+        self.options = kwargs.get('options', '') or (hasattr(self, 'options') and self.options) or getenv('honeypots_options', '') or ''
         disable_logger(1, tlog)
 
     def ftp_server_main(self):
@@ -55,6 +52,12 @@ class QFTPServer():
                     return string.decode()
                 else:
                     return str(string)
+
+            def connectionMade(self):
+                _q_s.logs.info({'server': 'ftp_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+                self.state = self.UNAUTH
+                self.setTimeout(self.timeOut)
+                self.reply("220.2", self.factory.welcomeMessage)
 
             def ftp_PASS(self, password):
                 username = self.check_bytes(self._user)
@@ -78,6 +81,7 @@ class QFTPServer():
                 return p
 
         factory = CustomFTPFactory()
+        factory.welcomeMessage = self.mocking_server
         reactor.listenTCP(port=self.port, factory=factory, interface=self.ip)
         reactor.run()
 
@@ -94,7 +98,7 @@ class QFTPServer():
                 run = True
 
             if run:
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--options', str(self.options), '--config', str(self.config), '--uuid', str(self.uuid)])
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
@@ -126,6 +130,7 @@ class QFTPServer():
             _password = password or self.password
             f = FFTP()
             f.connect(_ip, _port)
+            #f.getwelcome()
             f.login(_username, _password)
         except BaseException:
             pass
@@ -134,5 +139,5 @@ class QFTPServer():
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
-        ftpserver = QFTPServer(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, config=parsed.config)
+        ftpserver = QFTPServer(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, options=parsed.options, config=parsed.config)
         ftpserver.run_server()

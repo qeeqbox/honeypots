@@ -17,31 +17,27 @@ from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor
 from twisted.python import log as tlog
 from subprocess import Popen
-from os import path
+from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running, set_local_vars
 from uuid import uuid4
 
 
 class QRedisServer():
-    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
+    def __init__(self, **kwargs):
         self.auto_disabled = None
-        self.mocking = mocking or ''
         self.process = None
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
-        self.config = config
-        self.ip = None
-        self.port = None
-        self.username = None
-        self.password = None
-        if config:
-            self.logs = setup_logger(__class__.__name__, self.uuid, config)
-            set_local_vars(self, config)
+        self.config = kwargs.get('config', '')
+        if self.config:
+            self.logs = setup_logger(__class__.__name__, self.uuid, self.config)
+            set_local_vars(self, self.config)
         else:
             self.logs = setup_logger(__class__.__name__, self.uuid, None)
-        self.ip = ip or self.ip or '0.0.0.0'
-        self.port = port or self.port or 6379
-        self.username = username or self.username or 'test'
-        self.password = password or self.password or 'test'
+        self.ip = kwargs.get('ip', None) or (hasattr(self, 'ip') and self.ip) or '0.0.0.0'
+        self.port = kwargs.get('port', None) or (hasattr(self, 'port') and self.port) or 6379
+        self.username = kwargs.get('username', None) or (hasattr(self, 'username') and self.username) or 'test'
+        self.password = kwargs.get('password', None) or (hasattr(self, 'password') and self.password) or 'test'
+        self.options = kwargs.get('options', '') or (hasattr(self, 'options') and self.options) or getenv('honeypots_options', '') or ''
         disable_logger(1, tlog)
 
     def redis_server_main(self):
@@ -124,7 +120,7 @@ class QRedisServer():
                 run = True
 
             if run:
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--options', str(self.options), '--config', str(self.config), '--uuid', str(self.uuid)])
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
@@ -163,5 +159,5 @@ class QRedisServer():
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
-        qredisserver = QRedisServer(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, config=parsed.config)
+        qredisserver = QRedisServer(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, options=parsed.options, config=parsed.config)
         qredisserver.run_server()

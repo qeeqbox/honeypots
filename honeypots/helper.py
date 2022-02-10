@@ -17,7 +17,7 @@ from signal import SIGTERM
 from argparse import ArgumentParser
 from socket import socket, AF_INET, SOCK_STREAM
 from json import JSONEncoder, dumps, load
-from logging import Handler, Formatter, DEBUG, getLogger, addLevelName, INFO
+from logging import Handler, Formatter, DEBUG, getLogger, addLevelName, INFO, Logger
 from sys import stdout
 from datetime import datetime
 from logging.handlers import RotatingFileHandler, SysLogHandler
@@ -28,10 +28,11 @@ from time import sleep
 from traceback import format_exc
 from collections.abc import Mapping
 from urllib.parse import urlparse
+from sqlite3 import connect
+from pathlib import Path
 
-old_stderr = sys.stderr
-sys.stderr = open(devnull, 'w')
-
+#old_stderr = sys.stderr
+#sys.stderr = open(devnull, 'w')
 
 def set_local_vars(self, config):
     try:
@@ -43,13 +44,11 @@ def set_local_vars(self, config):
                 honeypot = self.__class__.__name__[1:-6].lower()
             if honeypot and honeypot in honeypots:
                 for var in honeypots[honeypot]:
-                    if var in vars(self):
-                        setattr(self, var, honeypots[honeypot][var])
-                        if var == 'port':
-                            setattr(self, 'auto_disabled', True)
+                    setattr(self, var, honeypots[honeypot][var])
+                    if var == 'port':
+                        setattr(self, 'auto_disabled', True)
     except Exception as e:
-        print(e)
-
+        print("Test",honeypot,e)
 
 def parse_record(record, custom_filter, type_):
     timestamp = {'timestamp': datetime.utcnow().isoformat()}
@@ -81,12 +80,22 @@ def parse_record(record, custom_filter, type_):
             record.msg = serialize_object(record.msg)
     except Exception as e:
         record.msg = serialize_object({'name': record.name, 'error': repr(e)})
-    if type_ == 'file':
-        if custom_filter is not None:
-            if 'dump_json_to_file' in custom_filter['honeypots']['options']:
-                record.msg = dumps(record.msg, sort_keys=True, cls=ComplexEncoder)
-    else:
-        record.msg = dumps(record.msg, sort_keys=True, cls=ComplexEncoder)
+    try:
+        if type_ == 'file':
+            if custom_filter is not None:
+                if 'dump_json_to_file' in custom_filter['honeypots']['options']:
+                    record.msg = dumps(record.msg, sort_keys=True, cls=ComplexEncoder)
+        elif type_ == 'db_postgres':
+            pass
+        elif type_ == 'db_sqlite':
+            for item in ['data','error']:
+                if item in record.msg:
+                    if not isinstance(record.msg[item], str):
+                        record.msg[item] = repr(record.msg[item]).replace('\x00', ' ')
+        else:
+            record.msg = dumps(record.msg, sort_keys=True, cls=ComplexEncoder)
+    except:
+        return None
     return record
 
 
@@ -135,7 +144,7 @@ def setup_logger(name, temp_name, config, drop=False):
     file_handler = None
     ret_logs_obj = getLogger(temp_name)
     ret_logs_obj.setLevel(DEBUG)
-    if 'db' in logs:
+    if 'db_postgres' in logs or 'db_sqlite' in logs:
         ret_logs_obj.addHandler(CustomHandler(temp_name, logs, custom_filter, config_data, drop))
     elif 'terminal' in logs:
         ret_logs_obj.addHandler(CustomHandler(temp_name, logs, custom_filter))
@@ -247,7 +256,7 @@ def close_port_wrapper(server_name, ip, port, logs):
     if sock.connect_ex((ip, port)) != 0 and ret:
         return True
     else:
-        logs.error({'server': server_name, 'error': 'port_open', 'type': 'Port {} still open..'.format(ip)})
+        logs.error({'server': server_name, 'error': 'port_open.. {} still open..'.format(ip)})
         return False
 
 
@@ -290,25 +299,31 @@ class CustomHandlerFileRotate(RotatingFileHandler):
 
 class CustomHandler(Handler):
     def __init__(self, uuid='', logs='', custom_filter=None, config=None, drop=False):
-        self.db = None
+        self.db = {'db_postgres':None,'db_sqlite':None}
         self.logs = logs
         self.uuid = uuid
         self.custom_filter = custom_filter
-        if config and config != '':
+        if config and config != '' and 'db_postgres' in self.logs:
             parsed = urlparse(config['postgres'])
-            self.db = postgres_class(host=parsed.hostname, port=parsed.port, username=parsed.username, password=parsed.password, db=parsed.path[1:], uuid=self.uuid, drop=drop)
+            self.db['db_postgres'] = postgres_class(host=parsed.hostname, port=parsed.port, username=parsed.username, password=parsed.password, db=parsed.path[1:], uuid=self.uuid, drop=drop)
+        if config and config != '' and 'db_sqlite' in self.logs:
+            self.db['db_sqlite'] = sqlite_class(file=config["sqlite_file"], drop=drop, uuid=self.uuid)
         Handler.__init__(self)
 
     def emit(self, record):
         try:
-            if 'db' in self.logs:
-                if self.db:
+            if 'db_postgres' in self.logs:
+                if self.db['db_postgres']:
                     if isinstance(record.msg, list):
                         if record.msg[0] == 'sniffer' or record.msg[0] == 'errors':
-                            self.db.insert_into_data_safe(record.msg[0], dumps(serialize_object(record.msg[1]), cls=ComplexEncoder))
+                            self.db['db_postgres'].insert_into_data_safe(record.msg[0], dumps(serialize_object(record.msg[1]), cls=ComplexEncoder))
                     elif isinstance(record.msg, Mapping):
                         if 'server' in record.msg:
-                            self.db.insert_into_data_safe('servers', dumps(serialize_object(record.msg), cls=ComplexEncoder))
+                            self.db['db_postgres'].insert_into_data_safe('servers', dumps(serialize_object(record.msg), cls=ComplexEncoder))
+            if 'db_sqlite' in self.logs:
+                _record = parse_record(record, self.custom_filter, 'db_sqlite')
+                if _record:
+                    self.db['db_sqlite'].insert_into_data_safe(_record.msg)
             if 'terminal' in self.logs:
                 _record = parse_record(record, self.custom_filter, 'terminal')
                 if _record:
@@ -393,16 +408,75 @@ class postgres_class():
 
     def insert_into_data_safe(self, table, obj):
         try:
-            # stdout.write(str(table))
-            self.cur.execute(
-                sql.SQL('INSERT INTO {} (id,date, data) VALUES (DEFAULT ,now(), %s)')
-                .format(sql.Identifier(table + '_table')),
-                [obj])
-            #self.cur.execute(sql.SQL('INSERT INTO errors_table (data) VALUES (%s,)'),dumps(serialize_object(obj),cls=ComplexEncoder))
+            self.cur.execute(sql.SQL('INSERT INTO {} (id,date, data) VALUES (DEFAULT ,now(), %s)').format(sql.Identifier(table + '_table')),[obj])
         except Exception:
-            stdout.write(str(format_exc()).replace('\n', ' '))
-        stdout.flush()
+            pass
 
+class sqlite_class():
+    def __init__(self, file=None, drop=False, uuid=None):
+        self.file = file
+        self.uuid = uuid
+        self.mapped_tables = ['servers']
+        self.servers_table_template = {'server':'servers_table','action':None,'status':None,'src_ip':None,'src_port':None,'username':None,'password':None,'dest_ip':None,'dest_port':None,'data':None,'error':None}
+        self.wait_until_up()
+        if drop:
+            self.con = connect(self.file,timeout=1,isolation_level=None)
+            self.cur = self.con.cursor()
+            self.drop_db()
+            self.drop_tables()
+            self.con.close()
+        self.con = connect(self.file,timeout=1,isolation_level=None)
+        self.cur = self.con.cursor()
+        self.create_tables()
+
+    def wait_until_up(self):
+        test = True
+        while test:
+            try:
+                print('{} - Waiting on sqlite connection'.format(self.uuid))
+                conn = connect(self.file,timeout=1)
+                conn.close()
+                test = False
+            except Exception as e:
+                pass
+            sleep(1)
+        print('{} - sqlite connection is good'.format(self.uuid))
+
+    def drop_db_test(self):
+        try:
+            file_exists = False
+            sql_file = False
+            with open(self.file, 'rb') as f:
+                file_exists = True
+                header = f.read(100)
+                if header[:16] == b'SQLite format 3\x00':
+                    sql_file = True
+            if sql_file:
+                print("yes")
+        except Exception as e:
+            pass
+
+    def drop_db(self):
+        try:
+            file = Path(self.file)
+            file.unlink(missing_ok=False)
+        except Exception as e:
+            pass
+
+    def drop_tables(self,):
+        for x in self.mapped_tables:
+            self.cur.execute("DROP TABLE IF EXISTS '{:s}'".format(x))
+
+    def create_tables(self):
+        self.cur.execute("CREATE TABLE IF NOT EXISTS '{:s}' (id INTEGER PRIMARY KEY,date DATETIME DEFAULT CURRENT_TIMESTAMP,server text, action text, status text, src_ip text, src_port text,dest_ip text, dest_port text, username text, password text, data text, error text)".format('servers_table'))
+
+    def insert_into_data_safe(self, obj):
+        try:
+            parsed = {k: v for k, v in obj.items() if v is not None}
+            dict_ = {**self.servers_table_template,**parsed}
+            self.cur.execute("INSERT INTO servers_table (server, action, status, src_ip, src_port, dest_ip, dest_port, username, password, data, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (dict_['server'],dict_['action'],dict_['status'],dict_['src_ip'],dict_['src_port'],dict_['dest_ip'],dict_['dest_port'],dict_['username'],dict_['password'],dict_['data'],dict_['error']))
+        except Exception as e:
+            pass
 
 def server_arguments():
     _server_parser = ArgumentParser(prog='Server')
@@ -414,7 +488,7 @@ def server_arguments():
     _server_parsergroupdeq.add_argument('--resolver_addresses', type=str, help='Change resolver address', required=False, metavar='')
     _server_parsergroupdeq.add_argument('--domain', type=str, help='A domain to test', required=False, metavar='')
     _server_parsergroupdeq.add_argument('--folders', type=str, help='folders for smb as name:target,name:target', required=False, metavar='')
-    _server_parsergroupdeq.add_argument('--mocking', type=str, help='Random banner', required=False)
+    _server_parsergroupdeq.add_argument('--options', type=str, help='Extra options', metavar='', default='')
     _server_parsergroupdes = _server_parser.add_argument_group('Sinffer options')
     _server_parsergroupdes.add_argument('--filter', type=str, help='setup the Sinffer filter', required=False)
     _server_parsergroupdes.add_argument('--interface', type=str, help='sinffer interface E.g eth0', required=False)

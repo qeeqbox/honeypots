@@ -1,5 +1,8 @@
-FROM python:3.7
-COPY . /app
-WORKDIR /app
-RUN python3 setup.py sdist bdist_wheel && pip3 install .
-CMD /bin/bash
+FROM ubuntu:20.04
+MAINTAINER qeeqbox
+ENV DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y syslog-ng
+ADD syslog-ng.conf /etc/syslog-ng/syslog-ng.conf
+EXPOSE 514/udp
+WORKDIR /var/log/syslog-ng/
+ENTRYPOINT ["syslog-ng", "-F"]

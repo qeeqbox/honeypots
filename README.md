@@ -149,7 +149,7 @@ ip= String E.g. 0.0.0.0
 port= Int E.g. 9999
 username= String E.g. Test
 password= String E.g. Test
-mocking= Boolean or String E.g OpenSSH 7.0
+options= Boolean or String E.g OpenSSH 7.0
 logs= String E.g db, terminal or all
 always remember to add process=true to run_server() for non-blocking
 ```
@@ -177,6 +177,22 @@ ssh test@127.0.0.1
 ```python
 INFO:chameleonlogger:['servers', {'status': 'success', 'username': 'test', 'src_ip': '127.0.0.1', 'server': 'ssh_server', 'action': 'login', 'password': 'test', 'src_port': 38696}]
 qsshserver.kill_server()
+```
+
+## All output values
+```sh
+'error'     :'Information about current error' 
+'server'    :'Server name'
+'timestamp' :'Time in ISO'
+'action'    :'Query, login, etc..'
+'data'      :'More info about the action'
+'status'    :'The return status of the action (success or fail)'
+'dest_ip'   :'Server address'
+'dest_port' :'Server port'
+'src_ip'    :'Attacker address'
+'src_port'  :'Attacker port'
+'username'  :'Attacker username'
+'password'  :'Attacker password'
 ```
 
 ## Current Servers/Emulators

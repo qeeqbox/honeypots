@@ -152,7 +152,7 @@ Usage Example - Import as object and auto test
     #port= Int E.g. 9999
     #username= String E.g. Test
     #password= String E.g. Test
-    #mocking= Boolean or String E.g OpenSSH 7.0
+    #options= Boolean or String E.g OpenSSH 7.0
     #logs= String E.g db, terminal or all
     #always remember to add process=true to run_server() for non-blocking
 

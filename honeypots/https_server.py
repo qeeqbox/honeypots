@@ -23,7 +23,7 @@ from twisted.web.resource import Resource
 from random import choice
 from twisted.python import log as tlog
 from subprocess import Popen
-from os import path
+from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
 
@@ -31,28 +31,24 @@ disable_warnings()
 
 
 class QHTTPSServer():
-    def __init__(self, ip=None, port=None, username=None, password=None, mocking=False, config=''):
+    def __init__(self, **kwargs):
         self.auto_disabled = None
-        self.mocking = mocking or ''
         self.key = path.join(gettempdir(), next(_get_candidate_names()))
         self.cert = path.join(gettempdir(), next(_get_candidate_names()))
-        self.random_servers = ['Apache', 'nginx', 'Microsoft-IIS/7.5', 'Microsoft-HTTPAPI/2.0', 'Apache/2.2.15', 'SmartXFilter', 'Microsoft-IIS/8.5', 'Apache/2.4.6', 'Apache-Coyote/1.1', 'Microsoft-IIS/7.0', 'Apache/2.4.18', 'AkamaiGHost', 'Apache/2.2.25', 'Microsoft-IIS/10.0', 'Apache/2.2.3', 'nginx/1.12.1', 'Apache/2.4.29', 'cloudflare', 'Apache/2.2.22']
+        self.mocking_server = choice(['Apache', 'nginx', 'Microsoft-IIS/7.5', 'Microsoft-HTTPAPI/2.0', 'Apache/2.2.15', 'SmartXFilter', 'Microsoft-IIS/8.5', 'Apache/2.4.6', 'Apache-Coyote/1.1', 'Microsoft-IIS/7.0', 'Apache/2.4.18', 'AkamaiGHost', 'Apache/2.2.25', 'Microsoft-IIS/10.0', 'Apache/2.2.3', 'nginx/1.12.1', 'Apache/2.4.29', 'cloudflare', 'Apache/2.2.22'])
         self.process = None
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
-        self.ip = None
-        self.port = None
-        self.username = None
-        self.password = None
-        self.config = config
-        if config:
-            self.logs = setup_logger(__class__.__name__, self.uuid, config)
-            set_local_vars(self, config)
+        self.config = kwargs.get('config', '')
+        if self.config:
+            self.logs = setup_logger(__class__.__name__, self.uuid, self.config)
+            set_local_vars(self, self.config)
         else:
             self.logs = setup_logger(__class__.__name__, self.uuid, None)
-        self.ip = ip or self.ip or '0.0.0.0'
-        self.port = port or self.port or 443
-        self.username = username or self.username or 'test'
-        self.password = password or self.password or 'test'
+        self.ip = kwargs.get('ip', None) or (hasattr(self, 'ip') and self.ip) or '0.0.0.0'
+        self.port = kwargs.get('port', None) or (hasattr(self, 'port') and self.port) or 443
+        self.username = kwargs.get('username', None) or (hasattr(self, 'username') and self.username) or 'test'
+        self.password = kwargs.get('password', None) or (hasattr(self, 'password') and self.password) or 'test'
+        self.options = kwargs.get('options', '') or (hasattr(self, 'options') and self.options) or getenv('honeypots_options', '') or ''
         disable_logger(1, tlog)
 
     def CreateCert(self, host_name, key, cert):
@@ -135,12 +131,6 @@ class QHTTPSServer():
 </html>
 '''
 
-            if isinstance(_q_s.mocking, bool):
-                if _q_s.mocking == True:
-                    server = choice(_q_s.random_servers)
-            elif isinstance(_q_s.mocking, str):
-                server = _q_s.mocking
-
             def check_bytes(self, string):
                 if isinstance(string, bytes):
                     return string.decode()
@@ -150,6 +140,7 @@ class QHTTPSServer():
             def render(self, request):
 
                 headers = {}
+                client_ip = ""
 
                 try:
                     def check_bytes(string):
@@ -165,14 +156,28 @@ class QHTTPSServer():
                 except BaseException:
                     pass
 
-                _q_s.logs.info({'server': 'https_server', 'action': 'connection', 'src_ip': request.getHost().host, 'src_port': request.getHost().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'request': headers})
 
-                if self.server != '':
+                if 'fix_get_client_ip' in _q_s.options:
+                    try:
+                        raw_headers = dict(request.requestHeaders.getAllRawHeaders())
+                        if b'X-Forwarded-For':
+                            client_ip = check_bytes(raw_headers[b'X-Forwarded-For'][0])
+                        elif b'X-Real-IP':
+                            client_ip = check_bytes(raw_headers[b'X-Real-IP'][0])
+                    except:
+                        pass
+
+                if client_ip == "":
+                    client_ip = request.getClientAddress().host
+
+                _q_s.logs.info({'server': 'https_server', 'action': 'connection', 'src_ip': request.client_ip, 'src_port': request.getClientAddress().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': headers})
+
+                if _q_s.mocking_server != '':
                     request.responseHeaders.removeHeader('Server')
-                    request.responseHeaders.addRawHeader('Server', self.server)
+                    request.responseHeaders.addRawHeader('Server', _q_s.mocking_server)
 
                 if request.method == b'GET' or request.method == b'POST':
-                    _q_s.logs.info({'server': 'https_server', 'action': request.method.decode(), 'src_ip': request.getHost().host, 'src_port': request.getHost().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+                    _q_s.logs.info({'server': 'https_server', 'action': request.method.decode(), 'src_ip': request.client_ip, 'src_port': request.getClientAddress().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
 
                 if request.method == b'GET':
                     if request.uri == b'/login.html':
@@ -196,7 +201,7 @@ class QHTTPSServer():
                                     username = _q_s.username
                                     password = _q_s.password
                                     status = 'success'
-                                _q_s.logs.info({'server': 'https_server', 'action': 'login', 'status': status, 'src_ip': request.getHost().host, 'src_port': request.getHost().port, 'username': username, 'password': password, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+                                _q_s.logs.info({'server': 'https_server', 'action': 'login', 'status': status, 'src_ip': request.client_ip, 'src_port': request.getClientAddress().port, 'username': username, 'password': password, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
 
                     request.responseHeaders.addRawHeader('Content-Type', 'text/html; charset=utf-8')
                     return self.home_file
@@ -222,7 +227,7 @@ class QHTTPSServer():
                 run = True
 
             if run:
-                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--mocking', str(self.mocking), '--config', str(self.config), '--uuid', str(self.uuid)])
+                self.process = Popen(['python3', path.realpath(__file__), '--custom', '--ip', str(self.ip), '--port', str(self.port), '--username', str(self.username), '--password', str(self.password), '--options', str(self.options), '--config', str(self.config), '--uuid', str(self.uuid)])
                 if self.process.poll() is None and check_if_server_is_running(self.uuid):
                     status = 'success'
 
@@ -260,5 +265,5 @@ class QHTTPSServer():
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
-        qhttpsserver = QHTTPSServer(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, mocking=parsed.mocking, config=parsed.config)
+        qhttpsserver = QHTTPSServer(ip=parsed.ip, port=parsed.port, username=parsed.username, password=parsed.password, options=parsed.options, config=parsed.config)
         qhttpsserver.run_server()

@@ -1,8 +1,8 @@
 {
-    "logs": "db_sqlite",
+    "logs": "syslog",
     "logs_location": "",
-    "syslog_address":"",
-    "syslog_facility":0,
+    "syslog_address": "udp://localhost:514",
+    "syslog_facility": 3,
     "postgres":"//changeme027a088931d22:changeme0f40773877963@0.0.0.0:9999/chameleon",
     "sqlite_file":"/home/p98h0digu248jr/Desktop/db/test.db",
     "db_options":["drop"],
