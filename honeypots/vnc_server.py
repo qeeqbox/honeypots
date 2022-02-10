@@ -28,7 +28,6 @@ from uuid import uuid4
 class QVNCServer():
     def __init__(self, **kwargs):
         self.auto_disabled = None
-        self.random_servers = ['VNC Server']
         self.challenge = unhexlify('00000000901234567890123456789012')
         self.words = ['test']
         self.process = None

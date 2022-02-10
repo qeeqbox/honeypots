@@ -25,7 +25,6 @@ from uuid import uuid4
 class QSMTPServer():
     def __init__(self, **kwargs):
         self.auto_disabled = None
-        self.random_servers = []
         self.process = None
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
         self.config = kwargs.get('config', '')

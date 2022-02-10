@@ -36,7 +36,6 @@ class QElasticServer():
         self.auto_disabled = None
         self.key = path.join(gettempdir(), next(_get_candidate_names()))
         self.cert = path.join(gettempdir(), next(_get_candidate_names()))
-        self.random_servers = ['Elastic']
         self.process = None
         self.uuid = 'honeypotslogger' + '_' + __class__.__name__ + '_' + str(uuid4())[:8]
         self.config = kwargs.get('config', '')
