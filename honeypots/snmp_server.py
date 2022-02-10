@@ -60,7 +60,7 @@ class QSNMPServer():
                 _q_s.logs.info({'server': 'snmp_server', 'action': 'connection', 'status': 'fail', 'src_ip': addr[0], 'src_port': addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
                 version, community, oids = self.parse_snmp(data)
                 if version or community or oids:
-                    _q_s.logs.info({'server': 'snmp_server', 'action': 'query', 'status': 'success', 'src_ip': addr[0], 'src_port': addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data':{'version': version, 'community': community, 'oids': oids}})
+                    _q_s.logs.info({'server': 'snmp_server', 'action': 'query', 'status': 'success', 'src_ip': addr[0], 'src_port': addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': {'version': version, 'community': community, 'oids': oids}})
                     self.transport.write('Error', addr)
 
                 self.transport.loseConnection()

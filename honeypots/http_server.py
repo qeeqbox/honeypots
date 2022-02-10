@@ -132,7 +132,7 @@ class QHTTPServer():
                         headers.update({check_bytes(item): ','.join(map(check_bytes, value))})
                     headers.update({'method': check_bytes(request.method)})
                     headers.update({'uri': check_bytes(request.uri)})
-                except:
+                except BaseException:
                     pass
 
                 if 'fix_get_client_ip' in _q_s.options:
@@ -142,7 +142,7 @@ class QHTTPServer():
                             client_ip = check_bytes(raw_headers[b'X-Forwarded-For'][0])
                         elif b'X-Real-IP':
                             client_ip = check_bytes(raw_headers[b'X-Real-IP'][0])
-                    except:
+                    except BaseException:
                         pass
 
                 if client_ip == "":

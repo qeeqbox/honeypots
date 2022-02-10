@@ -34,6 +34,7 @@ from pathlib import Path
 #old_stderr = sys.stderr
 #sys.stderr = open(devnull, 'w')
 
+
 def set_local_vars(self, config):
     try:
         honeypot = None
@@ -48,7 +49,8 @@ def set_local_vars(self, config):
                     if var == 'port':
                         setattr(self, 'auto_disabled', True)
     except Exception as e:
-        print("Test",honeypot,e)
+        print("Test", honeypot, e)
+
 
 def parse_record(record, custom_filter, type_):
     timestamp = {'timestamp': datetime.utcnow().isoformat()}
@@ -88,13 +90,13 @@ def parse_record(record, custom_filter, type_):
         elif type_ == 'db_postgres':
             pass
         elif type_ == 'db_sqlite':
-            for item in ['data','error']:
+            for item in ['data', 'error']:
                 if item in record.msg:
                     if not isinstance(record.msg[item], str):
                         record.msg[item] = repr(record.msg[item]).replace('\x00', ' ')
         else:
             record.msg = dumps(record.msg, sort_keys=True, cls=ComplexEncoder)
-    except:
+    except BaseException:
         return None
     return record
 
@@ -299,7 +301,7 @@ class CustomHandlerFileRotate(RotatingFileHandler):
 
 class CustomHandler(Handler):
     def __init__(self, uuid='', logs='', custom_filter=None, config=None, drop=False):
-        self.db = {'db_postgres':None,'db_sqlite':None}
+        self.db = {'db_postgres': None, 'db_sqlite': None}
         self.logs = logs
         self.uuid = uuid
         self.custom_filter = custom_filter
@@ -408,24 +410,25 @@ class postgres_class():
 
     def insert_into_data_safe(self, table, obj):
         try:
-            self.cur.execute(sql.SQL('INSERT INTO {} (id,date, data) VALUES (DEFAULT ,now(), %s)').format(sql.Identifier(table + '_table')),[obj])
+            self.cur.execute(sql.SQL('INSERT INTO {} (id,date, data) VALUES (DEFAULT ,now(), %s)').format(sql.Identifier(table + '_table')), [obj])
         except Exception:
             pass
+
 
 class sqlite_class():
     def __init__(self, file=None, drop=False, uuid=None):
         self.file = file
         self.uuid = uuid
         self.mapped_tables = ['servers']
-        self.servers_table_template = {'server':'servers_table','action':None,'status':None,'src_ip':None,'src_port':None,'username':None,'password':None,'dest_ip':None,'dest_port':None,'data':None,'error':None}
+        self.servers_table_template = {'server': 'servers_table', 'action': None, 'status': None, 'src_ip': None, 'src_port': None, 'username': None, 'password': None, 'dest_ip': None, 'dest_port': None, 'data': None, 'error': None}
         self.wait_until_up()
         if drop:
-            self.con = connect(self.file,timeout=1,isolation_level=None)
+            self.con = connect(self.file, timeout=1, isolation_level=None)
             self.cur = self.con.cursor()
             self.drop_db()
             self.drop_tables()
             self.con.close()
-        self.con = connect(self.file,timeout=1,isolation_level=None)
+        self.con = connect(self.file, timeout=1, isolation_level=None)
         self.cur = self.con.cursor()
         self.create_tables()
 
@@ -434,7 +437,7 @@ class sqlite_class():
         while test:
             try:
                 print('{} - Waiting on sqlite connection'.format(self.uuid))
-                conn = connect(self.file,timeout=1)
+                conn = connect(self.file, timeout=1)
                 conn.close()
                 test = False
             except Exception as e:
@@ -473,10 +476,11 @@ class sqlite_class():
     def insert_into_data_safe(self, obj):
         try:
             parsed = {k: v for k, v in obj.items() if v is not None}
-            dict_ = {**self.servers_table_template,**parsed}
-            self.cur.execute("INSERT INTO servers_table (server, action, status, src_ip, src_port, dest_ip, dest_port, username, password, data, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (dict_['server'],dict_['action'],dict_['status'],dict_['src_ip'],dict_['src_port'],dict_['dest_ip'],dict_['dest_port'],dict_['username'],dict_['password'],dict_['data'],dict_['error']))
+            dict_ = {**self.servers_table_template, **parsed}
+            self.cur.execute("INSERT INTO servers_table (server, action, status, src_ip, src_port, dest_ip, dest_port, username, password, data, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (dict_['server'], dict_['action'], dict_['status'], dict_['src_ip'], dict_['src_port'], dict_['dest_ip'], dict_['dest_port'], dict_['username'], dict_['password'], dict_['data'], dict_['error']))
         except Exception as e:
             pass
+
 
 def server_arguments():
     _server_parser = ArgumentParser(prog='Server')

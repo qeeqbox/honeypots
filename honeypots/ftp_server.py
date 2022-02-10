@@ -130,7 +130,7 @@ class QFTPServer():
             _password = password or self.password
             f = FFTP()
             f.connect(_ip, _port)
-            #f.getwelcome()
+            # f.getwelcome()
             f.login(_username, _password)
         except BaseException:
             pass

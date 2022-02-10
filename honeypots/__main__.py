@@ -117,7 +117,7 @@ def main_logic():
     ARG_PARSER_CHAMELEON.add_argument('--sniffer', action='store_true', help='sniffer - reserved for chameleon project')
     ARG_PARSER_CHAMELEON.add_argument('--iptables', action='store_true', help='iptables - reserved for chameleon project')
     ARGV = ARG_PARSER.parse_args()
-    PARSED_ARG_PARSER_OPTIONAL = {action.dest:getattr(ARGV,action.dest,'') for action in ARG_PARSER_OPTIONAL._group_actions}
+    PARSED_ARG_PARSER_OPTIONAL = {action.dest: getattr(ARGV, action.dest, '') for action in ARG_PARSER_OPTIONAL._group_actions}
     config_data = None
     if ARGV.config != '':
         with open(ARGV.config) as f:

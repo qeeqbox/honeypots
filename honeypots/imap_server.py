@@ -135,7 +135,7 @@ class QIMAPServer():
             _username = username or self.username
             _password = password or self.password
             imap_test = IMAP4(_ip, _port)
-            #imap_test.welcome
+            # imap_test.welcome
             imap_test.login(_username, _password)
         except BaseException:
             pass

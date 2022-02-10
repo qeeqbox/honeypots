@@ -144,7 +144,7 @@ class QPOP3Server():
             _username = username or self.username
             _password = password or self.password
             pp = poplibPOP3(_ip, _port)
-            #pp.getwelcome()
+            # pp.getwelcome()
             pp.user(_username)
             pp.pass_(_password)
         except BaseException:

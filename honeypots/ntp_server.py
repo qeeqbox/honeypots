@@ -73,9 +73,9 @@ class QNTPServer():
                         success = True
 
                 if success:
-                    _q_s.logs.info({'server': 'ntp_server', 'action': 'query', 'status': 'success', 'src_ip': addr[0], 'src_port': addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data':{'version': version, 'mode': mode}})
+                    _q_s.logs.info({'server': 'ntp_server', 'action': 'query', 'status': 'success', 'src_ip': addr[0], 'src_port': addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': {'version': version, 'mode': mode}})
                 else:
-                    _q_s.logs.info({'server': 'ntp_server', 'action': 'query', 'status': 'fail', 'src_ip': addr[0], 'src_port': addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data':{'version': version, 'mode': mode}})
+                    _q_s.logs.info({'server': 'ntp_server', 'action': 'query', 'status': 'fail', 'src_ip': addr[0], 'src_port': addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': {'version': version, 'mode': mode}})
 
                 self.transport.loseConnection()
 

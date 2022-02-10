@@ -156,7 +156,6 @@ class QHTTPSServer():
                 except BaseException:
                     pass
 
-
                 if 'fix_get_client_ip' in _q_s.options:
                     try:
                         raw_headers = dict(request.requestHeaders.getAllRawHeaders())
@@ -164,7 +163,7 @@ class QHTTPSServer():
                             client_ip = check_bytes(raw_headers[b'X-Forwarded-For'][0])
                         elif b'X-Real-IP':
                             client_ip = check_bytes(raw_headers[b'X-Real-IP'][0])
-                    except:
+                    except BaseException:
                         pass
 
                 if client_ip == "":

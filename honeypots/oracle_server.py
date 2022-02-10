@@ -89,7 +89,7 @@ class QOracleServer():
             def dataReceived(self, data):
                 service_name, program, local_user = self.parse_payload(data)
                 if service_name or program or local_user:
-                    _q_s.logs.info({'server': 'oracle_server', 'action': 'login', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data':{'local_user': local_user, 'program': program, 'service_name': service_name}})
+                    _q_s.logs.info({'server': 'oracle_server', 'action': 'login', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': {'local_user': local_user, 'program': program, 'service_name': service_name}})
                 self.transport.write(self.refuse_payload())
                 self.transport.loseConnection()
 
