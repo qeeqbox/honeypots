@@ -36,7 +36,7 @@ class QSOCKS5Server():
         self.port = kwargs.get('port', None) or (hasattr(self, 'port') and self.port) or 1080
         self.username = kwargs.get('username', None) or (hasattr(self, 'username') and self.username) or 'test'
         self.password = kwargs.get('password', None) or (hasattr(self, 'password') and self.password) or 'test'
-        self.options = kwargs.get('options', '') or (hasattr(self, 'options') and self.options) or getenv('honeypots_options', '') or ''
+        self.options = kwargs.get('options', '') or (hasattr(self, 'options') and self.options) or getenv('HONEYPOTS_OPTIONS', '') or ''
 
     def socks5_server_main(self):
         _q_s = self
