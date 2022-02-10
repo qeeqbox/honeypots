@@ -31,8 +31,8 @@ from urllib.parse import urlparse
 from sqlite3 import connect
 from pathlib import Path
 
-#old_stderr = sys.stderr
-#sys.stderr = open(devnull, 'w')
+old_stderr = sys.stderr
+sys.stderr = open(devnull, 'w')
 
 
 def set_local_vars(self, config):
