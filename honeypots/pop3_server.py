@@ -66,7 +66,7 @@ class QPOP3Server():
 
                 with suppress(Exception):
                     if "capture_commands" in _q_s.options:
-                        _q_s.logs.info({'server': 'pop3_server', 'action': 'command', 'data':{"cmd":self.check_bytes(command),"args":self.check_bytes(*args)},'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+                        _q_s.logs.info({'server': 'pop3_server', 'action': 'command', 'data': {"cmd": self.check_bytes(command), "args": self.check_bytes(*args)}, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
 
                 if self.blocked is not None:
                     self.blocked.append((command, args))
@@ -167,6 +167,7 @@ class QPOP3Server():
             # pp.getwelcome()
             pp.user(_username)
             pp.pass_(_password)
+
 
 if __name__ == '__main__':
     parsed = server_arguments()

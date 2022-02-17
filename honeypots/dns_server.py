@@ -23,6 +23,7 @@ from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrap
 from uuid import uuid4
 from contextlib import suppress
 
+
 class QDNSServer():
     def __init__(self, **kwargs):
         self.auto_disabled = None
@@ -113,6 +114,7 @@ class QDNSServer():
             res.port = self.port
             temp_domain = domain or 'example.org'
             r = res.query(temp_domain, 'a')
+
 
 if __name__ == '__main__':
     parsed = server_arguments()

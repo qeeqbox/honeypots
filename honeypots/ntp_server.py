@@ -128,6 +128,7 @@ class QNTPServer():
             data, address = c.recvfrom(256)
             ret_time = unpack('!12I', data)[10] - 2208988800
 
+
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:

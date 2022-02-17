@@ -51,6 +51,7 @@ def set_local_vars(self, config):
                     if var == 'port':
                         setattr(self, 'auto_disabled', True)
 
+
 def parse_record(record, custom_filter, type_):
     timestamp = {'timestamp': datetime.utcnow().isoformat()}
     try:
@@ -184,6 +185,7 @@ def kill_servers(name):
             if '--custom' in cmdline and name in cmdline:
                 process.send_signal(SIGTERM)
                 process.kill()
+
 
 def check_if_server_is_running(uuid):
     with suppress(Exception):
@@ -398,6 +400,7 @@ class postgres_class():
         with suppress(Exception):
             self.cur.execute(sql.SQL('INSERT INTO {} (id,date, data) VALUES (DEFAULT ,now(), %s)').format(sql.Identifier(table + '_table')), [obj])
 
+
 class sqlite_class():
     def __init__(self, file=None, drop=False, uuid=None):
         self.file = file
@@ -457,6 +460,7 @@ class sqlite_class():
             parsed = {k: v for k, v in obj.items() if v is not None}
             dict_ = {**self.servers_table_template, **parsed}
             self.cur.execute("INSERT INTO servers_table (server, action, status, src_ip, src_port, dest_ip, dest_port, username, password, data, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (dict_['server'], dict_['action'], dict_['status'], dict_['src_ip'], dict_['src_port'], dict_['dest_ip'], dict_['dest_port'], dict_['username'], dict_['password'], dict_['data'], dict_['error']))
+
 
 def server_arguments():
     _server_parser = ArgumentParser(prog='Server')

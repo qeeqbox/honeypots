@@ -11,7 +11,7 @@ setup(
     long_description=long_description,
     version='0.50',
     license="AGPL-3.0",
-    license_files = ('LICENSE'),
+    license_files=('LICENSE'),
     url="https://github.com/qeeqbox/honeypots",
     packages=['honeypots'],
     entry_points={

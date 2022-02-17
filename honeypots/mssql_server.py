@@ -161,6 +161,7 @@ class QMSSQLServer():
             conn = pconnect(host=_ip, port=str(_port), user=_username, password=_password, database='dbname')
             cursor = conn.cursor()
 
+
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:

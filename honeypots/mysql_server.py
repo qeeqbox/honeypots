@@ -199,6 +199,7 @@ class QMysqlServer():
             _password = password or self.password
             cnx = mysqlconnect(user=_username, password=_password, host=_ip, port=_port, database='test', connect_timeout=1000)
 
+
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:

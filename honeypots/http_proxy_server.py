@@ -138,6 +138,7 @@ class QHTTPProxyServer():
             _domain = domain or 'http://yahoo.com'
             get(_domain, proxies={'http': 'http://{}:{}'.format(_ip, _port)}).text.encode('ascii', 'ignore')
 
+
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:

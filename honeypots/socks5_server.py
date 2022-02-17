@@ -123,6 +123,7 @@ class QSOCKS5Server():
             _password = password or self.password
             get('https://yahoo.com', proxies=dict(http='socks5://{}:{}@{}:{}'.format(_username, _password, _ip, _port), https='socks5://{}:{}@{}:{}'.format(_username, _password, _ip, _port)))
 
+
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:

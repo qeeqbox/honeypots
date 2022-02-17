@@ -75,7 +75,7 @@ class QIMAPServer():
 
                 with suppress(Exception):
                     if "capture_commands" in _q_s.options:
-                        _q_s.logs.info({'server': 'imap_server', 'action': 'command', 'data':{"cmd":self.check_bytes(cmd),"tag":self.check_bytes(tag),"data":self.check_bytes(rest)},'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+                        _q_s.logs.info({'server': 'imap_server', 'action': 'command', 'data': {"cmd": self.check_bytes(cmd), "tag": self.check_bytes(tag), "data": self.check_bytes(rest)}, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
 
                 try:
                     return self.dispatchCommand(tag, cmd, rest)

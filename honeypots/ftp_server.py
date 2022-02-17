@@ -59,7 +59,7 @@ class QFTPServer():
 
                 with suppress(Exception):
                     if "capture_commands" in _q_s.options:
-                        _q_s.logs.info({'server': 'ftp_server', 'action': 'command', 'data':{"cmd":self.check_bytes(cmd),"args":self.check_bytes(*params)},'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+                        _q_s.logs.info({'server': 'ftp_server', 'action': 'command', 'data': {"cmd": self.check_bytes(cmd), "args": self.check_bytes(*params)}, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
 
                 if self.state == self.UNAUTH:
                     if cmd == 'USER':

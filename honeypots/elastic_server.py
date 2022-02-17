@@ -257,6 +257,7 @@ class QElasticServer():
             es = Elasticsearch(['https://{}:{}'.format(_ip, _port)], http_auth=(_username, _password), verify_certs=False)
             es.search(index='test', body={}, size=99)
 
+
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:

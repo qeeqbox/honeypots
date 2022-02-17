@@ -148,6 +148,7 @@ class QPostgresServer():
             _password = password or self.password
             x = connect(host=_ip, port=_port, user=_username, password=_password)
 
+
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:

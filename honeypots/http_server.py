@@ -232,6 +232,7 @@ class QHTTPServer():
             get('http://{}:{}'.format(_ip, _port), verify=False)
             post('http://{}:{}/login.html'.format(_ip, _port), data={'username': (None, _username), 'password': (None, _password)})
 
+
 if __name__ == '__main__':
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
