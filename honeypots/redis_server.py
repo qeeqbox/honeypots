@@ -20,6 +20,7 @@ from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running, set_local_vars
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QRedisServer():
@@ -52,15 +53,13 @@ class QRedisServer():
                     return str(string)
 
             def get_command(self, data):
-                try:
+                with suppress(Exception):
                     _data = data.decode('utf-8').split('\x0d\x0a')
                     if _data[0][0] == '*':
                         _count = int(_data[0][1]) - 1
                         _data.pop(0)
                         if _data[0::2][0][0] == '$' and len(_data[1::2][0]) == int(_data[0::2][0][1]):
                             return _count, _data[1::2][0]
-                except Exception as e:
-                    pass
 
                 return 0, ''
 
@@ -143,7 +142,7 @@ class QRedisServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from redis import StrictRedis
             _ip = ip or self.ip
             _port = port or self.port
@@ -152,9 +151,6 @@ class QRedisServer():
             r = StrictRedis.from_url('redis://{}:{}@{}:{}/1'.format(_username, _password, _ip, _port))
             for key in r.scan_iter('user:*'):
                 pass
-        except BaseException:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

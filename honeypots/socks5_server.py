@@ -19,6 +19,7 @@ from os import path, getenv
 from subprocess import Popen
 from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QSOCKS5Server():
@@ -114,16 +115,13 @@ class QSOCKS5Server():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from requests import get
             _ip = ip or self.ip
             _port = port or self.port
             _username = username or self.username
             _password = password or self.password
             get('https://yahoo.com', proxies=dict(http='socks5://{}:{}@{}:{}'.format(_username, _password, _ip, _port), https='socks5://{}:{}@{}:{}'.format(_username, _password, _ip, _port)))
-        except BaseException:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

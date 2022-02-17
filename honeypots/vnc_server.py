@@ -23,6 +23,7 @@ from os import path, getenv
 #from vncdotool import api as vncapi
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QVNCServer():
@@ -50,7 +51,7 @@ class QVNCServer():
             self.words = file.read().splitlines()
 
     def decode(self, c, r):
-        try:
+        with suppress(Exception):
             for word in self.words:
                 temp = word
                 word = word.strip('\n').ljust(8, '\00')[:8]
@@ -60,9 +61,6 @@ class QVNCServer():
                 output = DES.new(''.join(rev_word).encode('utf-8'), DES.MODE_ECB).encrypt(c)
                 if output == r:
                     return temp
-        except BaseException:
-            pass
-
         return None
 
     def vnc_server_main(self):
@@ -93,7 +91,7 @@ class QVNCServer():
                         self._state = 3
                         self.transport.write(_q_s.challenge)
                 elif self._state == 3:
-                    try:
+                    with suppress(Exception):
                         username = self.check_bytes(_q_s.decode(_q_s.challenge, data.hex()))
                         password = self.check_bytes(data)
                         status = 'failed'
@@ -105,8 +103,6 @@ class QVNCServer():
                         else:
                             password = data.hex()
                         _q_s.logs.info({'server': 'vnc_server', 'action': 'login', status: 'failed', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': username, 'password': password})
-                    except Exception as e:
-                        pass
                     self.transport.loseConnection()
                 else:
                     self.transport.loseConnection()
@@ -155,7 +151,7 @@ class QVNCServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             ip or self.ip
             port or self.port
             username or self.username
@@ -163,9 +159,6 @@ class QVNCServer():
             #client = vncapi.connect('{}::{}'.format(self.ip, self.port), password=password)
             # client.captureScreen('screenshot.png')
             # client.disconnect()
-        except BaseException:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

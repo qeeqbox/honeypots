@@ -22,6 +22,7 @@ from random import randint, uniform
 from time import time
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QMemcacheServer():
@@ -63,19 +64,17 @@ class QMemcacheServer():
 
             def get_key(self, key):
                 ret = b''
-                try:
+                with suppress(Exception):
                     random = randint(80000000, 90000000)
                     temp = 'VALUE {} 0 {}\r\n{}\r\nEND\r\n'.format(key.decode(), len(str(random)), random)
                     ret = temp.encode()
-                except BaseException:
-                    pass
                 return ret
 
             def connectionMade(self):
                 _q_s.logs.info({'server': 'memcache_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
 
             def dataReceived(self, data):
-                try:
+                with suppress(Exception):
                     _data = data.split(b'\r\n')[0].split(b' ')
                     if _data[0] == b'stats':
                         self.transport.write(self.get_stats())
@@ -90,8 +89,6 @@ class QMemcacheServer():
                         self.transport.write(b'ERROR\r\n')
                     if _data[0] != b'':
                         _q_s.logs.info({'server': 'memcache_server', 'action': _data[0].decode(), 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
-                except BaseException:
-                    pass
                 self.transport.loseConnection()
 
         factory = Factory()
@@ -135,7 +132,7 @@ class QMemcacheServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from socket import socket, AF_INET, SOCK_STREAM
             _ip = ip or self.ip
             _port = port or self.port
@@ -143,9 +140,6 @@ class QMemcacheServer():
             c.connect((_ip, _port))
             c.send(b'stats\r\n')
             data, address = c.recvfrom(10000)
-        except BaseException:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

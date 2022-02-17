@@ -21,6 +21,7 @@ from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QPostgresServer():
@@ -139,16 +140,13 @@ class QPostgresServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from psycopg2 import sql, connect
             _ip = ip or self.ip
             _port = port or self.port
             _username = username or self.username
             _password = password or self.password
             x = connect(host=_ip, port=_port, user=_username, password=_password)
-        except BaseException:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

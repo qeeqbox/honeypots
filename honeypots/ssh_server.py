@@ -22,6 +22,7 @@ from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QSSHServer():
@@ -43,13 +44,11 @@ class QSSHServer():
         self.options = kwargs.get('options', '') or (hasattr(self, 'options') and self.options) or getenv('HONEYPOTS_OPTIONS', '') or ''
 
     def generate_pub_pri_keys(self):
-        try:
+        with suppress(Exception):
             key = RSAKey.generate(2048)
             string_io = StringIO()
             key.write_private_key(string_io)
             return key.get_base64(), string_io.getvalue()
-        except BaseException:
-            pass
         return None, None
 
     def ssh_server_main(self):
@@ -79,7 +78,7 @@ class QSSHServer():
                 _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': username, 'password': password})
 
         def ConnectionHandle(client, priv):
-            try:
+            with suppress(Exception):
                 t = Transport(client)
                 ip, port = client.getpeername()
                 _q_s.logs.info({'server': 'ssh_server', 'action': 'connection', 'src_ip': ip, 'src_port': port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
@@ -89,8 +88,6 @@ class QSSHServer():
                 chan = t.accept(1)
                 if not chan is None:
                     chan.close()
-            except BaseException:
-                pass
 
         sock = socket(AF_INET, SOCK_STREAM)
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -98,11 +95,9 @@ class QSSHServer():
         sock.listen(1)
         pub, priv = self.generate_pub_pri_keys()
         while True:
-            try:
+            with suppress(Exception):
                 client, addr = sock.accept()
                 start_new_thread(ConnectionHandle, (client, priv,))
-            except BaseException:
-                pass
 
     def run_server(self, process=False, auto=False):
         status = 'error'
@@ -140,7 +135,7 @@ class QSSHServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from paramiko import SSHClient, AutoAddPolicy
             _ip = ip or self.ip
             _port = port or self.port
@@ -149,10 +144,6 @@ class QSSHServer():
             ssh = SSHClient()
             ssh.set_missing_host_key_policy(AutoAddPolicy())  # if you have default ones, remove them before using this..
             ssh.connect(_ip, port=_port, username=_username, password=_password)
-        except Exception as e:
-            print(e)
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

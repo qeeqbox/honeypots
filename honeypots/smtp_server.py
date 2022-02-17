@@ -20,6 +20,7 @@ from os import path, getenv
 from subprocess import Popen
 from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QSMTPServer():
@@ -64,7 +65,7 @@ class QSMTPServer():
                     self.push('250 STARTTLS')
 
             def smtp_AUTH(self, arg):
-                try:
+                with suppress(Exception):
                     if arg.startswith('PLAIN '):
                         _, username, password = b64decode(arg.split(' ')[1].strip()).decode('utf-8').split('\0')
                         username = self.check_bytes(username)
@@ -75,9 +76,6 @@ class QSMTPServer():
                             password = _q_s.password
                             status = 'success'
                         _q_s.logs.info({'server': 'smtp_server', 'action': 'login', 'status': status, 'src_ip': self.addr[0], 'src_port': self.addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': username, 'password': password})
-
-                except Exception as e:
-                    pass
 
                 self.push('235 Authentication successful')
 
@@ -134,7 +132,7 @@ class QSMTPServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from smtplib import SMTP
             _ip = ip or self.ip
             _port = port or self.port
@@ -145,9 +143,6 @@ class QSMTPServer():
             s.login(_username, _password)
             s.sendmail('fromtest', 'totest', 'Nothing')
             s.quit()
-        except BaseException:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

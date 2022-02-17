@@ -143,19 +143,19 @@ def main_logic():
         clean_all()
     elif ARGV.chameleon and config_data is not None:
         print('[x] Chameleon mode')
-        if config_data['filter'] and config_data['interface']:
+        if config_data['sniffer_filter'] and config_data['sniffer_interface']:
             if not ARGV.test:
                 if ARGV.sniffer:
                     current_interfaces = 'unknown'
                     try:
                         current_interfaces = ' '.join(interfaces())
-                        if config_data['interface'] in current_interfaces:
-                            print('[x] Your IP: {}'.format(ifaddresses(config_data['interface'])[AF_INET][0]['addr']))
-                            print('[x] Your MAC: {}'.format(ifaddresses(config_data['interface'])[AF_LINK][0]['addr']))
+                        if config_data['sniffer_interface'] in current_interfaces:
+                            print('[x] Your IP: {}'.format(ifaddresses(config_data['sniffer_interface'])[AF_INET][0]['addr']))
+                            print('[x] Your MAC: {}'.format(ifaddresses(config_data['sniffer_interface'])[AF_LINK][0]['addr']))
                         else:
                             exit()
                     except Exception as e:
-                        print('[!] Unable to detect IP or MAC for [{}] interface, current interfaces are [{}]'.format(config_data['interface'], current_interfaces), e)
+                        print('[!] Unable to detect IP or MAC for [{}] interface, current interfaces are [{}]'.format(config_data['sniffer_interface'], current_interfaces), e)
                         exit()
                     if ARGV.iptables:
                         try:
@@ -207,7 +207,7 @@ def main_logic():
 
             if ARGV.sniffer:
                 print('[x] Start sniffer')
-                x = locals()['QBSniffer'](filter=config_data['filter'], interface=config_data['interface'], config=ARGV.config)
+                x = locals()['QBSniffer'](filter=config_data['sniffer_filter'], interface=config_data['sniffer_interface'], config=ARGV.config)
                 x.run_sniffer(process=True)
                 temp_honeypots.append(x)
 

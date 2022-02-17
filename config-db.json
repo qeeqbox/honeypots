@@ -3,14 +3,14 @@
     "logs_location": "",
     "syslog_address":"",
     "syslog_facility":0,
-    "postgres":"//changeme027a088931d22:changeme0f40773877963@0.0.0.0:9999/chameleon",
-    "sqlite_file":"/home/p98h0digu248jr/Desktop/db/test.db",
+    "postgres":"",
+    "sqlite_file":"/home/test.db",
     "db_options":["drop"],
-    "filter": "",
-    "interface": "",
+    "sniffer_sniffer_filter": "",
+    "sniffer_interface": "",
     "honeypots": {
         "http": {
-            "port": 2222,
+            "port": 2221,
             "username": "test",
             "password": "test"
         }

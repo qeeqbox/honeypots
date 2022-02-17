@@ -23,6 +23,7 @@ from struct import unpack, pack
 from binascii import unhexlify, hexlify
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QMSSQLServer():
@@ -59,7 +60,7 @@ class QMSSQLServer():
 
             def create_payload(self, server_name=b'', token_error_msg=b'', error_code=2):
                 ret = '040100c000350100aaa80002000000010e440041006e0020006500720072006f007200200068006100730020006f00630063007500720072006500640020007700680069006c0065002000650073007400610062006c0069007300680069006e00670020006100200063006f006e006e0065006300740069006f006e00200074006f00200074006800650020007300650072007600650072002e00095200260044006200610063006b00750070000001000000fd020000000000000000000000'
-                try:
+                with suppress(Exception):
                     if server_name == b'':
                         server_name = b'R&Dbackup'
                     if token_error_msg == b'':
@@ -74,8 +75,6 @@ class QMSSQLServer():
                     token_error_len = hexlify(pack('<H', len(unhexlify(token_error_hex))))
                     data_stream = b'0401007600350100aa' + token_error_len + token_error_hex + token_done_hex
                     ret = data_stream[0:4] + hexlify(pack('>H', len(unhexlify(data_stream)))) + data_stream[8:]
-                except BaseException:
-                    pass
                 return ret
 
             def connectionMade(self):
@@ -153,7 +152,7 @@ class QMSSQLServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from pymssql import connect as pconnect
             _ip = ip or self.ip
             _port = port or self.port
@@ -161,9 +160,6 @@ class QMSSQLServer():
             _password = password or self.password
             conn = pconnect(host=_ip, port=str(_port), user=_username, password=_password, database='dbname')
             cursor = conn.cursor()
-        except Exception as e:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

@@ -21,6 +21,7 @@ from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QTelnetServer():
@@ -130,7 +131,7 @@ class QTelnetServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from telnetlib import Telnet as TTelnet
             _ip = ip or self.ip
             _port = port or self.port
@@ -143,9 +144,6 @@ class QTelnetServer():
             t.write(_username + b'\n')
             t.read_until(b'Password: ')
             t.write(_password + b'\n')
-        except Exception as e:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

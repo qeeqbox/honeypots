@@ -22,6 +22,7 @@ from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QPOP3Server():
@@ -60,6 +61,25 @@ class QPOP3Server():
                 _q_s.logs.info({'server': 'pop3_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
                 self._user = None
                 self.successResponse('{}'.format(_q_s.mocking_server))
+
+            def processCommand(self, command, *args):
+
+                with suppress(Exception):
+                    if "capture_commands" in _q_s.options:
+                        _q_s.logs.info({'server': 'pop3_server', 'action': 'command', 'data':{"cmd":self.check_bytes(command),"args":self.check_bytes(*args)},'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+
+                if self.blocked is not None:
+                    self.blocked.append((command, args))
+                    return
+
+                command = command.upper()
+                authCmd = command in self.AUTH_CMDS
+                if not self.mbox and not authCmd:
+                    raise POP3Error("not authenticated yet: cannot do " + command)
+                f = getattr(self, 'do_' + command, None)
+                if f:
+                    return f(*args)
+                raise POP3Error("Unknown protocol command: " + command)
 
             def do_USER(self, user):
                 self._user = user
@@ -137,7 +157,7 @@ class QPOP3Server():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from poplib import POP3 as poplibPOP3
             _ip = ip or self.ip
             _port = port or self.port
@@ -147,9 +167,6 @@ class QPOP3Server():
             # pp.getwelcome()
             pp.user(_username)
             pp.pass_(_password)
-        except BaseException:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

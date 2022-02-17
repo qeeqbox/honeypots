@@ -21,6 +21,7 @@ from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QFTPServer():
@@ -52,6 +53,39 @@ class QFTPServer():
                     return string.decode()
                 else:
                     return str(string)
+
+            def processCommand(self, cmd, *params):
+                cmd = cmd.upper()
+
+                with suppress(Exception):
+                    if "capture_commands" in _q_s.options:
+                        _q_s.logs.info({'server': 'ftp_server', 'action': 'command', 'data':{"cmd":self.check_bytes(cmd),"args":self.check_bytes(*params)},'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+
+                if self.state == self.UNAUTH:
+                    if cmd == 'USER':
+                        return self.ftp_USER(*params)
+                    elif cmd == 'PASS':
+                        return BAD_CMD_SEQ, "USER required before PASS"
+                    else:
+                        return NOT_LOGGED_IN
+
+                elif self.state == self.INAUTH:
+                    if cmd == 'PASS':
+                        return self.ftp_PASS(*params)
+                    else:
+                        return BAD_CMD_SEQ, "PASS required after USER"
+
+                elif self.state == self.AUTHED:
+                    method = getattr(self, "ftp_" + cmd, None)
+                    if method is not None:
+                        return method(*params)
+                    return defer.fail(CmdNotImplementedError(cmd))
+
+                elif self.state == self.RENAMING:
+                    if cmd == 'RNTO':
+                        return self.ftp_RNTO(*params)
+                    else:
+                        return BAD_CMD_SEQ, "RNTO required after RNFR"
 
             def connectionMade(self):
                 _q_s.logs.info({'server': 'ftp_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
@@ -122,7 +156,7 @@ class QFTPServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from ftplib import FTP as FFTP
             _ip = ip or self.ip
             _port = port or self.port
@@ -132,8 +166,6 @@ class QFTPServer():
             f.connect(_ip, _port)
             # f.getwelcome()
             f.login(_username, _password)
-        except BaseException:
-            pass
 
 
 if __name__ == '__main__':

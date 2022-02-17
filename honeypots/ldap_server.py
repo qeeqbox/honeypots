@@ -22,6 +22,7 @@ from struct import unpack
 from binascii import unhexlify
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QLDAPServer():
@@ -70,7 +71,7 @@ class QLDAPServer():
                 username_end = 0
                 password_start = 0
                 password_end = 0
-                try:
+                with suppress(Exception):
                     version = data.find(b'\x02\x01\x03')
                     if version > 0:
                         username_start = version + 5
@@ -85,8 +86,6 @@ class QLDAPServer():
                                 password_start = username_end + 2
                                 password_end = unpack('b', data[username_end + 2:username_end + 3])[0] + username_start + 2
                             password = data[password_start:password_end]
-                except BaseException:
-                    pass
 
                 return username, password
 
@@ -160,7 +159,7 @@ class QLDAPServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from ldap3 import Server, Connection, ALL
             _ip = ip or self.ip
             _port = port or self.port
@@ -169,9 +168,6 @@ class QLDAPServer():
             c = Connection(Server(_ip, port=_port, get_info=ALL), authentication='SIMPLE', user=_username, password=_password, check_names=True, lazy=False, client_strategy='SYNC', raise_exceptions=True)
             c.open()
             c.bind()
-        except Exception as e:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

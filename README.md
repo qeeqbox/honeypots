@@ -60,9 +60,10 @@ python3 -m honeypots --setup ftp --config config.json
   "syslog_address": "",
   "syslog_facility": 0,
   "postgres": "",
+  "sqlite_file":"",
   "db_options": [],
-  "filter": "",
-  "interface": "",
+  "sniffer_filter": "",
+  "sniffer_interface": "",
   "honeypots": {
     "ftp": {
       "port": 21,
@@ -85,9 +86,10 @@ python3 -m honeypots --setup ftp --config config.json
   "syslog_address": "udp://localhost:514",
   "syslog_facility": 3,
   "postgres": "",
+  "sqlite_file":"",
   "db_options": [],
-  "filter": "",
-  "interface": "",
+  "sniffer_filter": "",
+  "sniffer_interface": "",
   "honeypots": {
     "ftp": {
       "port": 21,
@@ -100,17 +102,40 @@ python3 -m honeypots --setup ftp --config config.json
 
 ```
 
-#### config.json (Output to db)
+#### config.json (Output to Postgres db)
 ```json
 {
-    "logs": "db",
+    "logs": "db_postgres",
     "logs_location": "",
     "syslog_address":"",
     "syslog_facility":0,
     "postgres":"//username:password@172.19.0.2:9999/honeypots",
+    "sqlite_file":"",
     "db_options":["drop"],
-    "filter": "",
-    "interface": "",
+    "sniffer_filter": "",
+    "sniffer_interface": "",
+    "honeypots": {
+        "ftp": {
+            "port": 21,
+            "username": "test",
+            "password": "test"
+        }
+    }
+}
+```
+
+#### config.json (Output to sqlite db)
+```json
+{
+    "logs": "db_postgres",
+    "logs_location": "",
+    "syslog_address":"",
+    "syslog_facility":0,
+    "postgres":"",
+    "sqlite_file":"/home/test.db",
+    "db_options":["drop"],
+    "sniffer_sniffer_filter": "",
+    "sniffer_interface": "",
     "honeypots": {
         "ftp": {
             "port": 21,
@@ -198,118 +223,122 @@ qsshserver.kill_server()
 ## Current Servers/Emulators
 - QDNSServer
     - Server: DNS 
-    - Port: 53
-    - Lib: Twisted
+    - Port: 53/udp
+    - Lib: Twisted.dns
     - Logs: ip, port
 - QFTPServer
     - Server: FTP 
-    - Port: 21
-    - Lib: Twisted
-    - Logs: ip, port, username and password
+    - Port: 21/tcp
+    - Lib: Twisted.ftp
+    - Logs: ip, port, username and password (default)
+    - Options: Capture all threat actor commands and data (avalible)
 - QHTTPProxyServer
     - Server: HTTP Proxy
-    - Port: 8080
-    - Lib: Twisted
+    - Port: 8080/tcp
+    - Lib: Twisted (low level emulation)
     - Logs: ip, port and data
 - QHTTPServer
     - Server: HTTP
-    - Port: 80
-    - Lib: Twisted
+    - Port: 80/tcp
+    - Lib: Twisted.http
     - Logs: ip, port, username and password
 - QHTTPSServer
     - Server: HTTPS
-    - Port: 443
-    - Lib: Twisted
+    - Port: 443/tcp
+    - Lib: Twisted.https
     - Logs: ip, port, username and password
 - QIMAPServer
     - Server: IMAP
-    - Port: 143
-    - Lib: Twisted
-    - Logs: ip, port, username and password
+    - Port: 143/tcp
+    - Lib: Twisted.imap
+    - Logs: ip, port, username and password (default)
+    - Options: Capture all threat actor commands and data (avalible)
 - QMysqlServer
     - Emulator: Mysql
-    - Port: 3306
-    - Lib: Twisted
+    - Port: 3306/tcp
+    - Lib: Twisted (low level emulation)
     - Logs: ip, port, username and password
 - QPOP3Server
     - Server: POP3
-    - Port: 110
-    - Lib: Twisted
-    - Logs: ip, port, username and password
+    - Port: 110/tcp
+    - Lib: Twisted.pop3
+    - Logs: ip, port, username and password (default)
+    - Options: Capture all threat actor commands and data (avalible)
 - QPostgresServer
     - Emulator: Postgres
-    - Port: 5432
-    - Lib: Twisted
+    - Port: 5432/tcp
+    - Lib: Twisted (low level emulation)
     - Logs: ip, port, username and password
 - QRedisServer
     - Emulator: Redis
-    - Port: 6379
-    - Lib: Twisted
+    - Port: 6379/tcp
+    - Lib: Twisted (low level emulation)
     - Logs: ip, port, username and password
 - QSMBServer
     - Server: Redis
-    - Port: 445
+    - Port: 445/tcp
     - Lib: impacket
     - Logs: ip, port and username
 - QSMTPServer
     - Server: SMTP
-    - Port: 25
+    - Port: 25/tcp
     - Lib: smtpd
-    - Logs: ip, port, username and password
+    - Logs: ip, port, username and password (default)
+    - Options: Capture all threat actor commands and data (avalible)
 - QSOCKS5Server
     - Server: SOCK5
-    - Port: 1080
+    - Port: 1080/tcp
     - Lib: socketserver
     - Logs: ip, port, username and password
 - QSSHServer
     - Server: SSH
-    - Port: 22
+    - Port: 22/tcp
     - Lib: paramiko
     - Logs: ip, port, username and password
 - QTelnetServer
     - Server: Telnet
-    - Port: 23
+    - Port: 23/tcp
     - Lib: Twisted
     - Logs: ip, port, username and password
 - QVNCServer
     - Emulator: VNC
-    - Port: 5900
-    - Lib: Twisted
+    - Port: 5900/tcp
+    - Lib: Twisted (low level emulation)
     - Logs: ip, port, username and password
 - QMSSQLServer
     - Emulator: MSSQL
-    - Port: 1433
-    - Lib: Twisted
+    - Port: 1433/tcp
+    - Lib: Twisted (low level emulation)
     - Logs: ip, port, username and password or hash
 - QElasticServer
     - Emulator: Elastic
-    - Port: 9200
+    - Port: 9200/tcp
     - Lib: http.server
     - Logs: ip, port and data
 - QLDAPServer
     - Emulator: LDAP
-    - Port: 389
-    - Lib: Twisted
+    - Port: 389/tcp
+    - Lib: Twisted (low level emulation)
     - Logs: ip, port, username and password
 - QNTPServer
     - Emulator: NTP
-    - Port: 123
-    - Lib: Twisted
+    - Port: 123/udp
+    - Lib: Twisted (low level emulation)
     - Logs: ip, port and data
 - QMemcacheServer
     - Emulator: Memcache
-    - Port: 11211
-    - Lib: Twisted
+    - Port: 11211/tcp
+    - Lib: Twisted (low level emulation)
     - Logs: ip, port and data
 - QOracleServer
     - Emulator: Oracle
-    - Port: 1521
-    - Lib: Twisted
+    - Port: 1521/tcp
+    - Lib: Twisted (low level emulation)
     - Logs: ip, port and connet data
 - QSNMPServer
     - Emulator: SNMP
-    - Port: 161
-    - Lib: Twisted
+    - Port: 161/udp
+    - Lib: Twisted (low level emulation)
     - Logs: ip, port and data
 
 ## Open Shell

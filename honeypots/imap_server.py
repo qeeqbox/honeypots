@@ -22,6 +22,7 @@ from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QIMAPServer():
@@ -53,6 +54,37 @@ class QIMAPServer():
                     return string.decode()
                 else:
                     return str(string)
+
+            def parse_command(self, line):
+                args = line.split(None, 2)
+                rest = None
+                tag = None
+                if len(args) == 3:
+                    tag, cmd, rest = args
+                elif len(args) == 2:
+                    tag, cmd = args
+                elif len(args) == 1:
+                    tag = args[0]
+                    self.sendBadResponse(tag, 'Missing command')
+                    return None
+                else:
+                    self.sendBadResponse(None, 'Null command')
+                    return None
+
+                cmd = cmd.upper()
+
+                with suppress(Exception):
+                    if "capture_commands" in _q_s.options:
+                        _q_s.logs.info({'server': 'imap_server', 'action': 'command', 'data':{"cmd":self.check_bytes(cmd),"tag":self.check_bytes(tag),"data":self.check_bytes(rest)},'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+
+                try:
+                    return self.dispatchCommand(tag, cmd, rest)
+                except IllegalClientResponse as e:
+                    self.sendBadResponse(tag, 'Illegal syntax: ' + str(e))
+                except IllegalOperation as e:
+                    self.sendNegativeResponse(tag, 'Illegal operation: ' + str(e))
+                except IllegalMailboxEncoding as e:
+                    self.sendNegativeResponse(tag, 'Illegal mailbox name: ' + str(e))
 
             def connectionMade(self):
                 _q_s.logs.info({'server': 'imap_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})

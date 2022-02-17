@@ -25,6 +25,7 @@ from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
+from contextlib import suppress
 
 disable_warnings()
 
@@ -122,7 +123,7 @@ class QHTTPServer():
                 headers = {}
                 client_ip = ""
 
-                try:
+                with suppress(Exception):
                     def check_bytes(string):
                         if isinstance(string, bytes):
                             return string.decode()
@@ -132,18 +133,14 @@ class QHTTPServer():
                         headers.update({check_bytes(item): ','.join(map(check_bytes, value))})
                     headers.update({'method': check_bytes(request.method)})
                     headers.update({'uri': check_bytes(request.uri)})
-                except BaseException:
-                    pass
 
                 if 'fix_get_client_ip' in _q_s.options:
-                    try:
+                    with suppress(Exception):
                         raw_headers = dict(request.requestHeaders.getAllRawHeaders())
                         if b'X-Forwarded-For':
                             client_ip = check_bytes(raw_headers[b'X-Forwarded-For'][0])
                         elif b'X-Real-IP':
                             client_ip = check_bytes(raw_headers[b'X-Real-IP'][0])
-                    except BaseException:
-                        pass
 
                 if client_ip == "":
                     client_ip = request.getClientAddress().host
@@ -226,7 +223,7 @@ class QHTTPServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from requests import get, post
             _ip = ip or self.ip
             _port = port or self.port
@@ -234,9 +231,6 @@ class QHTTPServer():
             _password = password or self.password
             get('http://{}:{}'.format(_ip, _port), verify=False)
             post('http://{}:{}/login.html'.format(_ip, _port), data={'username': (None, _username), 'password': (None, _password)})
-        except BaseException:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

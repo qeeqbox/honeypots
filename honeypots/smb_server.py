@@ -29,6 +29,7 @@ from random import randint
 from threading import current_thread
 from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QSMBServer():
@@ -58,7 +59,7 @@ class QSMBServer():
 
         class Logger(object):
             def write(self, message):
-                try:
+                with suppress(Exception):
                     temp = current_thread().name
                     if temp.startswith('thread_'):
                         ip = temp.split('_')[1]
@@ -69,8 +70,6 @@ class QSMBServer():
                             parsed = message.strip().split(':')
                             if len(parsed) > 2:
                                 _q_s.logs.info({'server': 'smb_server', 'action': 'login', 'workstation': parsed[0], 'test': parsed[1], 'src_ip': ip, 'src_port': port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
-                except Exception as e:
-                    pass
 
         class SMBSERVERHandler(smbserver.SMBSERVERHandler):
             def __init__(self, request, client_address, server, select_poll=False):
@@ -161,7 +160,7 @@ class QSMBServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from impacket.smbconnection import SMBConnection
             _ip = ip or self.ip
             _port = port or self.port
@@ -169,9 +168,6 @@ class QSMBServer():
             _password = password or self.password
             smb_client = SMBConnection(_ip, _ip, sess_port=_port)
             smb_client.login(_username, _password)
-        except Exception as e:
-            pass
-
 
 if __name__ == '__main__':
 

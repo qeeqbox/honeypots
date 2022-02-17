@@ -22,6 +22,7 @@ from struct import unpack
 from re import findall
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running, set_local_vars
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QOracleServer():
@@ -61,9 +62,8 @@ class QOracleServer():
                 service_name = None
                 program = None
                 local_user = None
-                try:
+                with suppress(Exception):
                     packet_len, packet_checksum, packet_type, packet_reserved_bytes, packet_header_checksum = unpack('>hhbbh', data[0:8])
-
                     if b'(DESCRIPTION=' in data:
                         connect = data[data.index(b'(DESCRIPTION='):].split(b'\0')[0]
                         found_temp = findall(rb'[^\(\)]+', connect)
@@ -78,9 +78,6 @@ class QOracleServer():
                                         program = value.decode()
                                     elif name.startswith(b'USER'):
                                         local_user = value.decode()
-                except Exception:
-                    pass
-
                 return service_name, program, local_user
 
             def connectionMade(self):
@@ -134,7 +131,7 @@ class QOracleServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from socket import socket, AF_INET, SOCK_STREAM
             payload = b'\x00\x00\x03\x04\x00\x06\x00\x00\x00\x00\x00\x00\x00\x00\x08\x00E\x00\x01F\xb9\xd9@\x00@\x06\x81\xd6\x7f\x00\x00\x01\x7f\x00\x00\x01\xbf\xce\x06\x13\xacW\xde\xc0Z\xb5\x0cI\x80\x18\x02\x00\xff:\x00\x00\x01\x01\x08\n\x1bdZ^\x1bdZ^\x01\x12\x00\x00\x01\x00\x00\x00\x01>\x01,\x0cA \x00\xff\xff\x7f\x08\x00\x00\x01\x00\x00\xc8\x00J\x00\x00\x14\x00AA\xa7C\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00 \x00\x00 \x00\x00\x00\x00\x00\x00\x00\x00\x00\x01(DESCRIPTION=(CONNECT_DATA=(SERVICE_NAME=xe)(CID=(PROGRAM=linux_1)(HOST=xxxxxxxxxxxxxx)(USER=xxxxxxxxxxxxxx))(CONNECTION_ID=xxxxxxxxxxxxxxxxxxxxxxxx))(ADDRESS=(PROTOCOL=tcp)(HOST=xxxxxxx)(PORT=xxxx)))'
             _ip = ip or self.ip
@@ -143,8 +140,6 @@ class QOracleServer():
             c.connect((_ip, _port))
             c.send(payload)
             data, address = c.recvfrom(10000)
-        except BaseException:
-            pass
 
 
 if __name__ == '__main__':

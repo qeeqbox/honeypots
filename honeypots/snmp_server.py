@@ -21,6 +21,7 @@ from os import path, getenv
 from scapy.all import SNMP
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QSNMPServer():
@@ -47,13 +48,11 @@ class QSNMPServer():
                 version = 'UnKnown'
                 community = 'UnKnown'
                 oids = 'UnKnown'
-                try:
+                with suppress(Exception):
                     parsed_snmp = SNMP(data)
                     community = parsed_snmp.community.val
                     version = parsed_snmp.version.val
                     oids = ' '.join([item.oid.val for item in parsed_snmp.PDU.varbindlist])
-                except BaseException:
-                    pass
                 return version, community, oids
 
             def datagramReceived(self, data, addr):
@@ -104,16 +103,12 @@ class QSNMPServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
-
+        with suppress(Exception):
             from pysnmp.hlapi import (getCmd, SnmpEngine, CommunityData, UdpTransportTarget, ContextData, ObjectType, ObjectIdentity,)
             _ip = ip or self.ip
             _port = port or self.port
             g = getCmd(SnmpEngine(), CommunityData('public'), UdpTransportTarget((_ip, _port)), ContextData(), ObjectType(ObjectIdentity('1.3.6.1.4.1.9.9.618.1.4.1.0')))
             errorIndication, errorStatus, errorIndex, varBinds = next(g)
-        except Exception as e:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

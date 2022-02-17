@@ -66,61 +66,101 @@ config.json (Output to folder and terminal)
 
 .. code:: json
 
-    {
-        "logs":"file,terminal",
-        "logs_location":"/temp/honeypots_logs/"
-        "honeypots": {
-            "ftp": {
-                "port": 21,
-                "ip": "0.0.0.0",
-                "username": "test",
-                "password": "test"
-                }
-            }
+{
+  "logs": "file,terminal,json",
+  "logs_location": "/var/log/honeypots/",
+  "syslog_address": "",
+  "syslog_facility": 0,
+  "postgres": "",
+  "sqlite_file":"",
+  "db_options": [],
+  "sniffer_filter": "",
+  "sniffer_interface": "",
+  "honeypots": {
+    "ftp": {
+      "port": 21,
+      "ip": "0.0.0.0",
+      "username": "ftp",
+      "password": "anonymous",
+      "log_file_name": "ftp.log",
+      "max_bytes": 10000,
+      "backup_count": 10
     }
-
+  }
+}
 config.json (Output to syslog)
 ==============================
 
 .. code:: json
 
-    {
-        "logs":"syslog",
-        "logs_location":"",
-        "syslog_address": "udp://localhost:514",
-        "syslog_facility": 3,
-        "honeypots": {
-            "ftp": {
-                "port": 21,
-                "ip": "0.0.0.0",
-                "username": "test",
-                "password": "test"
-                }
-            }
+{
+  "logs": "syslog",
+  "logs_location": "",
+  "syslog_address": "udp://localhost:514",
+  "syslog_facility": 3,
+  "postgres": "",
+  "sqlite_file":"",
+  "db_options": [],
+  "sniffer_filter": "",
+  "sniffer_interface": "",
+  "honeypots": {
+    "ftp": {
+      "port": 21,
+      "ip": "0.0.0.0",
+      "username": "test",
+      "password": "test"
     }
+  }
+}
 
-config.json (Output to db)
+config.json (Output to Postgres db)
 ==========================
 
 .. code:: json
 
-    {
-        "logs": "db",
-        "logs_location": "",
-        "syslog_address":"",
-        "syslog_facility":0,
-        "postgres":"//username:password@172.19.0.2:9999/honeypots",
-        "db_options":["drop"],
-        "filter": "",
-        "interface": "",
-        "honeypots": {
-            "ftp": {
-                "port": 21,
-                "username": "test",
-                "password": "test"
-            }
+{
+    "logs": "db_postgres",
+    "logs_location": "",
+    "syslog_address":"",
+    "syslog_facility":0,
+    "postgres":"//username:password@172.19.0.2:9999/honeypots",
+    "sqlite_file":"",
+    "db_options":["drop"],
+    "sniffer_filter": "",
+    "sniffer_interface": "",
+    "honeypots": {
+        "ftp": {
+            "port": 21,
+            "username": "test",
+            "password": "test"
         }
     }
+}
+
+
+config.json (Output to Sqlite db)
+==========================
+
+.. code:: json
+
+{
+    "logs": "db_postgres",
+    "logs_location": "",
+    "syslog_address":"",
+    "syslog_facility":0,
+    "postgres":"",
+    "sqlite_file":"/home/test.db",
+    "db_options":["drop"],
+    "sniffer_sniffer_filter": "",
+    "sniffer_interface": "",
+    "honeypots": {
+        "ftp": {
+            "port": 21,
+            "username": "test",
+            "password": "test"
+        }
+    }
+}
 
 db structure
 ============

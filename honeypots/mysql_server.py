@@ -22,6 +22,7 @@ from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QMysqlServer():
@@ -73,7 +74,7 @@ class QMysqlServer():
 
     def parse_data(self, data):
         username, password = '', ''
-        try:
+        with suppress(Exception):
             username_len = data[36:].find(b'\x00')
             username = data[36:].split(b'\x00')[0]
             password_len = data[36 + username_len + 1]
@@ -81,12 +82,10 @@ class QMysqlServer():
             rest_ = data[36 + username_len + 2 + password_len:]
             if len(password) == 20:
                 return username, password, True
-        except BaseException:
-            pass
         return username, password, False
 
     def decode(self, hash):
-        try:
+        with suppress(Exception):
             for word in self.words:
                 temp = word
                 word = word.strip(b'\n')
@@ -95,9 +94,6 @@ class QMysqlServer():
                 encrypted = [((a) ^ (b)) for a, b in zip(hash1, sha1(b'12345678123456789012' + hash2).digest())]
                 if encrypted == list([(i) for i in hash]):
                     return temp
-        except BaseException:
-            pass
-
         return None
 
     def mysql_server_main(self):
@@ -108,13 +104,12 @@ class QMysqlServer():
             _state = None
 
             def check_bytes(self, string):
-                try:
+                with suppress(Exception):
                     if isinstance(string, bytes):
                         return string.decode('utf-8', 'ignore')
                     else:
                         return str(string)
-                except Exception:
-                    return string
+                return string
 
             def connectionMade(self):
                 self._state = 1
@@ -196,16 +191,13 @@ class QMysqlServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from mysql.connector import connect as mysqlconnect
             _ip = ip or self.ip
             _port = port or self.port
             _username = username or self.username
             _password = password or self.password
             cnx = mysqlconnect(user=_username, password=_password, host=_ip, port=_port, database='test', connect_timeout=1000)
-        except Exception as e:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

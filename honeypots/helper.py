@@ -23,20 +23,22 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler, SysLogHandler
 from tempfile import _get_candidate_names, gettempdir
 from os import makedirs, path, scandir, devnull
-from psycopg2 import sql, connect
+from psycopg2 import sql
+from psycopg2 import connect as psycopg2_connect
 from time import sleep
 from traceback import format_exc
 from collections.abc import Mapping
 from urllib.parse import urlparse
-from sqlite3 import connect
+from sqlite3 import connect as sqlite3_connect
 from pathlib import Path
+from contextlib import suppress
 
-old_stderr = sys.stderr
-sys.stderr = open(devnull, 'w')
+#old_stderr = sys.stderr
+#sys.stderr = open(devnull, 'w')
 
 
 def set_local_vars(self, config):
-    try:
+    with suppress(Exception):
         honeypot = None
         if config and config != '':
             with open(config) as f:
@@ -48,9 +50,6 @@ def set_local_vars(self, config):
                     setattr(self, var, honeypots[honeypot][var])
                     if var == 'port':
                         setattr(self, 'auto_disabled', True)
-    except Exception as e:
-        print("Test", honeypot, e)
-
 
 def parse_record(record, custom_filter, type_):
     timestamp = {'timestamp': datetime.utcnow().isoformat()}
@@ -82,7 +81,7 @@ def parse_record(record, custom_filter, type_):
             record.msg = serialize_object(record.msg)
     except Exception as e:
         record.msg = serialize_object({'name': record.name, 'error': repr(e)})
-    try:
+    with suppress(Exception):
         if type_ == 'file':
             if custom_filter is not None:
                 if 'dump_json_to_file' in custom_filter['honeypots']['options']:
@@ -96,22 +95,18 @@ def parse_record(record, custom_filter, type_):
                         record.msg[item] = repr(record.msg[item]).replace('\x00', ' ')
         else:
             record.msg = dumps(record.msg, sort_keys=True, cls=ComplexEncoder)
-    except BaseException:
-        return None
     return record
 
 
 def get_running_servers():
     temp_list = []
-    try:
+    with suppress(Exception):
         honeypots = ['QDNSServer', 'QFTPServer', 'QHTTPProxyServer', 'QHTTPServer', 'QHTTPSServer', 'QIMAPServer', 'QMysqlServer', 'QPOP3Server', 'QPostgresServer', 'QRedisServer', 'QSMBServer', 'QSMTPServer', 'QSOCKS5Server', 'QSSHServer', 'QTelnetServer', 'QVNCServer', 'QElasticServer', 'QMSSQLServer', 'QLDAPServer', 'QNTPServer', 'QMemcacheServer', 'QOracleServer', 'QSNMPServer']
         for process in process_iter():
             cmdline = ' '.join(process.cmdline())
             for honeypot in honeypots:
                 if '--custom' in cmdline and honeypot in cmdline:
                     temp_list.append(cmdline.split(' --custom ')[1])
-    except BaseException:
-        pass
     return temp_list
 
 
@@ -129,7 +124,7 @@ def setup_logger(name, temp_name, config, drop=False):
     config_data = None
     custom_filter = None
     if config and config != '':
-        try:
+        with suppress(Exception):
             with open(config) as f:
                 config_data = load(f)
                 logs = config_data.get('logs', logs)
@@ -137,8 +132,6 @@ def setup_logger(name, temp_name, config, drop=False):
                 syslog_address = config_data.get('syslog_address', syslog_address)
                 syslog_facility = config_data.get('syslog_facility', syslog_facility)
                 custom_filter = config_data.get('custom_filter', custom_filter)
-        except BaseException:
-            pass
     if logs_location == '' or logs_location is None:
         logs_location = path.join(gettempdir(), 'logs')
     if not path.exists(logs_location):
@@ -153,7 +146,7 @@ def setup_logger(name, temp_name, config, drop=False):
     if 'file' in logs:
         max_bytes = 10000
         backup_count = 10
-        try:
+        with suppress(Exception):
             if config_data is not None:
                 if 'honeypots' in config_data:
                     temp_server_name = name[1:].lower().replace('server', '')
@@ -164,8 +157,6 @@ def setup_logger(name, temp_name, config, drop=False):
                             max_bytes = config_data['honeypots'][temp_server_name]['max_bytes']
                         if 'backup_count' in config_data['honeypots'][temp_server_name]:
                             backup_count = config_data['honeypots'][temp_server_name]['backup_count']
-        except Exception as e:
-            print(e)
         file_handler = CustomHandlerFileRotate(temp_name, logs, custom_filter, path.join(logs_location, temp_name), maxBytes=max_bytes, backupCount=backup_count)
         ret_logs_obj.addHandler(file_handler)
     if 'syslog' in logs:
@@ -187,30 +178,24 @@ def clean_all():
 
 
 def kill_servers(name):
-    try:
+    with suppress(Exception):
         for process in process_iter():
             cmdline = ' '.join(process.cmdline())
             if '--custom' in cmdline and name in cmdline:
                 process.send_signal(SIGTERM)
                 process.kill()
-    except BaseException:
-        pass
-
 
 def check_if_server_is_running(uuid):
-    try:
+    with suppress(Exception):
         for process in process_iter():
             cmdline = ' '.join(process.cmdline())
             if '--custom' in cmdline and uuid in cmdline:
                 return True
-    except BaseException:
-        pass
-
     return False
 
 
 def kill_server_wrapper(server_name, name, process):
-    try:
+    with suppress(Exception):
         if process is not None:
             process.kill()
         for process in process_iter():
@@ -219,20 +204,16 @@ def kill_server_wrapper(server_name, name, process):
                 process.send_signal(SIGTERM)
                 process.kill()
         return True
-    except Exception:
-        pass
     return False
 
 
 def get_free_port():
     port = 0
-    try:
+    with suppress(Exception):
         tcp = socket(AF_INET, SOCK_STREAM)
         tcp.bind(('', 0))
         addr, port = tcp.getsockname()
         tcp.close()
-    except BaseException:
-        pass
     return port
 
 
@@ -242,18 +223,14 @@ def close_port_wrapper(server_name, ip, port, logs):
     sock.settimeout(2)
     if sock.connect_ex((ip, port)) == 0:
         for process in process_iter():
-            try:
+            with suppress(Exception):
                 for conn in process.connections(kind='inet'):
                     if port == conn.laddr.port:
                         process.send_signal(SIGTERM)
                         process.kill()
-            except Exception:
-                pass
-    try:
+    with suppress(Exception):
         sock.bind((ip, port))
         ret = True
-    except BaseException:
-        pass
 
     if sock.connect_ex((ip, port)) != 0 and ret:
         return True
@@ -354,13 +331,21 @@ class postgres_class():
         self.mapped_tables = ['errors', 'servers', 'sniffer', 'system']
         self.wait_until_up()
         if drop:
-            self.con = connect(host=self.host, port=self.port, user=self.username, password=self.password)
+            self.con = psycopg2_connect(host=self.host, port=self.port, user=self.username, password=self.password)
             self.con.set_isolation_level(0)
             self.cur = self.con.cursor()
             self.drop_db()
             self.drop_tables()
+            self.create_db()
             self.con.close()
-        self.con = connect(host=self.host, port=self.port, user=self.username, password=self.password, database=self.db)
+        else:
+            self.con = psycopg2_connect(host=self.host, port=self.port, user=self.username, password=self.password)
+            self.con.set_isolation_level(0)
+            self.cur = self.con.cursor()
+            if not self.check_db_if_exists():
+                self.create_db()
+            self.con.close()
+        self.con = psycopg2_connect(host=self.host, port=self.port, user=self.username, password=self.password, database=self.db)
         self.con.set_isolation_level(0)
         self.con.set_client_encoding('UTF8')
         self.cur = self.con.cursor()
@@ -369,14 +354,12 @@ class postgres_class():
     def wait_until_up(self):
         test = True
         while test:
-            try:
+            with suppress(Exception):
                 print('{} - Waiting on postgres connection'.format(self.uuid))
                 stdout.flush()
-                conn = connect(host=self.host, port=self.port, user=self.username, password=self.password, connect_timeout=1)
+                conn = psycopg2_connect(host=self.host, port=self.port, user=self.username, password=self.password, connect_timeout=1)
                 conn.close()
                 test = False
-            except Exception:
-                pass
             sleep(1)
         print('{} - postgres connection is good'.format(self.uuid))
 
@@ -384,21 +367,24 @@ class postgres_class():
         self.__dict__[x] = val
 
     def check_db_if_exists(self):
-        self.cur.execute('SELECT exists(SELECT 1 from pg_catalog.pg_database where datname = %s)', (self.db,))
-        if self.cur.fetchall()[0][0]:
-            return True
-        else:
-            return False
+        exists = False
+        with suppress(Exception):
+            self.cur.execute('SELECT exists(SELECT 1 from pg_catalog.pg_database where datname = %s)', (self.db,))
+            if self.cur.fetchone()[0]:
+                exists = True
+        return exists
 
     def drop_db(self):
-        try:
+        with suppress(Exception):
             print('[x] Dropping {} db'.format(self.db))
             if self.check_db_if_exists():
                 self.cur.execute(sql.SQL('drop DATABASE IF EXISTS {}').format(sql.Identifier(self.db)))
                 sleep(2)
             self.cur.execute(sql.SQL('CREATE DATABASE {}').format(sql.Identifier(self.db)))
-        except BaseException:
-            pass
+
+    def create_db(self):
+        print("create")
+        self.cur.execute(sql.SQL('CREATE DATABASE {}').format(sql.Identifier(self.db)))
 
     def drop_tables(self,):
         for x in self.mapped_tables:
@@ -409,11 +395,8 @@ class postgres_class():
             self.cur.execute(sql.SQL('CREATE TABLE IF NOT EXISTS {} (id SERIAL NOT NULL,date timestamp with time zone DEFAULT now(),data json)').format(sql.Identifier(x + '_table')))
 
     def insert_into_data_safe(self, table, obj):
-        try:
+        with suppress(Exception):
             self.cur.execute(sql.SQL('INSERT INTO {} (id,date, data) VALUES (DEFAULT ,now(), %s)').format(sql.Identifier(table + '_table')), [obj])
-        except Exception:
-            pass
-
 
 class sqlite_class():
     def __init__(self, file=None, drop=False, uuid=None):
@@ -423,30 +406,28 @@ class sqlite_class():
         self.servers_table_template = {'server': 'servers_table', 'action': None, 'status': None, 'src_ip': None, 'src_port': None, 'username': None, 'password': None, 'dest_ip': None, 'dest_port': None, 'data': None, 'error': None}
         self.wait_until_up()
         if drop:
-            self.con = connect(self.file, timeout=1, isolation_level=None)
+            self.con = sqlite3_connect(self.file, timeout=1, isolation_level=None)
             self.cur = self.con.cursor()
             self.drop_db()
             self.drop_tables()
             self.con.close()
-        self.con = connect(self.file, timeout=1, isolation_level=None)
+        self.con = sqlite3_connect(self.file, timeout=1, isolation_level=None)
         self.cur = self.con.cursor()
         self.create_tables()
 
     def wait_until_up(self):
         test = True
         while test:
-            try:
+            with suppress(Exception):
                 print('{} - Waiting on sqlite connection'.format(self.uuid))
-                conn = connect(self.file, timeout=1)
+                conn = sqlite3_connect(self.file, timeout=1)
                 conn.close()
                 test = False
-            except Exception as e:
-                pass
             sleep(1)
         print('{} - sqlite connection is good'.format(self.uuid))
 
     def drop_db_test(self):
-        try:
+        with suppress(Exception):
             file_exists = False
             sql_file = False
             with open(self.file, 'rb') as f:
@@ -456,31 +437,26 @@ class sqlite_class():
                     sql_file = True
             if sql_file:
                 print("yes")
-        except Exception as e:
-            pass
 
     def drop_db(self):
-        try:
+        with suppress(Exception):
             file = Path(self.file)
             file.unlink(missing_ok=False)
-        except Exception as e:
-            pass
 
     def drop_tables(self,):
-        for x in self.mapped_tables:
-            self.cur.execute("DROP TABLE IF EXISTS '{:s}'".format(x))
+        with suppress(Exception):
+            for x in self.mapped_tables:
+                self.cur.execute("DROP TABLE IF EXISTS '{:s}'".format(x))
 
     def create_tables(self):
-        self.cur.execute("CREATE TABLE IF NOT EXISTS '{:s}' (id INTEGER PRIMARY KEY,date DATETIME DEFAULT CURRENT_TIMESTAMP,server text, action text, status text, src_ip text, src_port text,dest_ip text, dest_port text, username text, password text, data text, error text)".format('servers_table'))
+        with suppress(Exception):
+            self.cur.execute("CREATE TABLE IF NOT EXISTS '{:s}' (id INTEGER PRIMARY KEY,date DATETIME DEFAULT CURRENT_TIMESTAMP,server text, action text, status text, src_ip text, src_port text,dest_ip text, dest_port text, username text, password text, data text, error text)".format('servers_table'))
 
     def insert_into_data_safe(self, obj):
-        try:
+        with suppress(Exception):
             parsed = {k: v for k, v in obj.items() if v is not None}
             dict_ = {**self.servers_table_template, **parsed}
             self.cur.execute("INSERT INTO servers_table (server, action, status, src_ip, src_port, dest_ip, dest_port, username, password, data, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (dict_['server'], dict_['action'], dict_['status'], dict_['src_ip'], dict_['src_port'], dict_['dest_ip'], dict_['dest_port'], dict_['username'], dict_['password'], dict_['data'], dict_['error']))
-        except Exception as e:
-            pass
-
 
 def server_arguments():
     _server_parser = ArgumentParser(prog='Server')

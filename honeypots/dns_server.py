@@ -21,7 +21,7 @@ from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
-
+from contextlib import suppress
 
 class QDNSServer():
     def __init__(self, **kwargs):
@@ -56,12 +56,10 @@ class QDNSServer():
             def gotResolverResponse(self, response, protocol, message, address):
                 args = (self, response, protocol, message, address)
                 _q_s.logs.info({'server': 'dns_server', 'action': 'connection', 'src_ip': address[0], 'src_port': address[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
-                try:
+                with suppress(Exception):
                     for items in response:
                         for item in items:
                             _q_s.logs.info({'server': 'dns_server', 'action': 'query', 'src_ip': address[0], 'src_port': address[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': item.payload})
-                except Exception as e:
-                    pass
                 return DNSServerFactory.gotResolverResponse(*args)
 
         self.resolver = CustomCilentResolver(servers=self.resolver_addresses)
@@ -108,16 +106,13 @@ class QDNSServer():
         return ret
 
     def test_server(self, ip=None, port=None, domain=None):
-        try:
+        with suppress(Exception):
             from dns.resolver import Resolver
             res = Resolver(configure=False)
             res.nameservers = [self.ip]
             res.port = self.port
             temp_domain = domain or 'example.org'
             r = res.query(temp_domain, 'a')
-        except BaseException:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

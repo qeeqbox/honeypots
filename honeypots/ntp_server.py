@@ -22,6 +22,7 @@ from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QNTPServer():
@@ -118,7 +119,7 @@ class QNTPServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from socket import socket, AF_INET, SOCK_DGRAM
             _ip = ip or self.ip
             _port = port or self.port
@@ -126,9 +127,6 @@ class QNTPServer():
             c.sendto(b'\x1b' + 47 * b'\0', (_ip, _port))
             data, address = c.recvfrom(256)
             ret_time = unpack('!12I', data)[10] - 2208988800
-        except BaseException:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

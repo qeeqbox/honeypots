@@ -22,6 +22,7 @@ from email.parser import BytesParser
 from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
+from contextlib import suppress
 
 
 class QHTTPProxyServer():
@@ -50,20 +51,18 @@ class QHTTPProxyServer():
                 self.client = None
 
             def resolve_domain(self, request_string):
-                try:
+                with suppress(Exception):
                     _, parsed_request = request_string.split(b'\r\n', 1)
                     headers = BytesParser().parsebytes(parsed_request)
                     host = headers['host'].split(':')
                     _q_s.logs.info({'server': 'http_proxy_server', 'action': 'query', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': host[0]})
                     # return '127.0.0.1'
                     return dsnquery(host[0], 'A')[0].address
-                except Exception as e:
-                    pass
                 return None
 
             def dataReceived(self, data):
                 _q_s.logs.info({'server': 'http_proxy_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
-                try:
+                with suppress(Exception):
                     ip = self.resolve_domain(data)
                     if ip:
                         factory = ClientFactory()
@@ -77,8 +76,6 @@ class QHTTPProxyServer():
                         self.client.write(data)
                     else:
                         self.buffer = data
-                except BaseException:
-                    pass
 
             def write(self, data):
                 self.transport.write(data)
@@ -134,15 +131,12 @@ class QHTTPProxyServer():
         return ret
 
     def test_server(self, ip=None, port=None, domain=None):
-        try:
+        with suppress(Exception):
             from requests import get
             _ip = ip or self.ip
             _port = port or self.port
             _domain = domain or 'http://yahoo.com'
             get(_domain, proxies={'http': 'http://{}:{}'.format(_ip, _port)}).text.encode('ascii', 'ignore')
-        except BaseException:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()

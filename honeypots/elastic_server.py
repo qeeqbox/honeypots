@@ -27,6 +27,7 @@ from os import path, getenv
 from OpenSSL import crypto
 from tempfile import gettempdir, _get_candidate_names
 from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
+from contextlib import suppress
 
 disable_warnings()
 
@@ -80,7 +81,7 @@ class QElasticServer():
 
             def _dump_headers(self):
                 headers = {}
-                try:
+                with suppress(Exception):
                     def check_bytes(string):
                         if isinstance(string, bytes):
                             return string.decode()
@@ -89,8 +90,6 @@ class QElasticServer():
 
                     for item, value in dict(self.headers).items():
                         headers.update({check_bytes(item): check_bytes(value)})
-                except Exception:
-                    pass
 
                 _q_s.logs.info({'server': 'elastic_server', 'action': 'dump', 'data': check_bytes(self.raw_requestline), 'src_ip': self.client_address[0], 'src_port': self.client_address[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'headers': headers})
                 return headers
@@ -152,10 +151,8 @@ class QElasticServer():
                 elif self.headers.get('Authorization') == 'Basic ' + str(key):
                     extracted = ''
                     _q_s.logs.info({'server': 'elastic_server', 'action': 'login', 'status': 'success', 'src_ip': self.client_address[0], 'src_port': self.client_address[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': _q_s.username, 'password': _q_s.password})
-                    try:
+                    with suppress(Exception):
                         extracted = urlparse(self.path).path
-                    except BaseException:
-                        pass
                     if extracted == '/':
                         normal_payload = bytes(dumps({'name': e_name, 'cluster_name': e_cluster_name, 'cluster_uuid': '09cf5BKcTCG2U8z2ndwGEw', 'version': {'number': '7.12.1', 'build_flavor': 'default', 'build_type': e_build_type, 'build_hash': '3186837139b9c6b6d23c3200870651f10d3343b7', 'build_date': '2021-04-20T20:56:39.040728659Z', 'build_snapshot': False, 'lucene_version': '8.8.0', 'minimum_wire_compatibility_version': '6.8.0', 'minimum_index_compatibility_version': '6.0.0-beta1'}, 'tagline': 'You Know, for Search'}), 'utf-8')
                         self.wfile.write(self._set_response_gzip(normal_payload, 200))
@@ -251,7 +248,7 @@ class QElasticServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from elasticsearch import Elasticsearch
             _ip = ip or self.ip
             _port = port or self.port
@@ -259,9 +256,6 @@ class QElasticServer():
             _password = password or self.password
             es = Elasticsearch(['https://{}:{}'.format(_ip, _port)], http_auth=(_username, _password), verify_certs=False)
             es.search(index='test', body={}, size=99)
-        except Exception as e:
-            pass
-
 
 if __name__ == '__main__':
     parsed = server_arguments()
