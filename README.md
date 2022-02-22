@@ -371,7 +371,7 @@ qsshserver.kill_server()
 - Let me know if I missed a reference or resource!
 
 ## Some Articles
-[securityonline](https://securityonline.info/honeypots-16-honeypots-in-a-single-pypi-package/)
+- securityonline
 
 ## Notes
 - Almost all servers and emulators are stripped-down - You can adjust that as needed
