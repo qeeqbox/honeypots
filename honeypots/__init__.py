@@ -24,4 +24,6 @@ from .ntp_server import QNTPServer
 from .memcache_server import QMemcacheServer
 from .oracle_server import QOracleServer
 from .snmp_server import QSNMPServer
+from .sip_server import QSIPServer
+from .irc_server import QIRCServer
 from .helper import server_arguments, clean_all, kill_servers, get_free_port, close_port_wrapper, kill_server_wrapper, setup_logger, disable_logger, postgres_class, get_running_servers, set_local_vars

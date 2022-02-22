@@ -1,10 +1,10 @@
 <p align="center"> <img src="https://raw.githubusercontent.com/qeeqbox/honeypots/main/readme/honeypots.png"></p>
 
-23 different honeypots in a single PyPI package for monitoring network traffic, bots activities, and username \ password credentials. 
+25 different honeypots in a single PyPI package for monitoring network traffic, bots activities, and username \ password credentials. 
 
 The honeypots respond back, non-blocking, can be used as objects, or called directly with the in-built auto-configure scripts! Also, they are easy to setup and customize, it takes 1-2 seconds to spin a honeypot up. The output can be logged to a postgres database, file[s], terminal or syslog for easy integration.
 
-This honeypots package is the only package that contains all the following: dns, ftp, httpproxy, http, https, imap, mysql, pop3, postgres, redis, smb, smtp, socks5, ssh, telnet, vnc, mssql, elastic, ldap, ntp, memcache, snmp, and oracle.
+This honeypots package is the only package that contains all the following: dns, ftp, httpproxy, http, https, imap, mysql, pop3, postgres, redis, smb, smtp, socks5, ssh, telnet, vnc, mssql, elastic, ldap, ntp, memcache, snmp, oracle, sip and irc.
 
 Honeypots now is in the awesome [telekom security T-Pot project!](https://github.com/telekom-security/tpotce)
 
@@ -14,6 +14,29 @@ Honeypots now is in the awesome [telekom security T-Pot project!](https://github
 ## Install
 ```
 pip3 install honeypots
+```
+
+## honeypots -h
+```sh
+Qeeqbox/honeypots customizable honeypots for monitoring network traffic, bots activities, and username\password credentials
+
+Arguments:
+  --setup               target honeypot E.g. ssh or you can have multiple E.g ssh,http,https
+  --list                list all available honeypots
+  --kill                kill all honeypots
+  --verbose             Print error msgs
+
+Honeypots options:
+  --ip                  Override the IP
+  --port                Override the Port (Do not use on multiple!)
+  --username            Override the username
+  --password            Override the password
+  --config              Use a config file for honeypots settings
+  --options             Extra options (capture_commands for capturing all threat actor data)
+
+General options:
+  --termination-strategy {input,signal} Determines the strategy to terminate by
+  --test                Test a honeypot
 ```
 
 ## Usage Example - Auto configure
@@ -166,19 +189,6 @@ python3 -m honeypots --setup ftp --config config.json
 ```
 
 ## Usage Example - Import as object and auto test
-
-```
-#you need higher user permissions for binding\closing some ports
-
-ip= String E.g. 0.0.0.0
-port= Int E.g. 9999
-username= String E.g. Test
-password= String E.g. Test
-options= Boolean or String E.g OpenSSH 7.0
-logs= String E.g db, terminal or all
-always remember to add process=true to run_server() for non-blocking
-```
-
 ```python
 from honeypots import QSSHServer
 qsshserver = QSSHServer(port=9999)
@@ -340,6 +350,18 @@ qsshserver.kill_server()
     - Port: 161/udp
     - Lib: Twisted (low level emulation)
     - Logs: ip, port and data
+- QSIPServer
+    - Emulator: SIP
+    - Port: 5060/udp
+    - Lib: Twisted.sip
+    - Logs: ip, port and data
+    - Options: Capture all threat actor commands and data (avalible)
+- QIRCServer
+    - Emulator: IRC
+    - Port: 6667/tcp
+    - Lib: Twisted.irc
+    - Logs: ip, port, username and password
+    - Options: Capture all threat actor commands and data (avalible)
 
 ## Open Shell
 [![Open in Cloud Shell](https://img.shields.io/static/v1?label=%3E_&message=Open%20in%20Cloud%20Shell&color=3267d6&style=flat-square)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/qeeqbox/honeypots&tutorial=README.md) [![Open in repl.it Shell](https://img.shields.io/static/v1?label=%3E_&message=Open%20in%20repl.it%20Shell&color=606c74&style=flat-square)](https://repl.it/github/qeeqbox/honeypots)

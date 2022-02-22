@@ -7,7 +7,7 @@ setup(
     name='honeypots',
     author='QeeqBox',
     author_email='gigaqeeq@gmail.com',
-    description=r"23 different honeypots in a single pypi package! (dns, ftp, httpproxy, http, https, imap, mysql, pop3, postgres, redis, smb, smtp, socks5, ssh, telnet, vnc, mssql, elastic, ldap, ntp, memcache, snmp, and oracle) ",
+    description=r"23 different honeypots in a single pypi package! (dns, ftp, httpproxy, http, https, imap, mysql, pop3, postgres, redis, smb, smtp, socks5, ssh, telnet, vnc, mssql, elastic, ldap, ntp, memcache, snmp, oracle, sip and irc) ",
     long_description=long_description,
     version='0.50',
     license="AGPL-3.0",

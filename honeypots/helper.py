@@ -33,8 +33,8 @@ from sqlite3 import connect as sqlite3_connect
 from pathlib import Path
 from contextlib import suppress
 
-#old_stderr = sys.stderr
-#sys.stderr = open(devnull, 'w')
+old_stderr = sys.stderr
+sys.stderr = open(devnull, 'w')
 
 
 def set_local_vars(self, config):
