@@ -46,7 +46,7 @@ class QSIPServer():
         _q_s = self
 
         class CustomSIPServer(Base):
-            def handle_request(self,message,addr):
+            def handle_request(self, message, addr):
                 headers = {}
 
                 _q_s.logs.info({'server': 'sip_server', 'action': 'connection', 'src_ip': addr[0], 'src_port': addr[1]})
@@ -59,8 +59,8 @@ class QSIPServer():
                 for item, value in message.headers.items():
                     headers.update({check_bytes(item): ','.join(map(check_bytes, value))})
 
-                _q_s.logs.info({'server': 'sip_server', 'action': 'request', 'src_ip': addr[0], 'src_port': addr[1],'data':headers})
-                response = self.responseFromRequest(200,message)
+                _q_s.logs.info({'server': 'sip_server', 'action': 'request', 'src_ip': addr[0], 'src_port': addr[1], 'data': headers})
+                response = self.responseFromRequest(200, message)
                 response.creationFinished()
                 self.deliverResponse(response)
 
@@ -110,6 +110,7 @@ class QSIPServer():
         _password = password or self.password
         sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
         sock.sendto(b'INVITE sip:user_1@test.test SIP/2.0\r\nTo: <sip:user_2@test.test>\r\nFrom: sip:user_3@test.test.test;tag=none\r\nCall-ID: 1@0.0.0.0\r\nCSeq: 1 INVITE\r\nContact: sip:user_3@test.test.test\r\nVia: SIP/2.0/TCP 0.0.0.0;branch=34uiddhjczqw3mq23\r\nContent-Length: 1\r\n\r\nT', (_ip, _port))
+
 
 if __name__ == '__main__':
     parsed = server_arguments()
