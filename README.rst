@@ -14,6 +14,32 @@ Install
 
     pip3 install honeypots
 
+honeypots -h
+============
+
+.. code:: bash
+
+    Qeeqbox/honeypots customizable honeypots for monitoring network traffic, bots activities, and username\password credentials
+
+    Arguments:
+      --setup               target honeypot E.g. ssh or you can have multiple E.g ssh,http,https
+      --list                list all available honeypots
+      --kill                kill all honeypots
+      --verbose             Print error msgs
+
+    Honeypots options:
+      --ip                  Override the IP
+      --port                Override the Port (Do not use on multiple!)
+      --username            Override the username
+      --password            Override the password
+      --config              Use a config file for honeypots settings
+      --options             Extra options (capture_commands for capturing all threat actor data)
+
+    General options:
+      --termination-strategy {input,signal} Determines the strategy to terminate by
+      --test                Test a honeypot
+
+
 Usage Example - Auto configure
 ==============================
 Use a honeypot, or multiple honeypots separated by comma or word all
@@ -66,101 +92,102 @@ config.json (Output to folder and terminal)
 
 .. code:: json
 
-{
-  "logs": "file,terminal,json",
-  "logs_location": "/var/log/honeypots/",
-  "syslog_address": "",
-  "syslog_facility": 0,
-  "postgres": "",
-  "sqlite_file":"",
-  "db_options": [],
-  "sniffer_filter": "",
-  "sniffer_interface": "",
-  "honeypots": {
-    "ftp": {
-      "port": 21,
-      "ip": "0.0.0.0",
-      "username": "ftp",
-      "password": "anonymous",
-      "log_file_name": "ftp.log",
-      "max_bytes": 10000,
-      "backup_count": 10
+    {
+      "logs": "file,terminal,json",
+      "logs_location": "/var/log/honeypots/",
+      "syslog_address": "",
+      "syslog_facility": 0,
+      "postgres": "",
+      "sqlite_file":"",
+      "db_options": [],
+      "sniffer_filter": "",
+      "sniffer_interface": "",
+      "honeypots": {
+        "ftp": {
+          "port": 21,
+          "ip": "0.0.0.0",
+          "username": "ftp",
+          "password": "anonymous",
+          "log_file_name": "ftp.log",
+          "max_bytes": 10000,
+          "backup_count": 10
+        }
+      }
     }
-  }
-}
+
 config.json (Output to syslog)
 ==============================
 
 .. code:: json
 
-{
-  "logs": "syslog",
-  "logs_location": "",
-  "syslog_address": "udp://localhost:514",
-  "syslog_facility": 3,
-  "postgres": "",
-  "sqlite_file":"",
-  "db_options": [],
-  "sniffer_filter": "",
-  "sniffer_interface": "",
-  "honeypots": {
-    "ftp": {
-      "port": 21,
-      "ip": "0.0.0.0",
-      "username": "test",
-      "password": "test"
+    {
+      "logs": "syslog",
+      "logs_location": "",
+      "syslog_address": "udp://localhost:514",
+      "syslog_facility": 3,
+      "postgres": "",
+      "sqlite_file":"",
+      "db_options": [],
+      "sniffer_filter": "",
+      "sniffer_interface": "",
+      "honeypots": {
+        "ftp": {
+          "port": 21,
+          "ip": "0.0.0.0",
+          "username": "test",
+          "password": "test"
+        }
+      }
     }
-  }
-}
 
 config.json (Output to Postgres db)
-==========================
+===================================
 
 .. code:: json
 
-{
-    "logs": "db_postgres",
-    "logs_location": "",
-    "syslog_address":"",
-    "syslog_facility":0,
-    "postgres":"//username:password@172.19.0.2:9999/honeypots",
-    "sqlite_file":"",
-    "db_options":["drop"],
-    "sniffer_filter": "",
-    "sniffer_interface": "",
-    "honeypots": {
-        "ftp": {
-            "port": 21,
-            "username": "test",
-            "password": "test"
+    {
+        "logs": "db_postgres",
+        "logs_location": "",
+        "syslog_address":"",
+        "syslog_facility":0,
+        "postgres":"//username:password@172.19.0.2:9999/honeypots",
+        "sqlite_file":"",
+        "db_options":["drop"],
+        "sniffer_filter": "",
+        "sniffer_interface": "",
+        "honeypots": {
+            "ftp": {
+                "port": 21,
+                "username": "test",
+                "password": "test"
+            }
         }
     }
-}
 
 
 config.json (Output to Sqlite db)
-==========================
+=================================
 
 .. code:: json
 
-{
-    "logs": "db_postgres",
-    "logs_location": "",
-    "syslog_address":"",
-    "syslog_facility":0,
-    "postgres":"",
-    "sqlite_file":"/home/test.db",
-    "db_options":["drop"],
-    "sniffer_sniffer_filter": "",
-    "sniffer_interface": "",
-    "honeypots": {
-        "ftp": {
-            "port": 21,
-            "username": "test",
-            "password": "test"
+    {
+        "logs": "db_postgres",
+        "logs_location": "",
+        "syslog_address":"",
+        "syslog_facility":0,
+        "postgres":"",
+        "sqlite_file":"/home/test.db",
+        "db_options":["drop"],
+        "sniffer_sniffer_filter": "",
+        "sniffer_interface": "",
+        "honeypots": {
+            "ftp": {
+                "port": 21,
+                "username": "test",
+                "password": "test"
+            }
         }
     }
-}
 
 db structure
 ============
