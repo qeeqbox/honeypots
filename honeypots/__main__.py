@@ -85,6 +85,7 @@ def main_logic():
     from psutil import Process, net_io_counters
     from uuid import uuid4
     from json import JSONEncoder, dumps, load
+    from os import geteuid
 
     def exit_handler():
         print('[x] Cleaning')
@@ -112,6 +113,7 @@ def main_logic():
     ARG_PARSER_OPTIONAL_2 = ARG_PARSER.add_argument_group('General options')
     ARG_PARSER_OPTIONAL_2.add_argument('--termination-strategy', help='Determines the strategy to terminate by', default='input', choices=['input', 'signal'])
     ARG_PARSER_OPTIONAL_2.add_argument('--test', default='', metavar='', help='Test a honeypot')
+    ARG_PARSER_OPTIONAL_2.add_argument('--auto', help='Setup the honeypot with random port', action='store_true')
     ARG_PARSER_CHAMELEON = ARG_PARSER.add_argument_group('Chameleon')
     ARG_PARSER_CHAMELEON.add_argument('--chameleon', action='store_true', help='reserved for chameleon project')
     ARG_PARSER_CHAMELEON.add_argument('--sniffer', action='store_true', help='sniffer - reserved for chameleon project')
@@ -177,6 +179,7 @@ def main_logic():
                         if 'q{}server'.format(honeypot).lower() == _honeypot.lower():
                             if ARGV.port != '':
                                 ARGV.port = int(ARGV.port)
+                            PARSED_ARG_PARSER_OPTIONAL['port'] = ARGV.port
                             x = locals()[_honeypot](**PARSED_ARG_PARSER_OPTIONAL)
                             if not ARGV.test:
                                 x.run_server(process=True)
@@ -194,6 +197,7 @@ def main_logic():
                         if 'q{}server'.format(server).lower() == honeypot.lower():
                             if ARGV.port != '':
                                 ARGV.port = int(ARGV.port)
+                            PARSED_ARG_PARSER_OPTIONAL['port'] = ARGV.port
                             x = locals()[honeypot](**PARSED_ARG_PARSER_OPTIONAL)
                             if not ARGV.test:
                                 x.run_server(process=True)
@@ -234,20 +238,27 @@ def main_logic():
                     print('[x] Please wait few seconds')
                     sleep(5)
     elif ARGV.setup != '':
+
         register(exit_handler)
+        auto  = ARGV.auto
+        print(auto)
+
         if ARGV.termination_strategy == 'input':
             print('[x] Use [Enter] to exit or python3 -m honeypots --kill')
 
         if ARGV.config != '':
             print('[x] config.json file overrides --ip, --port, --username and --password')
 
+        if geteuid() == 0:
+            auto = False
+
         if ARGV.setup == 'all':
             try:
                 for honeypot in all_servers:
                     status = False
                     x = locals()[honeypot](**PARSED_ARG_PARSER_OPTIONAL)
-                    status = x.run_server(process=True, auto=True)
-                    temp_honeypots.append([x, status])
+                    status = x.run_server(process=True, auto=auto)
+                    temp_honeypots.append([x, honeypot, status])
             except Exception as e:
                 print(e)
         else:
@@ -258,6 +269,7 @@ def main_logic():
                     for honeypot in all_servers:
                         if 'q{}server'.format(server.split(':')[0]).lower() == honeypot.lower():
                             ARGV.port = int(server.split(':')[1])
+                            PARSED_ARG_PARSER_OPTIONAL['port'] = ARGV.port
                             x = locals()[honeypot](**PARSED_ARG_PARSER_OPTIONAL)
                             status = False
                             if not ARGV.test:
@@ -265,7 +277,7 @@ def main_logic():
                             else:
                                 server_timeout(x, honeypot)
                                 x.kill_server()
-                            temp_honeypots.append([x, status])
+                            temp_honeypots.append([x, honeypot, status])
                 elif ARGV.port != '':
                     for honeypot in all_servers:
                         if 'q{}server'.format(server).lower() == honeypot.lower():
@@ -276,29 +288,38 @@ def main_logic():
                             else:
                                 server_timeout(x, honeypot)
                                 x.kill_server()
-                            temp_honeypots.append([x, status])
+                            temp_honeypots.append([x, honeypot, status])
                 else:
                     for honeypot in all_servers:
                         if 'q{}server'.format(server).lower() == honeypot.lower():
                             x = locals()[honeypot](**PARSED_ARG_PARSER_OPTIONAL)
                             status = False
                             if not ARGV.test:
-                                status = x.run_server(process=True, auto=True)
+                                status = x.run_server(process=True, auto=auto)
                             else:
                                 print('[x] {} was configured with random port, unable to test..'.format(honeypot))
-                            temp_honeypots.append([x, status])
+                            temp_honeypots.append([x, honeypot, status])
+
+        running_honeypots = {'good':[],'bad':[]}
 
         if len(temp_honeypots) > 0:
             good = True
             for server in temp_honeypots:
-                if server[1] == False or server[1] == None:
-                    good = False
-            if good:
-                print('[x] Everything looks good!')
-            else:
-                print('[x] Something is wrong!')
+                if server[2] == False or server[2] == None:
+                    running_honeypots['bad'].append(server[1])
+                else:
+                    running_honeypots['good'].append(server[1])
 
-            if good:
+            if len(running_honeypots['good']) > 0:
+                print('[x] {} running..'.format(', '.join(running_honeypots['good'])))
+
+            if len(running_honeypots['bad']) > 0:
+                print('[x] {} not running..'.format(', '.join(running_honeypots['bad'])))
+
+            if len(running_honeypots['bad']) == 0:
+                print('[x] Everything looks good!')
+
+            if len(running_honeypots['good']) > 0:
                 if not ARGV.test:
                     Termination(ARGV.termination_strategy).await_termination()
 

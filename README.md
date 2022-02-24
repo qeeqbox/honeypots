@@ -2,11 +2,12 @@
 
 25 low-high level honeypots in a single PyPI package for monitoring network traffic, bots activities, and username \ password credentials. 
 
-The honeypots respond back, non-blocking, can be used as objects, or called directly with the in-built auto-configure scripts! Also, they are easy to setup and customize, it takes 1-2 seconds to spin a honeypot up. The output can be logged to a postgres database, file[s], terminal or syslog for easy integration.
+## Why honeypots package is very powerful?
+The honeypots respond back, non-blocking, can be used as objects, or called directly with the in-built auto-configure scripts! Also, they are easy to setup and customize, it takes 1-2 seconds to spin a honeypot up. You can spin up multiple instances with the same type. The output can be logged to a Postgres database, file[s], terminal or syslog for easy integration.
 
 This honeypots package is the only package that contains all the following: dns, ftp, httpproxy, http, https, imap, mysql, pop3, postgres, redis, smb, smtp, socks5, ssh, telnet, vnc, mssql, elastic, ldap, ntp, memcache, snmp, oracle, sip and irc.
 
-Honeypots now is in the awesome [telekom security T-Pot project!](https://github.com/telekom-security/tpotce)
+Honeypots is in the awesome [telekom security T-Pot project!](https://github.com/telekom-security/tpotce)
 
 ## Easy!
 <img src="https://raw.githubusercontent.com/qeeqbox/honeypots/main/readme/intro.gif" style="max-width:768px"/>
@@ -37,42 +38,39 @@ Honeypots options:
 General options:
   --termination-strategy {input,signal} Determines the strategy to terminate by
   --test                Test a honeypot
+  --auto                Setup the honeypot with random port
 ```
 
-## Usage Example - Auto configure
+## Usage Example - Auto configuration with default ports
 
 honeypot, or multiple honeypots separated by comma or word `all`
 
 ```
-python3 -m honeypots --setup ssh
+sudo -E python3 -m honeypots --setup ssh
 ```
 
-## Usage Example - Local ports needs higher privileges (use sudo -E)
+## Usage Example - Auto configuration with random port (No need for higher privileges)
 
 honeypot, or multiple honeypots separated by comma or word `all`
 
 ```
-sudo -E python3 -m honeypots --setup ssh:22
+python3 -m honeypots --setup ssh --auto
 ```
 
-## Usage Example - Auto configure with specific ports
+## Usage Example - Auto configure with specific ports (You might need for higher privileges)
 
 Use as honeypot:port or multiple honeypots as honeypot:port,honeypot:port
 
 ```
-python3 -m honeypots --setup imap:143,mysql:3306,redis:6379
+sudo -E python3 -m honeypots --setup imap:143,mysql:3306,redis:6379
 ```
 
-## Usage Example - Auto configure with logs location
-
-honeypot, or multiple honeypots separated by comma or word `all`
-
-## Usage Example - Custom configure
+## Usage Example - Custom configure with logs location
 
 honeypot, or multiple honeypots in a dict
 
 ```bash
-python3 -m honeypots --setup ftp --config config.json
+sudo -E python3 -m honeypots --setup ftp --config config.json
 ```
 
 #### config.json (Output to folder and terminal)
