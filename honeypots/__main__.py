@@ -240,7 +240,7 @@ def main_logic():
     elif ARGV.setup != '':
 
         register(exit_handler)
-        auto  = ARGV.auto
+        auto = ARGV.auto
         print(auto)
 
         if ARGV.termination_strategy == 'input':
@@ -300,7 +300,7 @@ def main_logic():
                                 print('[x] {} was configured with random port, unable to test..'.format(honeypot))
                             temp_honeypots.append([x, honeypot, status])
 
-        running_honeypots = {'good':[],'bad':[]}
+        running_honeypots = {'good': [], 'bad': []}
 
         if len(temp_honeypots) > 0:
             good = True
