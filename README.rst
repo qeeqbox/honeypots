@@ -56,8 +56,8 @@ Use a honeypot, or multiple honeypots separated by comma or word all
 
     sudo -E python3 -m honeypots --setup ssh
 
-## Usage Example - Auto configuration with random port (No need for higher privileges)
-======================================================================================
+Usage Example - Auto configuration with random port (No need for higher privileges)
+===================================================================================
 Use a honeypot, or multiple honeypots separated by comma or word all
 
 .. code:: bash
@@ -72,8 +72,8 @@ Use as honeypot:port or multiple honeypots as honeypot:port,honeypot:port
 
     python3 -m honeypots --setup imap:143,mysql:3306,redis:6379
 
-## Usage Example - Custom configure with logs location
-======================================================
+Usage Example - Custom configure with logs location
+===================================================
 Use a honeypot, or multiple honeypots separated by comma or word all
 
 .. code:: bash
