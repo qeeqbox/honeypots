@@ -4,9 +4,7 @@
    "syslog_address":"",
    "syslog_facility":0,
    "postgres":"",
-   "db_options":[
-      
-   ],
+   "db_options":[],
    "filter":"",
    "interface":"",
    "honeypots":{
