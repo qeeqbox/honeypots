@@ -12,6 +12,7 @@
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
+filterwarnings(action='ignore', module='.*scapy.*')
 
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor

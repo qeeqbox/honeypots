@@ -22,6 +22,7 @@ from honeypots.helper import check_if_server_is_running, close_port_wrapper, get
 from uuid import uuid4
 from contextlib import suppress
 
+import sys
 
 class QSMTPServer():
     def __init__(self, **kwargs):
@@ -50,6 +51,23 @@ class QSMTPServer():
                     return string.decode()
                 else:
                     return str(string)
+
+            def found_terminator(self):
+                with suppress(Exception):
+                    if "capture_commands" in _q_s.options:
+                        line = self._emptystring.join(self.received_lines).decode()
+                        command = None
+                        arg = None
+                        data = None
+                        if line.find(' ') < 0:
+                            command = line.upper()
+                        else:
+                            command = line.split(' ')[0].upper()
+                            arg = line.split(' ')[1].strip()
+                            if len(line.split(' ')) > 2:
+                                data = line.split(' ',2)[2]
+                        _q_s.logs.info({'server': 'smtp_server', 'action': 'connection', 'src_ip': self.addr[0], 'src_port': self.addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port,"data":{"command":command,"arg":arg,"data":data}})
+                super().found_terminator()
 
             def smtp_EHLO(self, arg):
                 _q_s.logs.info({'server': 'smtp_server', 'action': 'connection', 'src_ip': self.addr[0], 'src_port': self.addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})

@@ -166,7 +166,11 @@ class QHTTPSServer():
                 if client_ip == "":
                     client_ip = request.getClientAddress().host
 
-                _q_s.logs.info({'server': 'https_server', 'action': 'connection', 'src_ip': request.client_ip, 'src_port': request.getClientAddress().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': headers})
+                with suppress(Exception):
+                    if "capture_commands" in _q_s.options:
+                        _q_s.logs.info({'server': 'https_server', 'action': 'connection', 'src_ip': client_ip, 'src_port': request.getClientAddress().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': headers})
+                    else:
+                        _q_s.logs.info({'server': 'https_server', 'action': 'connection', 'src_ip': client_ip, 'src_port': request.getClientAddress().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
 
                 if _q_s.mocking_server != '':
                     request.responseHeaders.removeHeader('Server')
