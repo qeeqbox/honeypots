@@ -26,6 +26,7 @@ from contextlib import suppress
 from re import compile as rcompile
 from time import time
 
+
 class QSSHServer():
     def __init__(self, **kwargs):
         self.auto_disabled = None
