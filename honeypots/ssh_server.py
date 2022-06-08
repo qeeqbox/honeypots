@@ -25,6 +25,7 @@ from uuid import uuid4
 from contextlib import suppress
 from re import compile as rcompile
 
+
 class QSSHServer():
     def __init__(self, **kwargs):
         self.auto_disabled = None
@@ -60,7 +61,7 @@ class QSSHServer():
             def __init__(self, ip, port):
                 self.ip = ip
                 self.port = port
-                #ServerInterface.__init__(self)
+                # ServerInterface.__init__(self)
 
             def check_bytes(self, string):
                 if isinstance(string, bytes):
@@ -73,8 +74,8 @@ class QSSHServer():
                     return OPEN_SUCCEEDED
 
             def check_auth_publickey(self, username, key):
-                return AUTH_PARTIALLY_SUCCESSFUL  
-            
+                return AUTH_PARTIALLY_SUCCESSFUL
+
             def check_channel_pty_request(self, channel, term, width, height, pixelwidth, pixelheight, modes):
                 return True
 
@@ -112,11 +113,11 @@ class QSSHServer():
                             line = ""
                             while not line.endswith("\r"):
                                 recv = chan.recv(2).decode()
-                                if _q_s.ansi.match(recv) == None:
+                                if _q_s.ansi.match(recv) is None:
                                     chan.send(recv)
                                     line += recv
                             line = line.rstrip()
-                            _q_s.logs.info({'server': 'ssh_server', 'action': 'connection', 'src_ip': ip, 'src_port': port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, "data":{"command":line}})
+                            _q_s.logs.info({'server': 'ssh_server', 'action': 'connection', 'src_ip': ip, 'src_port': port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, "data": {"command": line}})
                             if line == "ls":
                                 chan.send("\r\nbin cdrom etc lib lib64 lost+found mnt proc run snap swapfile tmp var boot dev home lib32 libx32 media opt root sbin srv sys usr\r\n")
                             elif line == "pwd":
