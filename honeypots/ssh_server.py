@@ -13,7 +13,7 @@
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*paramiko.*')
 
-from paramiko import RSAKey, ServerInterface, Transport
+from paramiko import RSAKey, ServerInterface, Transport, OPEN_SUCCEEDED, AUTH_PARTIALLY_SUCCESSFUL, AUTH_SUCCESSFUL
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from _thread import start_new_thread
 from io import StringIO
@@ -23,7 +23,7 @@ from os import path, getenv
 from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
 from uuid import uuid4
 from contextlib import suppress
-
+from re import compile as rcompile
 
 class QSSHServer():
     def __init__(self, **kwargs):
@@ -42,9 +42,10 @@ class QSSHServer():
         self.username = kwargs.get('username', None) or (hasattr(self, 'username') and self.username) or 'test'
         self.password = kwargs.get('password', None) or (hasattr(self, 'password') and self.password) or 'test'
         self.options = kwargs.get('options', '') or (hasattr(self, 'options') and self.options) or getenv('HONEYPOTS_OPTIONS', '') or ''
+        self.ansi = rcompile(r'(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]')
 
     def generate_pub_pri_keys(self):
-        with suppress(Exception):
+        with suppress():
             key = RSAKey.generate(2048)
             string_io = StringIO()
             key.write_private_key(string_io)
@@ -59,13 +60,23 @@ class QSSHServer():
             def __init__(self, ip, port):
                 self.ip = ip
                 self.port = port
-                ServerInterface.__init__(self)
+                #ServerInterface.__init__(self)
 
             def check_bytes(self, string):
                 if isinstance(string, bytes):
                     return string.decode()
                 else:
                     return str(string)
+
+            def check_channel_request(self, kind, chanid):
+                if kind == 'session':
+                    return OPEN_SUCCEEDED
+
+            def check_auth_publickey(self, username, key):
+                return AUTH_PARTIALLY_SUCCESSFUL  
+            
+            def check_channel_pty_request(self, channel, term, width, height, pixelwidth, pixelheight, modes):
+                return True
 
             def check_auth_password(self, username, password):
                 username = self.check_bytes(username)
@@ -76,6 +87,13 @@ class QSSHServer():
                     password = _q_s.password
                     status = 'success'
                 _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': username, 'password': password})
+                return AUTH_SUCCESSFUL
+
+            def check_channel_exec_request(self, channel, command):
+                return True
+
+            def check_channel_shell_request(self, channel):
+                return True
 
         def ConnectionHandle(client, priv):
             with suppress(Exception):
@@ -87,7 +105,29 @@ class QSSHServer():
                 t.start_server(server=SSHHandle(ip, port))
                 chan = t.accept(1)
                 if not chan is None:
-                    chan.close()
+                    if "capture_commands" in _q_s.options:
+                        chan.send("Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.10.60.1-microsoft-standard-WSL2 x86_64)\r\n\r\n")
+                        while True:
+                            chan.send("/$ ")
+                            line = ""
+                            while not line.endswith("\r"):
+                                recv = chan.recv(2).decode()
+                                if _q_s.ansi.match(recv) == None:
+                                    chan.send(recv)
+                                    line += recv
+                            line = line.rstrip()
+                            _q_s.logs.info({'server': 'ssh_server', 'action': 'connection', 'src_ip': ip, 'src_port': port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, "data":{"command":line}})
+                            if line == "ls":
+                                chan.send("\r\nbin cdrom etc lib lib64 lost+found mnt proc run snap swapfile tmp var boot dev home lib32 libx32 media opt root sbin srv sys usr\r\n")
+                            elif line == "pwd":
+                                chan.send("\r\n/\r\n")
+                            elif line == "whoami":
+                                chan.send("\r\nroot\r\n")
+                            elif line == "exit":
+                                break
+                            else:
+                                chan.send("\r\n{}: command not found\r\n".format(line))
+                chan.close()
 
         sock = socket(AF_INET, SOCK_STREAM)
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
@@ -95,7 +135,7 @@ class QSSHServer():
         sock.listen(1)
         pub, priv = self.generate_pub_pri_keys()
         while True:
-            with suppress(Exception):
+            with suppress():
                 client, addr = sock.accept()
                 start_new_thread(ConnectionHandle, (client, priv,))
 
@@ -135,7 +175,7 @@ class QSSHServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        with suppress(Exception):
+        with suppress():
             from paramiko import SSHClient, AutoAddPolicy
             _ip = ip or self.ip
             _port = port or self.port
