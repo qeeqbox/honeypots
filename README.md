@@ -57,7 +57,7 @@ General options:
 honeypot, or multiple honeypots separated by comma or word `all`
 
 ```
-sudo -E python3 -m honeypots --setup ssh
+sudo -E python3 -m honeypots --setup ssh --options capture_commands
 ```
 
 ## Usage Example - Auto configuration with random port (No need for higher privileges)
@@ -104,7 +104,8 @@ sudo -E python3 -m honeypots --setup ftp --config config.json
       "password": "anonymous",
       "log_file_name": "ftp.log",
       "max_bytes": 10000,
-      "backup_count": 10
+      "backup_count": 10,
+      "options":["capture_commands"]
     }
   }
 }
@@ -127,7 +128,8 @@ sudo -E python3 -m honeypots --setup ftp --config config.json
       "port": 21,
       "ip": "0.0.0.0",
       "username": "test",
-      "password": "test"
+      "password": "test",
+      "options":["capture_commands"]
     }
   }
 }
@@ -172,7 +174,8 @@ sudo -E python3 -m honeypots --setup ftp --config config.json
         "ftp": {
             "port": 21,
             "username": "test",
-            "password": "test"
+            "password": "test",
+            "options":["capture_commands"]
         }
     }
 }
