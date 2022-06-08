@@ -256,11 +256,13 @@ qsshserver.kill_server()
     - Port: 8080/tcp
     - Lib: Twisted (low level emulation)
     - Logs: ip, port and data
+    - Options: Capture all threat actor commands and data (avalible)
 - QHTTPServer
     - Server: HTTP
     - Port: 80/tcp
     - Lib: Twisted.http
     - Logs: ip, port, username and password
+    - Options: Capture all threat actor commands and data (avalible)
 - QHTTPSServer
     - Server: HTTPS
     - Port: 443/tcp
@@ -314,6 +316,7 @@ qsshserver.kill_server()
     - Port: 22/tcp
     - Lib: paramiko
     - Logs: ip, port, username and password
+    - Options: Capture all threat actor commands and data (avalible)
 - QTelnetServer
     - Server: Telnet
     - Port: 23/tcp
