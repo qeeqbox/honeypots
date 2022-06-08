@@ -24,7 +24,7 @@ from honeypots.helper import check_if_server_is_running, close_port_wrapper, get
 from uuid import uuid4
 from contextlib import suppress
 from re import compile as rcompile
-
+from time import time
 
 class QSSHServer():
     def __init__(self, **kwargs):
@@ -105,29 +105,35 @@ class QSSHServer():
                 t.add_server_key(RSAKey(file_obj=StringIO(priv)))
                 t.start_server(server=SSHHandle(ip, port))
                 chan = t.accept(1)
-                if not chan is None:
-                    if "capture_commands" in _q_s.options:
-                        chan.send("Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.10.60.1-microsoft-standard-WSL2 x86_64)\r\n\r\n")
-                        while True:
-                            chan.send("/$ ")
-                            line = ""
-                            while not line.endswith("\r"):
-                                recv = chan.recv(2).decode()
-                                if _q_s.ansi.match(recv) is None:
-                                    chan.send(recv)
-                                    line += recv
-                            line = line.rstrip()
-                            _q_s.logs.info({'server': 'ssh_server', 'action': 'interactive', 'src_ip': ip, 'src_port': port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, "data": {"command": line}})
-                            if line == "ls":
-                                chan.send("\r\nbin cdrom etc lib lib64 lost+found mnt proc run snap swapfile tmp var boot dev home lib32 libx32 media opt root sbin srv sys usr\r\n")
-                            elif line == "pwd":
-                                chan.send("\r\n/\r\n")
-                            elif line == "whoami":
-                                chan.send("\r\nroot\r\n")
-                            elif line == "exit":
-                                break
-                            else:
-                                chan.send("\r\n{}: command not found\r\n".format(line))
+                try:
+                    if not chan is None:
+                        current_time = time()
+                        if "capture_commands" in _q_s.options:
+                            chan.send("Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.10.60.1-microsoft-standard-WSL2 x86_64)\r\n\r\n")
+                            while True and time() < current_time + 10:
+                                chan.send("/$ ")
+                                line = ""
+                                while not line.endswith("\x0d") and not line.endswith("\x0a") and time() < current_time + 30:
+                                    chan.settimeout(10)
+                                    recv = chan.recv(2).decode()
+                                    chan.settimeout(None)
+                                    if _q_s.ansi.match(recv) is None:
+                                        chan.send(recv)
+                                        line += recv
+                                line = line.rstrip()
+                                _q_s.logs.info({'server': 'ssh_server', 'action': 'interactive', 'src_ip': ip, 'src_port': port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, "data": {"command": line}})
+                                if line == "ls":
+                                    chan.send("\r\nbin cdrom etc lib lib64 lost+found mnt proc run snap swapfile tmp var boot dev home lib32 libx32 media opt root sbin srv sys usr\r\n")
+                                elif line == "pwd":
+                                    chan.send("\r\n/\r\n")
+                                elif line == "whoami":
+                                    chan.send("\r\nroot\r\n")
+                                elif line == "exit":
+                                    break
+                                else:
+                                    chan.send("\r\n{}: command not found\r\n".format(line))
+                except Exception as e:
+                    pass
                 chan.close()
 
         sock = socket(AF_INET, SOCK_STREAM)

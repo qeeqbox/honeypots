@@ -65,7 +65,7 @@ class QIRCServer():
                 service.IRCUser.handleCommand(self, command, prefix, params)
 
             def dataReceived(self, data):
-                _q_s.logs.info({'server': 'irc_server', 'action': 'command', 'data': '111', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+                #_q_s.logs.info({'server': 'irc_server', 'action': 'command', 'data': check_bytes(data), 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
                 service.IRCUser.dataReceived(self, data)
 
             def irc_unknown(self, prefix, command, params):

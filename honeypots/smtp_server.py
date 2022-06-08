@@ -65,7 +65,8 @@ class QSMTPServer():
                             arg = line.split(' ')[1].strip()
                             if len(line.split(' ')) > 2:
                                 data = line.split(' ', 2)[2]
-                        _q_s.logs.info({'server': 'smtp_server', 'action': 'connection', 'src_ip': self.addr[0], 'src_port': self.addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, "data": {"command": command, "arg": arg, "data": data}})
+                        if command != "HELO" and command != "EHLO":
+                            _q_s.logs.info({'server': 'smtp_server', 'action': 'connection', 'src_ip': self.addr[0], 'src_port': self.addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, "data": {"command": command, "arg": arg, "data": data}})
                 super().found_terminator()
 
             def smtp_EHLO(self, arg):
