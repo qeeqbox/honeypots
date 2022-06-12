@@ -45,7 +45,7 @@ class QSMBServer():
         else:
             self.logs = setup_logger(__class__.__name__, self.uuid, None)
         self.ip = kwargs.get('ip', None) or (hasattr(self, 'ip') and self.ip) or '0.0.0.0'
-        self.port = kwargs.get('port', None) or (hasattr(self, 'port') and self.port) or 445
+        self.port = (kwargs.get('port', None) and int(kwargs.get('port', None))) or (hasattr(self, 'port') and self.port) or 445
         self.username = kwargs.get('username', None) or (hasattr(self, 'username') and self.username) or 'test'
         self.password = kwargs.get('password', None) or (hasattr(self, 'password') and self.password) or 'test'
         self.options = kwargs.get('options', '') or (hasattr(self, 'options') and self.options) or getenv('HONEYPOTS_OPTIONS', '') or ''

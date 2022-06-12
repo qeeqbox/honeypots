@@ -22,7 +22,7 @@ from sys import stdout
 from datetime import datetime
 from logging.handlers import RotatingFileHandler, SysLogHandler
 from tempfile import _get_candidate_names, gettempdir
-from os import makedirs, path, scandir, devnull
+from os import makedirs, path, scandir, devnull,getuid
 from psycopg2 import sql
 from psycopg2 import connect as psycopg2_connect
 from time import sleep
@@ -36,6 +36,14 @@ from contextlib import suppress
 old_stderr = sys.stderr
 sys.stderr = open(devnull, 'w')
 
+
+def check_privileges():
+    with suppress(Exception):
+        return getuid() == 0
+    with suppress(Exception):
+        import ctypes
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+    return False
 
 def set_local_vars(self, config):
     with suppress(Exception):

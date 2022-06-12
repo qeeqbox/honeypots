@@ -13,7 +13,7 @@
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 
-from twisted.protocols.ftp import FTPAnonymousShell, FTPFactory, FTP, AUTH_FAILURE, IFTPShell, GUEST_LOGGED_IN_PROCEED, AuthorizationError, BAD_CMD_SEQ
+from twisted.protocols.ftp import FTPAnonymousShell, FTPFactory, FTP, AUTH_FAILURE, IFTPShell, GUEST_LOGGED_IN_PROCEED, AuthorizationError, BAD_CMD_SEQ, USR_LOGGED_IN_PROCEED
 from twisted.internet import reactor, defer
 from twisted.cred.portal import Portal
 from twisted.cred import portal, credentials
@@ -30,7 +30,6 @@ from uuid import uuid4
 from contextlib import suppress
 from tempfile import TemporaryDirectory
 
-
 class QFTPServer():
     def __init__(self, **kwargs):
         self.auto_disabled = None
@@ -44,7 +43,7 @@ class QFTPServer():
         else:
             self.logs = setup_logger(__class__.__name__, self.uuid, None)
         self.ip = kwargs.get('ip', None) or (hasattr(self, 'ip') and self.ip) or '0.0.0.0'
-        self.port = kwargs.get('port', None) or (hasattr(self, 'port') and self.port) or 21
+        self.port = (kwargs.get('port', None) and int(kwargs.get('port', None))) or (hasattr(self, 'port') and self.port) or 21
         self.username = kwargs.get('username', None) or (hasattr(self, 'username') and self.username) or 'test'
         self.password = kwargs.get('password', None) or (hasattr(self, 'password') and self.password) or 'test'
         self.options = kwargs.get('options', '') or (hasattr(self, 'options') and self.options) or getenv('HONEYPOTS_OPTIONS', '') or ''
@@ -70,11 +69,21 @@ class QFTPServer():
         class CustomAccess:
             credentialInterfaces = (credentials.IAnonymous, credentials.IUsernamePassword)
 
+            def check_bytes(self, string):
+                if isinstance(string, bytes):
+                    return string.decode()
+                else:
+                    return str(string)
+
             def requestAvatarId(self, credentials):
-                try:
-                    return defer.succeed("Dummy")
-                except KeyError:
-                    return defer.fail(UnauthorizedLogin())
+                with suppress(Exception):
+                    username = self.check_bytes(credentials.username)
+                    password = self.check_bytes(credentials.password)
+                    if username == _q_s.username and password == _q_s.password:
+                        username = _q_s.username
+                        password = _q_s.password
+                        return defer.succeed(credentials.username)
+                return defer.fail(UnauthorizedLogin())
 
         class CustomFTPProtocol(FTP):
 
@@ -91,7 +100,7 @@ class QFTPServer():
                 self.reply("220.2", self.factory.welcomeMessage)
 
             def processCommand(self, cmd, *params):
-                with suppress():
+                with suppress(Exception):
                     if "capture_commands" in _q_s.options:
                         _q_s.logs.info({'server': 'ftp_server', 'action': 'command', 'data': {"cmd": self.check_bytes(cmd.upper()), "args": self.check_bytes(params)}, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
                 return super().processCommand(cmd, *params)
@@ -106,7 +115,13 @@ class QFTPServer():
                     status = 'success'
                 _q_s.logs.info({'server': 'ftp_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': username, 'password': password})
 
-                creds = credentials.Anonymous()
+                if self.factory.allowAnonymous and self._user == self.factory.userAnonymous:
+                    creds = credentials.Anonymous()
+                    reply = GUEST_LOGGED_IN_PROCEED
+                else:
+                    creds = credentials.UsernamePassword(self._user, password)
+                    reply = USR_LOGGED_IN_PROCEED
+
                 del self._user
 
                 def _cbLogin(parsed):
@@ -114,7 +129,7 @@ class QFTPServer():
                     self.logout = parsed[2]
                     self.workingDirectory = []
                     self.state = self.AUTHED
-                    return GUEST_LOGGED_IN_PROCEED
+                    return reply
 
                 def _ebLogin(failure):
                     failure.trap(UnauthorizedLogin, UnhandledCredentials)

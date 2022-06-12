@@ -76,7 +76,7 @@ def server_timeout(object, name):
 
 def main_logic():
 
-    from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, QMSSQLServer, QElasticServer, QLDAPServer, QNTPServer, QMemcacheServer, QOracleServer, QSNMPServer, QSIPServer, QIRCServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer, get_running_servers
+    from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, QMSSQLServer, QElasticServer, QLDAPServer, QNTPServer, QMemcacheServer, QOracleServer, QSNMPServer, QSIPServer, QIRCServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer, get_running_servers, check_privileges
     from atexit import register
     from argparse import ArgumentParser, SUPPRESS
     from sys import stdout
@@ -121,6 +121,9 @@ def main_logic():
     ARGV = ARG_PARSER.parse_args()
     PARSED_ARG_PARSER_OPTIONAL = {action.dest: getattr(ARGV, action.dest, '') for action in ARG_PARSER_OPTIONAL._group_actions}
     config_data = None
+    print("[!] For updates, check https://github.com/qeeqbox/honeypots")
+    if check_privileges() == False:
+        print("[!] Using system or well-known ports requires higher privileges (E.g. sudo -E)")
     if ARGV.config != '':
         with open(ARGV.config) as f:
             try:
@@ -241,8 +244,6 @@ def main_logic():
 
         register(exit_handler)
         auto = ARGV.auto
-        print(auto)
-
         if ARGV.termination_strategy == 'input':
             print('[x] Use [Enter] to exit or python3 -m honeypots --kill')
 

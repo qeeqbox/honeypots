@@ -13,7 +13,7 @@
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*paramiko.*')
 
-from paramiko import RSAKey, ServerInterface, Transport, OPEN_SUCCEEDED, AUTH_PARTIALLY_SUCCESSFUL, AUTH_SUCCESSFUL, OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED, OPEN_SUCCEEDED
+from paramiko import RSAKey, ServerInterface, Transport, OPEN_SUCCEEDED, AUTH_PARTIALLY_SUCCESSFUL, AUTH_SUCCESSFUL, OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED, OPEN_SUCCEEDED,AUTH_FAILED
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR, getfqdn
 from _thread import start_new_thread
 from io import StringIO
@@ -28,7 +28,6 @@ from time import time
 from threading import Event
 from binascii import hexlify
 
-
 class QSSHServer():
     def __init__(self, **kwargs):
         self.auto_disabled = None
@@ -42,7 +41,7 @@ class QSSHServer():
         else:
             self.logs = setup_logger(__class__.__name__, self.uuid, None)
         self.ip = kwargs.get('ip', None) or (hasattr(self, 'ip') and self.ip) or '0.0.0.0'
-        self.port = kwargs.get('port', None) or (hasattr(self, 'port') and self.port) or 22
+        self.port = (kwargs.get('port', None) and int(kwargs.get('port', None))) or (hasattr(self, 'port') and self.port) or 22
         self.username = kwargs.get('username', None) or (hasattr(self, 'username') and self.username) or 'test'
         self.password = kwargs.get('password', None) or (hasattr(self, 'password') and self.password) or 'test'
         self.options = kwargs.get('options', '') or (hasattr(self, 'options') and self.options) or getenv('HONEYPOTS_OPTIONS', '') or ''
@@ -65,7 +64,7 @@ class QSSHServer():
                 self.ip = ip
                 self.port = port
                 self.event = Event()
-                # ServerInterface.__init__(self)
+                #ServerInterface.__init__(self)
 
             def check_bytes(self, string):
                 if isinstance(string, bytes):
@@ -86,12 +85,14 @@ class QSSHServer():
                     username = _q_s.username
                     password = _q_s.password
                     status = 'success'
-                _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': username, 'password': password})
-                return AUTH_SUCCESSFUL
+                if status =='success':
+                    _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': username, 'password': password})
+                    return AUTH_SUCCESSFUL
+                return AUTH_FAILED
 
             def check_channel_exec_request(self, channel, command):
                 if "capture_commands" in _q_s.options:
-                    _q_s.logs.info({'server': 'ssh_server', 'action': 'command', 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, "data": {"command": self.check_bytes(command)}})
+                    _q_s.logs.info({'server': 'ssh_server', 'action': 'command', 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port,"data":{"command":self.check_bytes(command)}})
                 self.event.set()
                 return True
 
@@ -99,7 +100,7 @@ class QSSHServer():
                 return "password,publickey"
 
             def check_auth_publickey(self, username, key):
-                _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, "username": self.check_bytes(username), 'key_fingerprint': self.check_bytes(hexlify(key.get_fingerprint()))})
+                _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, "username":self.check_bytes(username),'key_fingerprint': self.check_bytes(hexlify(key.get_fingerprint()))})
                 return AUTH_SUCCESSFUL
 
             def check_channel_shell_request(self, channel):
@@ -107,7 +108,7 @@ class QSSHServer():
 
             def check_channel_direct_tcpip_request(self, chanid, origin, destination):
                 return OPEN_SUCCEEDED
-
+            
             def check_channel_pty_request(self, channel, term, width, height, pixelwidth, pixelheight, modes):
                 return True
 
@@ -121,7 +122,7 @@ class QSSHServer():
                 sshhandle = SSHHandle(ip, port)
                 t.start_server(server=sshhandle)
                 conn = t.accept(30)
-                if "interactive" in _q_s.options and conn is not None:
+                if "interactive" in _q_s.options and conn != None:
                     conn.send("Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.10.60.1-microsoft-standard-WSL2 x86_64)\r\n\r\n")
                     current_time = time()
                     while True and time() < current_time + 10:
