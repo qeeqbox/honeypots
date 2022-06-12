@@ -13,8 +13,8 @@
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*paramiko.*')
 
-from paramiko import RSAKey, ServerInterface, Transport, OPEN_SUCCEEDED, AUTH_PARTIALLY_SUCCESSFUL, AUTH_SUCCESSFUL
-from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
+from paramiko import RSAKey, ServerInterface, Transport, OPEN_SUCCEEDED, AUTH_PARTIALLY_SUCCESSFUL, AUTH_SUCCESSFUL, OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED, OPEN_SUCCEEDED
+from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR, getfqdn
 from _thread import start_new_thread
 from io import StringIO
 from random import choice
@@ -25,7 +25,8 @@ from uuid import uuid4
 from contextlib import suppress
 from re import compile as rcompile
 from time import time
-
+from threading import Event
+from binascii import hexlify
 
 class QSSHServer():
     def __init__(self, **kwargs):
@@ -62,7 +63,8 @@ class QSSHServer():
             def __init__(self, ip, port):
                 self.ip = ip
                 self.port = port
-                # ServerInterface.__init__(self)
+                self.event = Event()
+                #ServerInterface.__init__(self)
 
             def check_bytes(self, string):
                 if isinstance(string, bytes):
@@ -73,12 +75,7 @@ class QSSHServer():
             def check_channel_request(self, kind, chanid):
                 if kind == 'session':
                     return OPEN_SUCCEEDED
-
-            def check_auth_publickey(self, username, key):
-                return AUTH_PARTIALLY_SUCCESSFUL
-
-            def check_channel_pty_request(self, channel, term, width, height, pixelwidth, pixelheight, modes):
-                return True
+                return OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
 
             def check_auth_password(self, username, password):
                 username = self.check_bytes(username)
@@ -92,9 +89,25 @@ class QSSHServer():
                 return AUTH_SUCCESSFUL
 
             def check_channel_exec_request(self, channel, command):
+                if "capture_commands" in _q_s.options:
+                    _q_s.logs.info({'server': 'ssh_server', 'action': 'command', 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port,"data":{"command":self.check_bytes(command)}})
+                self.event.set()
                 return True
 
+            def get_allowed_auths(self, username):
+                return "password,publickey"
+
+            def check_auth_publickey(self, username, key):
+                _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, "username":self.check_bytes(username),'key_fingerprint': self.check_bytes(hexlify(key.get_fingerprint()))})
+                return AUTH_SUCCESSFUL
+
             def check_channel_shell_request(self, channel):
+                return True
+
+            def check_channel_direct_tcpip_request(self, chanid, origin, destination):
+                return OPEN_SUCCEEDED
+            
+            def check_channel_pty_request(self, channel, term, width, height, pixelwidth, pixelheight, modes):
                 return True
 
         def ConnectionHandle(client, priv):
@@ -104,38 +117,40 @@ class QSSHServer():
                 _q_s.logs.info({'server': 'ssh_server', 'action': 'connection', 'src_ip': ip, 'src_port': port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
                 t.local_version = 'SSH-2.0-' + _q_s.mocking_server
                 t.add_server_key(RSAKey(file_obj=StringIO(priv)))
-                t.start_server(server=SSHHandle(ip, port))
-                chan = t.accept(1)
-                try:
-                    if not chan is None:
-                        current_time = time()
-                        if "capture_commands" in _q_s.options:
-                            chan.send("Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.10.60.1-microsoft-standard-WSL2 x86_64)\r\n\r\n")
-                            while True and time() < current_time + 10:
-                                chan.send("/$ ")
-                                line = ""
-                                while not line.endswith("\x0d") and not line.endswith("\x0a") and time() < current_time + 30:
-                                    chan.settimeout(10)
-                                    recv = chan.recv(2).decode()
-                                    chan.settimeout(None)
-                                    if _q_s.ansi.match(recv) is None:
-                                        chan.send(recv)
-                                        line += recv
-                                line = line.rstrip()
-                                _q_s.logs.info({'server': 'ssh_server', 'action': 'interactive', 'src_ip': ip, 'src_port': port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, "data": {"command": line}})
-                                if line == "ls":
-                                    chan.send("\r\nbin cdrom etc lib lib64 lost+found mnt proc run snap swapfile tmp var boot dev home lib32 libx32 media opt root sbin srv sys usr\r\n")
-                                elif line == "pwd":
-                                    chan.send("\r\n/\r\n")
-                                elif line == "whoami":
-                                    chan.send("\r\nroot\r\n")
-                                elif line == "exit":
-                                    break
-                                else:
-                                    chan.send("\r\n{}: command not found\r\n".format(line))
-                except Exception as e:
-                    pass
-                chan.close()
+                sshhandle = SSHHandle(ip, port)
+                t.start_server(server=sshhandle)
+                conn = t.accept(30)
+                if "interactive" in _q_s.options and conn != None:
+                    conn.send("Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.10.60.1-microsoft-standard-WSL2 x86_64)\r\n\r\n")
+                    current_time = time()
+                    while True and time() < current_time + 10:
+                        conn.send("/$ ")
+                        line = ""
+                        while not line.endswith("\x0d") and not line.endswith("\x0a") and time() < current_time + 10:
+                            conn.settimeout(10)
+                            recv = conn.recv(1).decode()
+                            conn.settimeout(None)
+                            if _q_s.ansi.match(recv) is None and recv != "\x7f":
+                                conn.send(recv)
+                                line += recv
+                        line = line.rstrip()
+                        _q_s.logs.info({'server': 'ssh_server', 'action': 'interactive', 'src_ip': ip, 'src_port': port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, "data": {"command": line}})
+                        if line == "ls":
+                            conn.send("\r\nbin cdrom etc lib lib64 lost+found mnt proc run snap swapfile tmp var boot dev home lib32 libx32 media opt root sbin srv sys usr\r\n")
+                        elif line == "pwd":
+                            conn.send("\r\n/\r\n")
+                        elif line == "whoami":
+                            conn.send("\r\nroot\r\n")
+                        elif line == "exit":
+                            break
+                        else:
+                            conn.send("\r\n{}: command not found\r\n".format(line))
+                with suppress(Exception):
+                    sshhandle.event.wait(2)
+                with suppress(Exception):
+                    conn.close()
+                with suppress(Exception):
+                    t.close()
 
         sock = socket(AF_INET, SOCK_STREAM)
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)

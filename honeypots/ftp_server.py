@@ -13,8 +13,14 @@
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 
-from twisted.protocols.ftp import FTPFactory, FTP, AUTH_FAILURE
-from twisted.internet import reactor
+from twisted.protocols.ftp import FTPAnonymousShell, FTPFactory, FTP, AUTH_FAILURE, IFTPShell, GUEST_LOGGED_IN_PROCEED, AuthorizationError, BAD_CMD_SEQ
+from twisted.internet import reactor, defer
+from twisted.cred.portal import Portal
+from twisted.cred import portal, credentials
+from twisted.cred.error import UnauthorizedLogin, UnauthorizedLogin,UnhandledCredentials
+from twisted.cred.checkers import ICredentialsChecker
+from zope.interface import implementer
+from twisted.python import filepath
 from twisted.python import log as tlog
 from random import choice
 from subprocess import Popen
@@ -22,7 +28,7 @@ from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
 from contextlib import suppress
-
+from tempfile import TemporaryDirectory
 
 class QFTPServer():
     def __init__(self, **kwargs):
@@ -41,10 +47,31 @@ class QFTPServer():
         self.username = kwargs.get('username', None) or (hasattr(self, 'username') and self.username) or 'test'
         self.password = kwargs.get('password', None) or (hasattr(self, 'password') and self.password) or 'test'
         self.options = kwargs.get('options', '') or (hasattr(self, 'options') and self.options) or getenv('HONEYPOTS_OPTIONS', '') or ''
+        self.temp_folder = TemporaryDirectory()
         disable_logger(1, tlog)
 
     def ftp_server_main(self):
         _q_s = self
+
+        @implementer(portal.IRealm)
+        class CustomFTPRealm:
+            def __init__(self, anonymousRoot):
+                self.anonymousRoot = filepath.FilePath(anonymousRoot)
+            def requestAvatar(self, avatarId, mind, *interfaces):
+                for iface in interfaces:
+                    if iface is IFTPShell:
+                        avatar = FTPAnonymousShell(self.anonymousRoot)
+                        return IFTPShell, avatar, getattr(avatar, 'logout', lambda: None)
+                raise NotImplementedError("Only IFTPShell interface is supported by this realm")
+
+        @implementer(ICredentialsChecker)
+        class CustomAccess:
+            credentialInterfaces = (credentials.IAnonymous, credentials.IUsernamePassword)
+            def requestAvatarId(self, credentials):
+                try:
+                    return defer.succeed("Dummy")
+                except KeyError:
+                    return defer.fail(UnauthorizedLogin())
 
         class CustomFTPProtocol(FTP):
 
@@ -54,44 +81,18 @@ class QFTPServer():
                 else:
                     return str(string)
 
-            def processCommand(self, cmd, *params):
-                cmd = cmd.upper()
-
-                with suppress(Exception):
-                    if "capture_commands" in _q_s.options:
-                        _q_s.logs.info({'server': 'ftp_server', 'action': 'command', 'data': {"cmd": self.check_bytes(cmd), "args": self.check_bytes(*params)}, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
-
-                if self.state == self.UNAUTH:
-                    if cmd == 'USER':
-                        return self.ftp_USER(*params)
-                    elif cmd == 'PASS':
-                        return BAD_CMD_SEQ, "USER required before PASS"
-                    else:
-                        return NOT_LOGGED_IN
-
-                elif self.state == self.INAUTH:
-                    if cmd == 'PASS':
-                        return self.ftp_PASS(*params)
-                    else:
-                        return BAD_CMD_SEQ, "PASS required after USER"
-
-                elif self.state == self.AUTHED:
-                    method = getattr(self, "ftp_" + cmd, None)
-                    if method is not None:
-                        return method(*params)
-                    return defer.fail(CmdNotImplementedError(cmd))
-
-                elif self.state == self.RENAMING:
-                    if cmd == 'RNTO':
-                        return self.ftp_RNTO(*params)
-                    else:
-                        return BAD_CMD_SEQ, "RNTO required after RNFR"
-
             def connectionMade(self):
                 _q_s.logs.info({'server': 'ftp_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
                 self.state = self.UNAUTH
                 self.setTimeout(self.timeOut)
                 self.reply("220.2", self.factory.welcomeMessage)
+
+
+            def processCommand(self, cmd, *params):
+                with suppress():
+                    if "capture_commands" in _q_s.options:
+                        _q_s.logs.info({'server': 'ftp_server', 'action': 'command', 'data': {"cmd": self.check_bytes(cmd.upper()), "args": self.check_bytes(params)}, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+                return super().processCommand(cmd,*params)
 
             def ftp_PASS(self, password):
                 username = self.check_bytes(self._user)
@@ -102,21 +103,32 @@ class QFTPServer():
                     password = _q_s.password
                     status = 'success'
                 _q_s.logs.info({'server': 'ftp_server', 'action': 'login', 'status': status, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': username, 'password': password})
-                return AUTH_FAILURE
+                
+                creds = credentials.Anonymous()
+                del self._user
 
-        class CustomFTPFactory(FTPFactory):
-            protocol = CustomFTPProtocol
-            portal = None
+                def _cbLogin(parsed):
+                    self.shell = parsed[1]
+                    self.logout = parsed[2]
+                    self.workingDirectory = []
+                    self.state = self.AUTHED
+                    return GUEST_LOGGED_IN_PROCEED
 
-            def buildProtocol(self, address):
-                p = self.protocol()
-                p.portal = self.portal
-                p.factory = self
-                return p
+                def _ebLogin(failure):
+                    failure.trap(UnauthorizedLogin,UnhandledCredentials)
+                    self.state = self.UNAUTH
+                    raise AuthorizationError
 
-        factory = CustomFTPFactory()
-        factory.welcomeMessage = self.mocking_server
-        reactor.listenTCP(port=self.port, factory=factory, interface=self.ip)
+                d = self.portal.login(creds, None, IFTPShell)
+                d.addCallbacks(_cbLogin, _ebLogin)
+                return d
+
+
+        p = Portal(CustomFTPRealm("data"), [CustomAccess()])
+        factory = FTPFactory(p)
+        factory.protocol = CustomFTPProtocol
+        factory.welcomeMessage = "ProFTPD 1.2.10"
+        reactor.listenTCP(port=self.port, factory=factory)
         reactor.run()
 
     def run_server(self, process=False, auto=False):
@@ -164,8 +176,9 @@ class QFTPServer():
             _password = password or self.password
             f = FFTP()
             f.connect(_ip, _port)
-            # f.getwelcome()
             f.login(_username, _password)
+            f.pwd()
+            f.quit()
 
 
 if __name__ == '__main__':
