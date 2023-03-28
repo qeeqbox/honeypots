@@ -1,6 +1,6 @@
 .. image:: https://raw.githubusercontent.com/qeeqbox/honeypots/main/readme/honeypots.png
 
-25 different honeypots in a single PyPI package for monitoring network traffic, bots activities, and username \ password credentials. 
+30 different honeypots in a single PyPI package for monitoring network traffic, bots activities, and username \ password credentials. 
 
 Why honeypots package is very powerful?
 =======================================
