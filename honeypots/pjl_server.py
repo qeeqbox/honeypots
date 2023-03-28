@@ -25,6 +25,7 @@ from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrap
 from uuid import uuid4
 from contextlib import suppress
 
+
 class QPJLServer():
     def __init__(self, **kwargs):
         self.auto_disabled = None
@@ -40,22 +41,22 @@ class QPJLServer():
         self.ip = kwargs.get('ip', None) or (hasattr(self, 'ip') and self.ip) or '0.0.0.0'
         self.port = (kwargs.get('port', None) and int(kwargs.get('port', None))) or (hasattr(self, 'port') and self.port) or 9100
         self.options = kwargs.get('options', '') or (hasattr(self, 'options') and self.options) or getenv('HONEYPOTS_OPTIONS', '') or ''
-        self.template = {   'ProductName' : 'Brother HL-L2360',
-                            'FormatterNumber' : 'Q910CHL',
-                            'PrinterNumber' : 'L2360',
-                            'ProductSerialNumber' : 'VNB1897514',
-                            'ServiceID' : '20157',
-                            'FirmwareDateCode' : '20051103',
-                            'MaxPrintResolution' : '900',
-                            'ControllerNumber' : 'Q910CHL',
-                            'DeviceDescription' : 'Brother HL-L2360',
-                            'DeviceLang' : 'ZJS PJL',
-                            'TotalMemory' : '6890816',
-                            'AvailableMemory' : '3706526',
-                            'Personality' : '0',
-                            'EngFWVer' : '10',
-                            'IPAddress' : '172.17.0.2',
-                            'HWAddress' : '0025B395EA01'}
+        self.template = {'ProductName': 'Brother HL-L2360',
+                         'FormatterNumber': 'Q910CHL',
+                         'PrinterNumber': 'L2360',
+                         'ProductSerialNumber': 'VNB1897514',
+                         'ServiceID': '20157',
+                         'FirmwareDateCode': '20051103',
+                         'MaxPrintResolution': '900',
+                         'ControllerNumber': 'Q910CHL',
+                         'DeviceDescription': 'Brother HL-L2360',
+                         'DeviceLang': 'ZJS PJL',
+                         'TotalMemory': '6890816',
+                         'AvailableMemory': '3706526',
+                         'Personality': '0',
+                         'EngFWVer': '10',
+                         'IPAddress': '172.17.0.2',
+                         'HWAddress': '0025B395EA01'}
         disable_logger(1, tlog)
 
     def pjl_server_main(self):
@@ -76,21 +77,21 @@ class QPJLServer():
                 _q_s.logs.info({'server': 'pjl_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
 
             def dataReceived(self, data):
-                #Control to PJL (Removed)
+                # Control to PJL (Removed)
                 data = data.replace(b'\x1b%-12345X', b'')
                 if data.lower().startswith(b'@pjl echo'):
-                    self.transport.write(b'@PJL '+ data[10:] + b'\x1b')
+                    self.transport.write(b'@PJL ' + data[10:] + b'\x1b')
                 elif data.lower().startswith(b'@pjl info id'):
-                    self.transport.write(b'@PJL INFO ID\r\n'+_q_s.printer+b'\r\n\x1b')
+                    self.transport.write(b'@PJL INFO ID\r\n' + _q_s.printer + b'\r\n\x1b')
                 elif data.lower().startswith(b'@pjl prodinfo'):
-                    prodinfo = '\r\n'.join([k+" = "+v for k,v in _q_s.template.items()])
-                    self.transport.write(prodinfo.encode('utf-8')+ b'\x1b')
+                    prodinfo = '\r\n'.join([k + " = " + v for k, v in _q_s.template.items()])
+                    self.transport.write(prodinfo.encode('utf-8') + b'\x1b')
                 _q_s.logs.info({'server': 'ntp_server', 'action': 'query', 'status': 'success', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': {'command': self.check_bytes(data)}})
                 self.transport.loseConnection()
 
             def connectionLost(self, reason):
                 self._state = None
-                
+
         factory = Factory()
         factory.protocol = Custompjlrotocol
         reactor.listenTCP(port=self.port, factory=factory, interface=self.ip)
@@ -142,6 +143,7 @@ class QPJLServer():
             c = socket(AF_INET, SOCK_STREAM)
             c.sendto(b'\x1b%-12345X@PJL prodinfo', (_ip, _port))
             c.close()
+
 
 if __name__ == '__main__':
     parsed = server_arguments()

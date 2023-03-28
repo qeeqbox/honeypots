@@ -26,6 +26,7 @@ from struct import unpack
 from OpenSSL import crypto
 from tempfile import gettempdir, _get_candidate_names
 
+
 class QRDPServer():
     def __init__(self, **kwargs):
         self.auto_disabled = None
@@ -85,13 +86,13 @@ class QRDPServer():
                 with suppress(Exception):
                     var = b''
                     for idx, _ in enumerate(data):
-                        if _ == 0 and data[idx+1] == 0:
+                        if _ == 0 and data[idx + 1] == 0:
                             break
                         if _ == 0:
                             continue
                         else:
                             var += bytes([_])
-                    if length/2 == len(var):
+                    if length / 2 == len(var):
                         return var
                 return b''
 
@@ -99,7 +100,7 @@ class QRDPServer():
                 cookie = b''
                 with suppress(Exception):
                     for idx, _ in enumerate(data):
-                        if _ == 13 and data[idx+1] == 10:
+                        if _ == 13 and data[idx + 1] == 10:
                             break
                         else:
                             cookie += bytes([_])
@@ -109,17 +110,17 @@ class QRDPServer():
                 user = ''
                 password = ''
                 with suppress(Exception):
-                    flag,flags,code_page,option_flags,domain_length,user_length,password_length,shell_length,working_dir_length = unpack('HHIIHHHHH',data[15:37])
+                    flag, flags, code_page, option_flags, domain_length, user_length, password_length, shell_length, working_dir_length = unpack('HHIIHHHHH', data[15:37])
                     location = 37
-                    domain = self.get_value(domain_length,data[location:])
-                    location  = location + domain_length + 2
-                    user = self.get_value(user_length,data[location:])
-                    location  = location + user_length + 2
-                    password = self.get_value(password_length,data[location:])
-                    location  = location + password_length + 2
-                    shell = self.get_value(shell_length,data[location:])
-                    location  = location + shell_length + 2
-                    working_dir = self.get_value(working_dir_length,data[location:])
+                    domain = self.get_value(domain_length, data[location:])
+                    location = location + domain_length + 2
+                    user = self.get_value(user_length, data[location:])
+                    location = location + user_length + 2
+                    password = self.get_value(password_length, data[location:])
+                    location = location + password_length + 2
+                    shell = self.get_value(shell_length, data[location:])
+                    location = location + shell_length + 2
+                    working_dir = self.get_value(working_dir_length, data[location:])
                 return user, password
 
             def run(self):
@@ -130,7 +131,7 @@ class QRDPServer():
                 initiator = b'\x00\x06'
                 with suppress(Exception):
                     _q_s.logs.info({'server': 'rdp_server', 'action': 'connection', 'src_ip': self.sock.getpeername()[0], 'src_port': self.sock.getpeername()[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
-                    #Client X.224 Connection Request PDU
+                    # Client X.224 Connection Request PDU
 
                     data = self.sock.recv(1024)
                     if b'Cookie' in data:
@@ -138,11 +139,11 @@ class QRDPServer():
                         cookie = self.check_bytes(cookie)
                         _q_s.logs.info({'server': 'rdp_server', 'action': 'stshash', 'mstshash': 'success', 'src_ip': self.sock.getpeername()[0], 'src_port': self.sock.getpeername()[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': {'stshash': cookie}})
 
-                    #Server X.224 Connection Confirm PDU
-                    #data[0] version
-                    #19 (x13) total len
-                    #14 (x0e) X.224 len
-                    #TLS only \x02\x00\x08\x00\x01\x00\x00\x00
+                    # Server X.224 Connection Confirm PDU
+                    # data[0] version
+                    # 19 (x13) total len
+                    # 14 (x0e) X.224 len
+                    # TLS only \x02\x00\x08\x00\x01\x00\x00\x00
 
                     self.sock.send(b'\x03\x00\x00\x13\x0e\xd0\x00\x00\x12\x34\x00\x02\x00\x08\x00\x01\x00\x00\x00')
                     ctx = SSLContext(PROTOCOL_TLSv1_1)
@@ -161,43 +162,43 @@ class QRDPServer():
                     if b'rdpsnd' in data:
                         rdpsnd = True
 
-                    #MCS Connect Response PDU with GCC Conference Create Response
-                    #\x03\x00\x00
-                    #\x7c
-                    #\x02\xf0\x80\x7f\x66\x74\x0a\x01\x00\x02\x01\x00\x30\x1a\x02\x01\x22\x02\x01\x03\x02\x01\x00\x02\x01\x01\x02\x01\x00\x02\x01\x01\x02\x03\x00\xff\xf8\x02\x01\x02\x04
-                    #\x4e
-                    #\x00\x05\x00\x14\x7c\x00\x01\x2a\x14\x76\x0a\x01\x01\x00\x01\xc0\x00\x4d\x63\x44\x6e
-                    #\x38
-                    #\x01\x0c SC_CORE
-                    #\x0e\x00\x04\x00\x08\x00\x03\x00\x00\x00\x03\x00
-                    #\x02\x0c SC_SECURITY
-                    #\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00
-                    #\x03\x0c SC_NET
-                    #03eb I/O channel
-                    #03ec rdpdr channel
-                    #03ed cliprdr channel
-                    #03ef rdpsnd channel
-                    #\x10\x00\xeb\x03\x04\x00\xec\x03\xed\x03\xee\x03\xef\x03
-                    #\x04\x0c SC_MCS_MSGCHANNEL
-                    #\x06\x00\xf0\x03
-                    #\x08\x0c SC_MULTITRANSPORT
-                    #\x08\x00\x00\x00\x00\x00
+                    # MCS Connect Response PDU with GCC Conference Create Response
+                    # \x03\x00\x00
+                    # \x7c
+                    # \x02\xf0\x80\x7f\x66\x74\x0a\x01\x00\x02\x01\x00\x30\x1a\x02\x01\x22\x02\x01\x03\x02\x01\x00\x02\x01\x01\x02\x01\x00\x02\x01\x01\x02\x03\x00\xff\xf8\x02\x01\x02\x04
+                    # \x4e
+                    # \x00\x05\x00\x14\x7c\x00\x01\x2a\x14\x76\x0a\x01\x01\x00\x01\xc0\x00\x4d\x63\x44\x6e
+                    # \x38
+                    # \x01\x0c SC_CORE
+                    # \x0e\x00\x04\x00\x08\x00\x03\x00\x00\x00\x03\x00
+                    # \x02\x0c SC_SECURITY
+                    # \x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00
+                    # \x03\x0c SC_NET
+                    # 03eb I/O channel
+                    # 03ec rdpdr channel
+                    # 03ed cliprdr channel
+                    # 03ef rdpsnd channel
+                    # \x10\x00\xeb\x03\x04\x00\xec\x03\xed\x03\xee\x03\xef\x03
+                    # \x04\x0c SC_MCS_MSGCHANNEL
+                    # \x06\x00\xf0\x03
+                    # \x08\x0c SC_MULTITRANSPORT
+                    # \x08\x00\x00\x00\x00\x00
 
                     self.sock.send(b'\x03\x00\x00\x7c\x02\xf0\x80\x7f\x66\x74\x0a\x01\x00\x02\x01\x00\x30\x1a\x02\x01\x22\x02\x01\x03\x02\x01\x00\x02\x01\x01\x02\x01\x00\x02\x01\x01\x02\x03\x00\xff\xf8\x02\x01\x02\x04\x4e\x00\x05\x00\x14\x7c\x00\x01\x2a\x14\x76\x0a\x01\x01\x00\x01\xc0\x00\x4d\x63\x44\x6e\x38\x01\x0c\x0e\x00\x04\x00\x08\x00\x03\x00\x00\x00\x03\x00\x02\x0c\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x0c\x10\x00\xeb\x03\x04\x00\xec\x03\xed\x03\xee\x03\xef\x03\x04\x0c\x06\x00\xf0\x03\x08\x0c\x08\x00\x00\x00\x00\x00')
 
                     data = self.sock.recv(1024)
                     data = self.sock.recv(1024)
 
-                    #Server MCS Attach-User Confirm PDU 
-                    #03 00 00 0b 02 f0 80 2e 00 00 06
+                    # Server MCS Attach-User Confirm PDU
+                    # 03 00 00 0b 02 f0 80 2e 00 00 06
                     self.sock.send(b'\x03\x00\x00\x0b\x02\xf0\x80\x2e\x00' + initiator)
 
-                    #Multiple channel join
-                    #03 00 00 0c 02 f0 80 38 00 06 03 eb
-                    #03 00 00 0f 02 f0 80 3e 00 00 06 03 eb 03 eb
+                    # Multiple channel join
+                    # 03 00 00 0c 02 f0 80 38 00 06 03 eb
+                    # 03 00 00 0f 02 f0 80 3e 00 00 06 03 eb 03 eb
 
                     with suppress(Exception):
-                        #7 times + 1
+                        # 7 times + 1
                         for i in range(8):
                             data = self.sock.recv(1024)
                             if len(data) > 14:
@@ -216,8 +217,8 @@ class QRDPServer():
                                     break
                             else:
                                 self.sock.send(b'\x03\x00\x00\x0f\x02\xf0\x80\x3e\x00' + initiator + b'\x03' + bytes([data[-1]]) + b'\x03' + bytes([data[-1]]))
-                    
-                    #MCS Disconnect Provider Ultimatum PDU
+
+                    # MCS Disconnect Provider Ultimatum PDU
                     self.sock.send(b'\x03\x00\x00\x09\x02\xf0\x80\x21\x80')
 
                 with suppress(Exception):
@@ -235,7 +236,7 @@ class QRDPServer():
             with suppress(Exception):
                 client, addr = rpdserver.accept()
                 client.settimeout(10.0)
-                ConnectionHandle(client,self.key,self.cert).start()
+                ConnectionHandle(client, self.key, self.cert).start()
 
     def run_server(self, process=False, auto=False):
         status = 'error'
@@ -283,6 +284,7 @@ class QRDPServer():
             c = socket(AF_INET, SOCK_STREAM)
             c.sendto(b'test', (_ip, _port))
             c.close()
+
 
 if __name__ == '__main__':
     parsed = server_arguments()

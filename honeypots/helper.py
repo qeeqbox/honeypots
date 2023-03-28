@@ -39,6 +39,7 @@ from contextlib import suppress
 #old_stderr = sys.stderr
 #sys.stderr = open(devnull, 'w')
 
+
 def check_privileges():
     with suppress(Exception):
         return getuid() == 0

@@ -26,6 +26,7 @@ from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrap
 from uuid import uuid4
 from contextlib import suppress
 
+
 class QDHCPServer():
     def __init__(self, **kwargs):
         self.auto_disabled = None
@@ -56,18 +57,18 @@ class QDHCPServer():
             def payload(self, value, message):
                 op, htype, hlen, hops, xid, secs, flags, ciaddr, yiaddr, siaddr, giaddr, chaddr = unpack('1s1s1s1s4s2s2s4s4s4s4s16s', message[:44])
                 #op, htype, hlen, hops, xid, secs, flags, ciaddr
-                response =  b'\x02\x01\x06\x00' + xid + b'\x00\x00\x00\x00\x00\x00\x00\x00'
+                response = b'\x02\x01\x06\x00' + xid + b'\x00\x00\x00\x00\x00\x00\x00\x00'
                 #yiaddr, siaddr, giaddr, chaddr
                 response += inet_aton(_q_s.dhcp_ip_lease) + inet_aton(_q_s.dhcp_ip) + inet_aton('0.0.0.0') + chaddr
-                #sname, file, magic 
-                response += b'\x00' * 64 + b'\x00' * 128 + b'\x63\x82\x53\x63' 
-                #options
-                response += bytes([53,1,value])
-                response += bytes([54,4])+inet_aton(_q_s.dhcp_ip)
-                response += bytes([1,4])+inet_aton(_q_s.subnet_mask)
-                response += bytes([3,4])+inet_aton(_q_s.router)
-                response += bytes([6,4])+inet_aton(_q_s.dns_server)
-                response += bytes([51,4])+b'\x00\x00\xa8\xc0' #lease
+                #sname, file, magic
+                response += b'\x00' * 64 + b'\x00' * 128 + b'\x63\x82\x53\x63'
+                # options
+                response += bytes([53, 1, value])
+                response += bytes([54, 4]) + inet_aton(_q_s.dhcp_ip)
+                response += bytes([1, 4]) + inet_aton(_q_s.subnet_mask)
+                response += bytes([3, 4]) + inet_aton(_q_s.router)
+                response += bytes([6, 4]) + inet_aton(_q_s.dns_server)
+                response += bytes([51, 4]) + b'\x00\x00\xa8\xc0'  # lease
                 response += b'\xff'
                 return response
 
@@ -77,9 +78,9 @@ class QDHCPServer():
                 tag_size = None
                 tag = ''
                 for idx, b in enumerate(raw):
-                    if tag_name == None:
+                    if tag_name is None:
                         tag_name = b
-                    elif tag_name != None and tag_size == None:
+                    elif tag_name is not None and tag_size is None:
                         tag_size = b
                         tag = ''
                     else:
@@ -87,7 +88,7 @@ class QDHCPServer():
                             tag_size -= 1
                             tag += chr(b)
                             if tag_size == 0:
-                                options.update({self.check_bytes(tag_name):self.check_bytes(tag)})
+                                options.update({self.check_bytes(tag_name): self.check_bytes(tag)})
                                 tag_name = None
                                 tag_size = None
                                 tag = ''
@@ -96,7 +97,7 @@ class QDHCPServer():
             def datagramReceived(self, data, addr):
                 mac_address = unpack('!28x6s', data[:34])[0].hex(':')
                 data = self.parse_options(data[240:])
-                data.update({'mac_address':mac_address})
+                data.update({'mac_address': mac_address})
                 _q_s.logs.info({'server': 'dhcp_server', 'action': 'query', 'status': 'success', 'src_ip': addr[0], 'src_port': addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': data})
                 self.transport.loseConnection()
 
@@ -140,6 +141,7 @@ class QDHCPServer():
 
     def test_server(self, ip=None, port=None):
         pass
+
 
 if __name__ == '__main__':
     parsed = server_arguments()

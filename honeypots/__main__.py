@@ -4,7 +4,7 @@ from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 filterwarnings('ignore', category=RuntimeWarning, module='runpy')
 
-all_servers = ['QDNSServer', 'QFTPServer', 'QHTTPProxyServer', 'QHTTPServer', 'QHTTPSServer', 'QIMAPServer', 'QMysqlServer', 'QPOP3Server', 'QPostgresServer', 'QRedisServer', 'QSMBServer', 'QSMTPServer', 'QSOCKS5Server', 'QSSHServer', 'QTelnetServer', 'QVNCServer', 'QElasticServer', 'QMSSQLServer', 'QLDAPServer', 'QNTPServer', 'QMemcacheServer', 'QOracleServer', 'QSNMPServer', 'QSIPServer', 'QIRCServer','QRDPServer','QDHCPServer','QPJLServer','QIPPServer']
+all_servers = ['QDNSServer', 'QFTPServer', 'QHTTPProxyServer', 'QHTTPServer', 'QHTTPSServer', 'QIMAPServer', 'QMysqlServer', 'QPOP3Server', 'QPostgresServer', 'QRedisServer', 'QSMBServer', 'QSMTPServer', 'QSOCKS5Server', 'QSSHServer', 'QTelnetServer', 'QVNCServer', 'QElasticServer', 'QMSSQLServer', 'QLDAPServer', 'QNTPServer', 'QMemcacheServer', 'QOracleServer', 'QSNMPServer', 'QSIPServer', 'QIRCServer', 'QRDPServer', 'QDHCPServer', 'QPJLServer', 'QIPPServer']
 temp_honeypots = []
 
 from signal import signal, alarm, SIGALRM, SIG_IGN, SIGTERM, SIGINT, SIGTSTP
@@ -76,7 +76,7 @@ def server_timeout(object, name):
 
 def main_logic():
 
-    from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, QMSSQLServer, QElasticServer, QLDAPServer, QNTPServer, QMemcacheServer, QOracleServer, QSNMPServer, QSIPServer, QIRCServer, QRDPServer,QDHCPServer, QPJLServer, QIPPServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer, get_running_servers, check_privileges
+    from honeypots import QDNSServer, QFTPServer, QHTTPProxyServer, QHTTPServer, QHTTPSServer, QIMAPServer, QMysqlServer, QPOP3Server, QPostgresServer, QRedisServer, QSMBServer, QSMTPServer, QSOCKS5Server, QSSHServer, QTelnetServer, QVNCServer, QMSSQLServer, QElasticServer, QLDAPServer, QNTPServer, QMemcacheServer, QOracleServer, QSNMPServer, QSIPServer, QIRCServer, QRDPServer, QDHCPServer, QPJLServer, QIPPServer, server_arguments, clean_all, postgres_class, setup_logger, QBSniffer, get_running_servers, check_privileges
     from atexit import register
     from argparse import ArgumentParser, SUPPRESS
     from sys import stdout
@@ -306,7 +306,7 @@ def main_logic():
         if len(temp_honeypots) > 0:
             good = True
             for server in temp_honeypots:
-                if server[2] == False or server[2] == None:
+                if server[2] == False or server[2] is None:
                     running_honeypots['bad'].append(server[1])
                 else:
                     running_honeypots['good'].append(server[1])
