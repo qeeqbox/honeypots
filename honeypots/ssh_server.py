@@ -12,6 +12,7 @@
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*paramiko.*')
+filterwarnings(action='ignore', module='.*socket.*')
 
 from paramiko import RSAKey, ServerInterface, Transport, OPEN_SUCCEEDED, AUTH_PARTIALLY_SUCCESSFUL, AUTH_SUCCESSFUL, OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED, OPEN_SUCCEEDED, AUTH_FAILED
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR, getfqdn
@@ -201,15 +202,14 @@ class QSSHServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        with suppress(Exception):
-            from paramiko import SSHClient, AutoAddPolicy
-            _ip = ip or self.ip
-            _port = port or self.port
-            _username = username or self.username
-            _password = password or self.password
-            ssh = SSHClient()
-            ssh.set_missing_host_key_policy(AutoAddPolicy())  # if you have default ones, remove them before using this..
-            ssh.connect(_ip, port=_port, username=_username, password=_password)
+        from paramiko import SSHClient, AutoAddPolicy
+        _ip = ip or self.ip
+        _port = port or self.port
+        _username = username or self.username
+        _password = password or self.password
+        ssh = SSHClient()
+        ssh.set_missing_host_key_policy(AutoAddPolicy())  # if you have default ones, remove them before using this..
+        ssh.connect(_ip, port=_port, username=_username, password=_password)
 
 
 if __name__ == '__main__':

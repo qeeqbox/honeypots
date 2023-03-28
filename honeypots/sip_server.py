@@ -103,13 +103,15 @@ class QSIPServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        from socket import socket, AF_INET, SOCK_DGRAM, IPPROTO_UDP
-        _ip = ip or self.ip
-        _port = port or self.port
-        _username = username or self.username
-        _password = password or self.password
-        sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
-        sock.sendto(b'INVITE sip:user_1@test.test SIP/2.0\r\nTo: <sip:user_2@test.test>\r\nFrom: sip:user_3@test.test.test;tag=none\r\nCall-ID: 1@0.0.0.0\r\nCSeq: 1 INVITE\r\nContact: sip:user_3@test.test.test\r\nVia: SIP/2.0/TCP 0.0.0.0;branch=34uiddhjczqw3mq23\r\nContent-Length: 1\r\n\r\nT', (_ip, _port))
+        with suppress(Exception):
+            from socket import socket, AF_INET, SOCK_DGRAM, IPPROTO_UDP
+            _ip = ip or self.ip
+            _port = port or self.port
+            _username = username or self.username
+            _password = password or self.password
+            sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+            sock.sendto(b'INVITE sip:user_1@test.test SIP/2.0\r\nTo: <sip:user_2@test.test>\r\nFrom: sip:user_3@test.test.test;tag=none\r\nCall-ID: 1@0.0.0.0\r\nCSeq: 1 INVITE\r\nContact: sip:user_3@test.test.test\r\nVia: SIP/2.0/TCP 0.0.0.0;branch=34uiddhjczqw3mq23\r\nContent-Length: 1\r\n\r\nT', (_ip, _port))
+            sock.close()
 
 
 if __name__ == '__main__':

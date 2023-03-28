@@ -160,7 +160,7 @@ class QIMAPServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        try:
+        with suppress(Exception):
             from imaplib import IMAP4
             _ip = ip or self.ip
             _port = port or self.port
@@ -169,8 +169,6 @@ class QIMAPServer():
             imap_test = IMAP4(_ip, _port)
             # imap_test.welcome
             imap_test.login(_username, _password)
-        except BaseException:
-            pass
 
 
 if __name__ == '__main__':

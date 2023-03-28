@@ -60,7 +60,7 @@ class QNTPServer():
             def datagramReceived(self, data, addr):
                 version = 'UnKnown'
                 mode = 'UnKnown'
-                success = False
+                success = 'failed'
                 unpacked = None
                 _q_s.logs.info({'server': 'ntp_server', 'action': 'connection', 'src_ip': addr[0], 'src_port': addr[1]})
                 if len(data) == calcsize('!B B B b I I I Q Q Q Q'):
@@ -71,13 +71,9 @@ class QNTPServer():
                         i, f = self.system_time_to_ntp(time())
                         response = pack('!B B B b I I I Q Q Q Q', 0 << 6 | 3 << 3 | 2, data[1], data[2], data[3], 0, 0, 0, 0, data[10], 0, i + f)
                         self.transport.write(response, addr)
-                        success = True
+                        success = 'success'
 
-                if success:
-                    _q_s.logs.info({'server': 'ntp_server', 'action': 'query', 'status': 'success', 'src_ip': addr[0], 'src_port': addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': {'version': version, 'mode': mode}})
-                else:
-                    _q_s.logs.info({'server': 'ntp_server', 'action': 'query', 'status': 'fail', 'src_ip': addr[0], 'src_port': addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': {'version': version, 'mode': mode}})
-
+                _q_s.logs.info({'server': 'ntp_server', 'action': 'query', 'status': 'success', 'src_ip': addr[0], 'src_port': addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': {'version': version, 'mode': mode}})
                 self.transport.loseConnection()
 
         reactor.listenUDP(port=self.port, protocol=CustomDatagramProtocolProtocol(), interface=self.ip)
@@ -120,13 +116,17 @@ class QNTPServer():
 
     def test_server(self, ip=None, port=None, username=None, password=None):
         with suppress(Exception):
+            from warnings import filterwarnings
+            filterwarnings(action='ignore', module='.*socket.*')
             from socket import socket, AF_INET, SOCK_DGRAM
+
             _ip = ip or self.ip
             _port = port or self.port
             c = socket(AF_INET, SOCK_DGRAM)
             c.sendto(b'\x1b' + 47 * b'\0', (_ip, _port))
             data, address = c.recvfrom(256)
             ret_time = unpack('!12I', data)[10] - 2208988800
+            c.close()
 
 
 if __name__ == '__main__':

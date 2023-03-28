@@ -201,7 +201,7 @@ class QHTTPSServer():
                                     username = _q_s.username
                                     password = _q_s.password
                                     status = 'success'
-                                _q_s.logs.info({'server': 'https_server', 'action': 'login', 'status': status, 'src_ip': request.client_ip, 'src_port': request.getClientAddress().port, 'username': username, 'password': password, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+                                _q_s.logs.info({'server': 'https_server', 'action': 'login', 'status': status, 'src_ip': client_ip, 'src_port': request.getClientAddress().port, 'username': username, 'password': password, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
 
                     request.responseHeaders.addRawHeader('Content-Type', 'text/html; charset=utf-8')
                     return self.home_file

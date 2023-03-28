@@ -12,6 +12,9 @@
 
 import sys
 
+from warnings import filterwarnings
+filterwarnings(action='ignore', module='.*requests.*')
+
 from psutil import process_iter
 from signal import SIGTERM
 from argparse import ArgumentParser
@@ -33,9 +36,8 @@ from sqlite3 import connect as sqlite3_connect
 from pathlib import Path
 from contextlib import suppress
 
-old_stderr = sys.stderr
-sys.stderr = open(devnull, 'w')
-
+#old_stderr = sys.stderr
+#sys.stderr = open(devnull, 'w')
 
 def check_privileges():
     with suppress(Exception):

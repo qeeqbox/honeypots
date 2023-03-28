@@ -12,6 +12,7 @@
 
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
+filterwarnings(action='ignore', module='.*socket.*')
 
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor
@@ -128,17 +129,21 @@ class QIRCServer():
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
-        from socket import socket, AF_INET, SOCK_STREAM
-        from time import sleep
-        _ip = ip or self.ip
-        _port = port or self.port
-        _username = username or self.username
-        _password = password or self.password
-        sock = socket(AF_INET, SOCK_STREAM)
-        sock.connect((_ip, _port))
-        sock.setblocking(False)
-        sock.send("PASS {}\n".format(_password).encode())
-        sleep(2)
+        with suppress(Exception):
+            from warnings import filterwarnings
+            filterwarnings(action='ignore', module='.*socket.*')
+            from socket import socket, AF_INET, SOCK_STREAM
+            from time import sleep
+
+            _ip = ip or self.ip
+            _port = port or self.port
+            _username = username or self.username
+            _password = password or self.password
+            c = socket(AF_INET, SOCK_STREAM)
+            c.connect((_ip, _port))
+            c.setblocking(False)
+            c.send("PASS {}\n".format(_password).encode())
+            c.close()
 
 
 if __name__ == '__main__':
