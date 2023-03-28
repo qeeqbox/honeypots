@@ -5,7 +5,7 @@
 ## Why honeypots package is very powerful?
 The honeypots respond back, non-blocking, can be used as objects, or called directly with the in-built auto-configure scripts! Also, they are easy to set up and customize; it takes 1-2 seconds to spin a honeypot up. You can spin up multiple instances with the same type. For easy integration, the output can be logged to a Postgres database, file[s], terminal, or Syslog.
 
-This honeypots package is the only package that contains all the following: dns, ftp, httpproxy, http, https, imap, mysql, pop3, postgres, redis, smb, smtp, socks5, ssh, telnet, vnc, mssql, elastic, ldap, ntp, memcache, snmp, oracle, sip and irc.
+This honeypots package is the only package that contains all the following: dhcp, dns, elastic, ftp, http_proxy, http, https, imap, ipp, irc, ldap, memcache, mssql, mysql, ntp, oracle, pjl, pop3, postgres, rdp, redis, sip, smb, smtp, snmp, socks5, ssh, telnet, vnc.
 
 Honeypots is in the awesome [telekom security T-Pot project!](https://github.com/telekom-security/tpotce)
 
