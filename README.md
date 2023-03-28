@@ -377,6 +377,25 @@ qsshserver.kill_server()
     - Lib: Twisted.irc
     - Logs: ip, port, username and password
     - Options: Capture all threat actor commands and data (avalible)
+- QPJLServer
+    - Emulator: PJL
+    - Port: 9100/tcp
+    - Lib: Twisted
+    - Logs: ip, port
+    - Options: Capture all threat actor commands and data (avalible)
+- QIPPServer
+    - Emulator: IPP
+    - Port: 631/tcp
+    - Lib: Twisted
+    - Logs: ip, por
+    - Options: Capture all threat actor commands and data (avalible)
+- QRDPServer
+    - Emulator: RDP
+    - Port: 3389/tcp
+    - Lib: Sockets
+    - Logs: ip, port, username and password
+    - Options: Capture all threat actor commands and data (avalible)
+
 
 ## Open Shell
 [![Open in Cloud Shell](https://img.shields.io/static/v1?label=%3E_&message=Open%20in%20Cloud%20Shell&color=3267d6&style=flat-square)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/qeeqbox/honeypots&tutorial=README.md) [![Open in repl.it Shell](https://img.shields.io/static/v1?label=%3E_&message=Open%20in%20repl.it%20Shell&color=606c74&style=flat-square)](https://repl.it/github/qeeqbox/honeypots)
