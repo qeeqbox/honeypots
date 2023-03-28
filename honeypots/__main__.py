@@ -306,7 +306,7 @@ def main_logic():
         if len(temp_honeypots) > 0:
             good = True
             for server in temp_honeypots:
-                if server[2] == False or server[2] == None:
+                if server[2] == False or server[2] is None:
                     running_honeypots['bad'].append(server[1])
                 else:
                     running_honeypots['good'].append(server[1])
