@@ -247,6 +247,36 @@
          "max_bytes":10000,
          "backup_count":10,
          "options":["capture_commands"]
+      },
+      "pjl":{
+         "port":9100,
+         "ip":"0.0.0.0",
+         "username":"",
+         "password":"",
+         "log_file_name":"pjl.log",
+         "max_bytes":10000,
+         "backup_count":10,
+         "options":["capture_commands"]
+      },
+      "ipp":{
+         "port":631,
+         "ip":"0.0.0.0",
+         "username":"",
+         "password":"",
+         "log_file_name":"ipp.log",
+         "max_bytes":10000,
+         "backup_count":10,
+         "options":["capture_commands"]
+      },
+      "rdp":{
+         "port":3389,
+         "ip":"0.0.0.0",
+         "username":"",
+         "password":"",
+         "log_file_name":"rdp.log",
+         "max_bytes":10000,
+         "backup_count":10,
+         "options":["capture_commands"]
       }
    },
    "custom_filter":{
