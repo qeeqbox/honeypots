@@ -1,6 +1,6 @@
 <p align="center"> <img src="https://raw.githubusercontent.com/qeeqbox/honeypots/main/readme/honeypots.png"></p>
 
-25 low-high level honeypots in a single PyPI package for monitoring network traffic, bots activities, and username \ password credentials. 
+30 low-high level honeypots in a single PyPI package for monitoring network traffic, bots activities, and username \ password credentials. 
 
 ## Why honeypots package is very powerful?
 The honeypots respond back, non-blocking, can be used as objects, or called directly with the in-built auto-configure scripts! Also, they are easy to set up and customize; it takes 1-2 seconds to spin a honeypot up. You can spin up multiple instances with the same type. For easy integration, the output can be logged to a Postgres database, file[s], terminal, or Syslog.
