@@ -124,6 +124,7 @@ class QRDPServer():
                 return user, password
 
             def run(self):
+                #There is no good documentation on how RDP protocol works (It took a bit of time to figure it out - Use b1105eb1-d1f7-414b-ad68-fd0c5a7823e4 test case)
                 cookie = ''
                 rdpdr = False
                 cliprdr = False
