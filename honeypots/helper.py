@@ -421,12 +421,12 @@ class sqlite_class():
         self.servers_table_template = {'server': 'servers_table', 'action': None, 'status': None, 'src_ip': None, 'src_port': None, 'username': None, 'password': None, 'dest_ip': None, 'dest_port': None, 'data': None, 'error': None}
         self.wait_until_up()
         if drop:
-            self.con = sqlite3_connect(self.file, timeout=1, isolation_level=None)
+            self.con = sqlite3_connect(self.file, timeout=1, isolation_level=None, check_same_thread=False)
             self.cur = self.con.cursor()
             self.drop_db()
             self.drop_tables()
             self.con.close()
-        self.con = sqlite3_connect(self.file, timeout=1, isolation_level=None)
+        self.con = sqlite3_connect(self.file, timeout=1, isolation_level=None, check_same_thread=False)
         self.cur = self.con.cursor()
         self.create_tables()
 
@@ -435,7 +435,7 @@ class sqlite_class():
         while test:
             with suppress(Exception):
                 print('{} - Waiting on sqlite connection'.format(self.uuid))
-                conn = sqlite3_connect(self.file, timeout=1)
+                conn = sqlite3_connect(self.file, timeout=1, check_same_thread=False)
                 conn.close()
                 test = False
             sleep(1)
