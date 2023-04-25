@@ -28,7 +28,7 @@ setup(
         'requests==2.28.2',
         'requests[socks]==2.28.2',
         'impacket==0.9.24',
-        'paramiko==2.7.1',
+        'paramiko==3.1.0',
         'scapy==2.4.5',
         'service_identity==21.1.0',
         'netifaces==0.11.0'
