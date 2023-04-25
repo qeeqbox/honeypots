@@ -90,6 +90,7 @@ class QSSHServer():
                 if status == 'success':
                     _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': username, 'password': password})
                     return AUTH_SUCCESSFUL
+                _q_s.logs.info({'server': 'ssh_server', 'action': 'login', 'status': status, 'src_ip': self.ip, 'src_port': self.port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'username': username, 'password': password})
                 return AUTH_FAILED
 
             def check_channel_exec_request(self, channel, command):
