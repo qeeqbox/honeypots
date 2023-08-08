@@ -14,7 +14,7 @@ from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*paramiko.*')
 
 from socket import socket, SHUT_RDWR, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
-from ssl import SSLContext, PROTOCOL_TLSv1_1, CERT_NONE
+from ssl import SSLContext, PROTOCOL_TLSv1_2, CERT_NONE
 from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import check_if_server_is_running, close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, set_local_vars, setup_logger
@@ -147,7 +147,7 @@ class QRDPServer():
                     # TLS only \x02\x00\x08\x00\x01\x00\x00\x00
 
                     self.sock.send(b'\x03\x00\x00\x13\x0e\xd0\x00\x00\x12\x34\x00\x02\x00\x08\x00\x01\x00\x00\x00')
-                    ctx = SSLContext(PROTOCOL_TLSv1_1)
+                    ctx = SSLContext(PROTOCOL_TLSv1_2)
                     ctx.set_ciphers('RSA:!aNULL')
                     ctx.check_hostname = False
                     ctx.verify_mode = CERT_NONE

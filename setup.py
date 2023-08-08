@@ -9,7 +9,7 @@ setup(
     author_email='gigaqeeq@gmail.com',
     description=r"30 different honeypots in one package! (dhcp, dns, elastic, ftp, http proxy, https proxy, http, https, imap, ipp, irc, ldap, memcache, mssql, mysql, ntp, oracle, pjl, pop3, postgres, rdp, redis, sip, smb, smtp, snmp, socks5, ssh, telnet, vnc)",
     long_description=long_description,
-    version='0.63',
+    version='0.64',
     license="AGPL-3.0",
     license_files=('LICENSE'),
     url="https://github.com/qeeqbox/honeypots",
