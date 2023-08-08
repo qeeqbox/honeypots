@@ -404,9 +404,6 @@ qsshserver.kill_server()
 - By using this framework, you are accepting the license terms of all these packages: `pipenv twisted psutil psycopg2-binary dnspython requests impacket paramiko redis mysql-connector pycryptodome vncdotool service_identity requests[socks] pygments http.server`
 - Let me know if I missed a reference or resource!
 
-## Some Articles
-- securityonline
-
 ## Notes
 - Almost all servers and emulators are stripped-down - You can adjust that as needed
 
