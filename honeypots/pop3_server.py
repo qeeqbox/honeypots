@@ -9,11 +9,11 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 '''
-
+from typing import Tuple
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 
-from twisted.mail.pop3 import POP3
+from twisted.mail.pop3 import POP3, POP3Error
 from twisted.internet.protocol import Factory
 from twisted.internet import reactor
 from random import choice
@@ -62,7 +62,7 @@ class QPOP3Server():
                 self._user = None
                 self.successResponse('{}'.format(_q_s.mocking_server))
 
-            def processCommand(self, command, *args):
+            def processCommand(self, command: bytes, *args):
 
                 with suppress(Exception):
                     if "capture_commands" in _q_s.options:
@@ -75,11 +75,11 @@ class QPOP3Server():
                 command = command.upper()
                 authCmd = command in self.AUTH_CMDS
                 if not self.mbox and not authCmd:
-                    raise POP3Error("not authenticated yet: cannot do " + command)
-                f = getattr(self, 'do_' + command, None)
+                    raise POP3Error(b"not authenticated yet: cannot do " + command)
+                f = getattr(self, "do_{}".format(self.check_bytes(command)), None)
                 if f:
                     return f(*args)
-                raise POP3Error("Unknown protocol command: " + command)
+                raise POP3Error(b"Unknown protocol command: " + command)
 
             def do_USER(self, user):
                 self._user = user
