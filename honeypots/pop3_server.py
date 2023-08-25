@@ -85,10 +85,10 @@ class QPOP3Server():
                 self._user = user
                 self.successResponse('USER Ok')
 
-            def do_PASS(self, password):
+            def do_PASS(self, password: bytes, *words: Tuple[bytes]):
                 if self._user:
                     username = self.check_bytes(self._user)
-                    password = self.check_bytes(password)
+                    password = self.check_bytes(b" ".join((password,) + words))
                     status = 'failed'
                     if username == _q_s.username and password == _q_s.password:
                         username = _q_s.username
