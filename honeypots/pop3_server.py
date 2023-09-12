@@ -66,7 +66,11 @@ class QPOP3Server():
 
                 with suppress(Exception):
                     if "capture_commands" in _q_s.options:
-                        _q_s.logs.info({'server': 'pop3_server', 'action': 'command', 'data': {"cmd": self.check_bytes(command), "args": self.check_bytes(*args)}, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+                        _q_s.logs.info({'server': 'pop3_server', 'action': 'command', 'data': {"cmd": self.check_bytes(command), "args": self.check_bytes(b" ".join(args))}, 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+
+                if not (command.lower().startswith(b'user') or command.lower().startswith(b'pass')):
+                    self.failResponse('Authentication failed')
+                    return
 
                 if self.blocked is not None:
                     self.blocked.append((command, args))
@@ -100,12 +104,6 @@ class QPOP3Server():
                     self.failResponse('USER first, then PASS')
 
                 self._user = None
-
-            def lineReceived(self, line):
-                if line.lower().startswith(b'user') or line.lower().startswith(b'pass'):
-                    POP3.lineReceived(self, line)
-                else:
-                    self.failResponse('Authentication failed')
 
         class CustomPOP3Factory(Factory):
             protocol = CustomPOP3Protocol
