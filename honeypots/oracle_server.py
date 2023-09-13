@@ -55,7 +55,7 @@ class QOracleServer():
                 return payload
 
             def refuse_payload(self):
-                payload = b'\x00\x08\x00\x00' + '\x04' + '\x00\x00\x00'
+                payload = b'\x00\x08\x00\x00\x04\x00\x00\x00'
                 return payload
 
             def parse_payload(self, data):
