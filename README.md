@@ -395,7 +395,11 @@ qsshserver.kill_server()
     - Lib: Sockets
     - Logs: ip, port, username and password
     - Options: Capture all threat actor commands and data (avalible)
-
+- QDHCPServer
+    - Emulator: DHCP
+    - Port: 67/udp
+    - Lib: Sockets
+    - Logs: ip, port
 
 ## Open Shell
 [![Open in Cloud Shell](https://img.shields.io/static/v1?label=%3E_&message=Open%20in%20Cloud%20Shell&color=3267d6&style=flat-square)](https://ssh.cloud.google.com/cloudshell/editor?cloudshell_git_repo=https://github.com/qeeqbox/honeypots&tutorial=README.md) [![Open in repl.it Shell](https://img.shields.io/static/v1?label=%3E_&message=Open%20in%20repl.it%20Shell&color=606c74&style=flat-square)](https://repl.it/github/qeeqbox/honeypots)
