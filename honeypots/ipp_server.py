@@ -9,7 +9,7 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 '''
-
+from typing import Dict
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 
@@ -26,6 +26,9 @@ from contextlib import suppress
 from struct import unpack
 
 disable_warnings()
+
+STATUS_CODE_OK = b"\x00\x00"
+STATUS_CODE_BAD_REQUEST = b"\x04\x00"
 
 
 class QIPPServer():
@@ -172,7 +175,17 @@ class QIPPServer():
                         response = response[0:-1]
                 if len(response) > 0:
                     _q_s.logs.info({'server': 'ipp_server', 'action': 'query', 'status': status, 'src_ip': client_ip, 'src_port': request.getClientAddress().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': {'request': response}})
-                return self.send_response(request, b'\x01\x01\x00\x00')
+                return self.send_response(data, status != "failed")
+
+            @staticmethod
+            def send_response(request: bytes, successful: bool) -> bytes:
+                version, request_id = request[0:2], request[3:7]
+                if version not in [b"\x01\x01", b"\x02\x00", b"\x02\x01", b"\x02\x02"]:
+                    version = b"\x02\x00"
+                status_code = STATUS_CODE_OK if successful else STATUS_CODE_BAD_REQUEST
+                attributes = attributes_dict_to_bytes({"attributes-charset": "utf-8", "attributes-natural-language": "en-us"})
+                response = version + status_code + request_id + attributes
+                return response
 
         reactor.listenTCP(self.port, Site(MainResource()))
         reactor.run()
@@ -231,6 +244,23 @@ class QIPPServer():
             s = socket(AF_INET, SOCK_STREAM)
             s.connect((_ip, _port))
             s.sendall(headers + body)
+
+
+ATTRIBUTE_NAME_TO_VALUE_TAG = {
+    "attributes-charset": b"\x47",
+    "attributes-natural-language": b"\x48",
+}
+
+
+def attributes_dict_to_bytes(attributes: Dict[str, str]) -> bytes:
+    attributes_str = b"\x01"  # start operation attributes
+    for key, value in attributes.items():
+        value_tag = ATTRIBUTE_NAME_TO_VALUE_TAG[key]
+        name_length = len(key).to_bytes(2, "big")
+        value_length = len(value).to_bytes(2, "big")
+        attributes_str += value_tag + name_length + key.encode() + value_length + value.encode()
+    attributes_str += b"\x03"  # end operation attributes
+    return attributes_str
 
 
 if __name__ == '__main__':
