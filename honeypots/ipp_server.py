@@ -95,9 +95,9 @@ class QIPPServer():
                 if 'fix_get_client_ip' in _q_s.options:
                     with suppress(Exception):
                         raw_headers = dict(request.requestHeaders.getAllRawHeaders())
-                        if b'X-Forwarded-For':
+                        if b'X-Forwarded-For' in raw_headers:
                             client_ip = check_bytes(raw_headers[b'X-Forwarded-For'][0])
-                        elif b'X-Real-IP':
+                        elif b'X-Real-IP' in raw_headers:
                             client_ip = check_bytes(raw_headers[b'X-Real-IP'][0])
 
                 if client_ip == "":
