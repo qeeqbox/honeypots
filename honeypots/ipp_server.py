@@ -9,10 +9,11 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 '''
-from typing import Dict
+
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 
+from typing import Dict
 from requests.packages.urllib3 import disable_warnings
 from twisted.internet import reactor
 from twisted.web.server import Site
