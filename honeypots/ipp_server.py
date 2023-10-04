@@ -9,7 +9,7 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 '''
-
+from typing import Dict
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 
@@ -26,6 +26,9 @@ from contextlib import suppress
 from struct import unpack
 
 disable_warnings()
+
+STATUS_CODE_OK = b"\x00\x00"
+STATUS_CODE_BAD_REQUEST = b"\x04\x00"
 
 
 class QIPPServer():
@@ -49,7 +52,7 @@ class QIPPServer():
 
         class MainResource(Resource):
             isLeaf = True
-            operations_supported = {0x0001: 'Reserved', 0x0002: 'Print-Job', 0x0003: 'Print-URI', 0x0003: 'Print-URI', 0x0004: 'Validate-Job', 0x0005: 'Create-Job', 0x0006: 'Send-Document', 0x0007: 'Send-URI', 0x0007: 'Send-URI', 0x0008: 'Cancel-Job', 0x0009: 'Get-Job-Attributes', 0x000A: 'Get-Jobs', 0x000B: 'Get-Printer-Attributes', 0x000C: 'Hold-Job', 0x000D: 'Release-Job', 0x000E: 'Restart-Job', 0x000E: 'Restart-Job', 0x000F: 'Reserved', 0x0010: 'Pause-Printer', 0x0011: 'Resume-Printer', 0x0012: 'Purge-Jobs', 0x0012: 'Purge-Jobs', 0x0013: 'Set-Printer-Attributes', 0x0014: 'Set-Job-Attributes', 0x0015: 'Get-Printer-Supported-Values', 0x0016: 'Create-Printer-Subscriptions', 0x0017: 'Create-Job-Subscriptions', 0x0018: 'Get-Subscription-Attributes', 0x0019: 'Get-Subscriptions', 0x001A: 'Renew-Subscription', 0x001B: 'Cancel-Subscription', 0x001C: 'Get-Notifications', 0x001D: 'ipp-indp-method', 0x001E: 'Get-Resource-Attributes', 0x001F: 'ipp-get-resources', 0x0020: 'Get-Resources', 0x0021: 'ipp-install', 0x0022: 'Enable-Printer', 0x0023: 'Disable-Printer', 0x0024: 'Pause-Printer-After-Current-Job', 0x0025: 'Hold-New-Jobs', 0x0026: 'Release-Held-New-Jobs', 0x0027: 'Deactivate-Printer', 0x0027: 'Deactivate-Printer', 0x0028: 'Activate-Printer', 0x0028: 'Activate-Printer', 0x0029: 'Restart-Printer', 0x002A: 'Shutdown-Printer', 0x002B: 'Startup-Printer', 0x002C: 'Reprocess-Job', 0x002C: 'Reprocess-Job', 0x002D: 'Cancel-Current-Job', 0x002E: 'Suspend-Current-Job', 0x002F: 'Resume-Job', 0x0030: 'Promote-Job', 0x0031: 'Schedule-Job-After', 0x0033: 'Cancel-Document', 0x0034: 'Get-Document-Attributes', 0x0035: 'Get-Documents', 0x0036: 'Delete-Document', 0x0036: 'Delete-Document', 0x0037: 'Set-Document-Attributes', 0x0038: 'Cancel-Jobs', 0x0039: 'Cancel-My-Jobs', 0x003A: 'Resubmit-Job', 0x003B: 'Close-Job', 0x003C: 'Identify-Printer', 0x003D: 'Validate-Document', 0x003E: 'Add-Document-Images', 0x003F: 'Acknowledge-Document', 0x0040: 'Acknowledge-Identify-Printer', 0x0041: 'Acknowledge-Job', 0x0042: 'Fetch-Document', 0x0043: 'Fetch-Job', 0x0044: 'Get-Output-Device-Attributes', 0x0045: 'Update-Active-Jobs', 0x0046: 'Deregister-Output-Device', 0x0047: 'Update-Document-Status', 0x0048: 'Update-Job-Status', 0x0049: 'Update-Output-Device-Attributes', 0x004A: 'Get-Next-Document-Data', 0x004B: 'Allocate-Printer-Resources', 0x004C: 'Create-Printer', 0x004D: 'Deallocate-Printer-Resources', 0x004E: 'Delete-Printer', 0x004F: 'Get-Printers', 0x0050: 'Shutdown-One-Printer', 0x0051: 'Startup-One-Printer', 0x0052: 'Cancel-Resource', 0x0053: 'Create-Resource', 0x0054: 'Install-Resource', 0x0055: 'Send-Resource-Data', 0x0056: 'Set-Resource-Attributes', 0x0057: 'Create-Resource-Subscriptions', 0x0058: 'Create-System-Subscriptions', 0x0059: 'Disable-All-Printers', 0x005A: 'Enable-All-Printers', 0x005B: 'Get-System-Attributes', 0x005C: 'Get-System-Supported-Values', 0x005D: 'Pause-All-Printers', 0x005E: 'Pause-All-Printers-After-Current-Job', 0x005F: 'Register-Output-Device', 0x0060: 'Restart-System', 0x0061: 'Resume-All-Printers', 0x0062: 'Set-System-Attributes', 0x0063: 'Shutdown-All-Printers', 0x0064: 'Startup-All-Printers', 0x0065: 'Get-Printer-Resources', 0x0066: 'Get-User-Printer-Attributes', 0x0067: 'Restart-One-Printer'}
+            operations_supported = {0x0001: 'Reserved', 0x0002: 'Print-Job', 0x0003: 'Print-URI', 0x0004: 'Validate-Job', 0x0005: 'Create-Job', 0x0006: 'Send-Document', 0x0007: 'Send-URI', 0x0008: 'Cancel-Job', 0x0009: 'Get-Job-Attributes', 0x000A: 'Get-Jobs', 0x000B: 'Get-Printer-Attributes', 0x000C: 'Hold-Job', 0x000D: 'Release-Job', 0x000E: 'Restart-Job', 0x000F: 'Reserved', 0x0010: 'Pause-Printer', 0x0011: 'Resume-Printer', 0x0012: 'Purge-Jobs', 0x0013: 'Set-Printer-Attributes', 0x0014: 'Set-Job-Attributes', 0x0015: 'Get-Printer-Supported-Values', 0x0016: 'Create-Printer-Subscriptions', 0x0017: 'Create-Job-Subscriptions', 0x0018: 'Get-Subscription-Attributes', 0x0019: 'Get-Subscriptions', 0x001A: 'Renew-Subscription', 0x001B: 'Cancel-Subscription', 0x001C: 'Get-Notifications', 0x001D: 'ipp-indp-method', 0x001E: 'Get-Resource-Attributes', 0x001F: 'ipp-get-resources', 0x0020: 'Get-Resources', 0x0021: 'ipp-install', 0x0022: 'Enable-Printer', 0x0023: 'Disable-Printer', 0x0024: 'Pause-Printer-After-Current-Job', 0x0025: 'Hold-New-Jobs', 0x0026: 'Release-Held-New-Jobs', 0x0027: 'Deactivate-Printer', 0x0028: 'Activate-Printer', 0x0029: 'Restart-Printer', 0x002A: 'Shutdown-Printer', 0x002B: 'Startup-Printer', 0x002C: 'Reprocess-Job', 0x002D: 'Cancel-Current-Job', 0x002E: 'Suspend-Current-Job', 0x002F: 'Resume-Job', 0x0030: 'Promote-Job', 0x0031: 'Schedule-Job-After', 0x0033: 'Cancel-Document', 0x0034: 'Get-Document-Attributes', 0x0035: 'Get-Documents', 0x0036: 'Delete-Document', 0x0037: 'Set-Document-Attributes', 0x0038: 'Cancel-Jobs', 0x0039: 'Cancel-My-Jobs', 0x003A: 'Resubmit-Job', 0x003B: 'Close-Job', 0x003C: 'Identify-Printer', 0x003D: 'Validate-Document', 0x003E: 'Add-Document-Images', 0x003F: 'Acknowledge-Document', 0x0040: 'Acknowledge-Identify-Printer', 0x0041: 'Acknowledge-Job', 0x0042: 'Fetch-Document', 0x0043: 'Fetch-Job', 0x0044: 'Get-Output-Device-Attributes', 0x0045: 'Update-Active-Jobs', 0x0046: 'Deregister-Output-Device', 0x0047: 'Update-Document-Status', 0x0048: 'Update-Job-Status', 0x0049: 'Update-Output-Device-Attributes', 0x004A: 'Get-Next-Document-Data', 0x004B: 'Allocate-Printer-Resources', 0x004C: 'Create-Printer', 0x004D: 'Deallocate-Printer-Resources', 0x004E: 'Delete-Printer', 0x004F: 'Get-Printers', 0x0050: 'Shutdown-One-Printer', 0x0051: 'Startup-One-Printer', 0x0052: 'Cancel-Resource', 0x0053: 'Create-Resource', 0x0054: 'Install-Resource', 0x0055: 'Send-Resource-Data', 0x0056: 'Set-Resource-Attributes', 0x0057: 'Create-Resource-Subscriptions', 0x0058: 'Create-System-Subscriptions', 0x0059: 'Disable-All-Printers', 0x005A: 'Enable-All-Printers', 0x005B: 'Get-System-Attributes', 0x005C: 'Get-System-Supported-Values', 0x005D: 'Pause-All-Printers', 0x005E: 'Pause-All-Printers-After-Current-Job', 0x005F: 'Register-Output-Device', 0x0060: 'Restart-System', 0x0061: 'Resume-All-Printers', 0x0062: 'Set-System-Attributes', 0x0063: 'Shutdown-All-Printers', 0x0064: 'Startup-All-Printers', 0x0065: 'Get-Printer-Resources', 0x0066: 'Get-User-Printer-Attributes', 0x0067: 'Restart-One-Printer'}
 
             attribute_group_tags = {0x00: 'Reserved', 0x01: 'operation-attributes-tag', 0x02: 'job-attributes-tag', 0x03: 'end-of-attributes-tag', 0x04: 'printer-attributes-tag', 0x05: 'unsupported-attributes-tag', 0x06: 'subscription-attributes-tag', 0x07: 'event-notification-attributes-tag', 0x08: 'resource-attributes-tag', 0x09: 'document-attributes-tag', 0x0A: 'system-attributes-tag'}
 
@@ -95,9 +98,9 @@ class QIPPServer():
                 if 'fix_get_client_ip' in _q_s.options:
                     with suppress(Exception):
                         raw_headers = dict(request.requestHeaders.getAllRawHeaders())
-                        if b'X-Forwarded-For':
+                        if b'X-Forwarded-For' in raw_headers:
                             client_ip = check_bytes(raw_headers[b'X-Forwarded-For'][0])
-                        elif b'X-Real-IP':
+                        elif b'X-Real-IP' in raw_headers:
                             client_ip = check_bytes(raw_headers[b'X-Real-IP'][0])
 
                 if client_ip == "":
@@ -172,7 +175,17 @@ class QIPPServer():
                         response = response[0:-1]
                 if len(response) > 0:
                     _q_s.logs.info({'server': 'ipp_server', 'action': 'query', 'status': status, 'src_ip': client_ip, 'src_port': request.getClientAddress().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': {'request': response}})
-                return self.send_response(request, b'\x01\x01\x00\x00')
+                return self.send_response(data, status != "failed")
+
+            @staticmethod
+            def send_response(request: bytes, successful: bool) -> bytes:
+                version, request_id = request[0:2], request[3:7]
+                if version not in [b"\x01\x01", b"\x02\x00", b"\x02\x01", b"\x02\x02"]:
+                    version = b"\x02\x00"
+                status_code = STATUS_CODE_OK if successful else STATUS_CODE_BAD_REQUEST
+                attributes = attributes_dict_to_bytes({"attributes-charset": "utf-8", "attributes-natural-language": "en-us"})
+                response = version + status_code + request_id + attributes
+                return response
 
         reactor.listenTCP(self.port, Site(MainResource()))
         reactor.run()
@@ -231,6 +244,23 @@ class QIPPServer():
             s = socket(AF_INET, SOCK_STREAM)
             s.connect((_ip, _port))
             s.sendall(headers + body)
+
+
+ATTRIBUTE_NAME_TO_VALUE_TAG = {
+    "attributes-charset": b"\x47",
+    "attributes-natural-language": b"\x48",
+}
+
+
+def attributes_dict_to_bytes(attributes: Dict[str, str]) -> bytes:
+    attributes_str = b"\x01"  # start operation attributes
+    for key, value in attributes.items():
+        value_tag = ATTRIBUTE_NAME_TO_VALUE_TAG[key]
+        name_length = len(key).to_bytes(2, "big")
+        value_length = len(value).to_bytes(2, "big")
+        attributes_str += value_tag + name_length + key.encode() + value_length + value.encode()
+    attributes_str += b"\x03"  # end operation attributes
+    return attributes_str
 
 
 if __name__ == '__main__':
