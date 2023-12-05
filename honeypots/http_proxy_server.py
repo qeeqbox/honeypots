@@ -65,17 +65,27 @@ class QHTTPProxyServer():
                 with suppress(Exception):
                     ip = self.resolve_domain(data)
                     if ip:
-                        factory = ClientFactory()
-                        factory.CustomProtocolParent_ = self
-                        factory.protocol = CustomProtocolChild
-                        reactor.connectTCP(ip, 80, factory)
+                        # We don't want the HTTP Proxy honeypot to trully proxy requests
+                        # but we want it to provide a response.
+                        # I'd suggest reading an external file containing the response
+                        #  we want to mimic, but doing so here would result in a read 
+                        # operation for each request to the server receives, which is not 
+                        # a good idea. Therefore, deeper understanding than I have of the
+                        # code is necessary to properly implement this. For now, a static
+                        # dummy response will do.
+                        #factory = ClientFactory()
+                        #factory.CustomProtocolParent_ = self
+                        #factory.protocol = CustomProtocolChild
+                        #reactor.connectTCP(ip, 80, factory)
+                        dummy_response = b"HTTP/1.1 200 OK\r\nContent-Type: text/plain\r\n\r\nHello world!!!\r\n"
+                        self.transport.write(dummy_response)
                     else:
                         self.transport.loseConnection()
 
-                    if self.client:
-                        self.client.write(data)
-                    else:
-                        self.buffer = data
+                    #if self.client:
+                    #    self.client.write(data)
+                    #else:
+                    #    self.buffer = data
 
             def write(self, data):
                 self.transport.write(data)
