@@ -36,8 +36,9 @@ setup(
             "elasticsearch",
             "pymssql",
             "ldap3",
-            "pysnmp",
+            "pysnmplib",
             "pytest",
+            "redis",
             "vncdotool",
         ]
     },
