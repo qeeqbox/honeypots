@@ -31,9 +31,7 @@ def test_smb_server(server_logs):
 
     sleep(1)  # give the server process some time to write logs
 
-    log_files = [f for f in server_logs.iterdir()]
-    assert len(log_files) == 1
-    logs = load_logs_from_file(log_files[0])
+    logs = load_logs_from_file(server_logs)
 
     assert len(logs) == 3
     for entry in logs:

@@ -31,9 +31,7 @@ def test_vnc_server(server_logs):
     process.terminate()
     process.join(timeout=5)
 
-    log_files = [f for f in server_logs.iterdir()]
-    assert len(log_files) == 1
-    logs = load_logs_from_file(log_files[0])
+    logs = load_logs_from_file(server_logs)
 
     assert len(logs) == 1
     assert_connect_is_logged(logs[0], PORT)
