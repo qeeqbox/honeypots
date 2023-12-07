@@ -1,21 +1,14 @@
 from __future__ import annotations
 
-import json
-from multiprocessing import Process
-from pathlib import Path
 from time import sleep
 
 import pytest
+from paramiko import AutoAddPolicy, SSHClient
+
 from honeypots import QSSHServer
-from paramiko import SSHClient, AutoAddPolicy
+from .utils import assert_connect_is_logged, IP, load_logs_from_file, PASSWORD, USERNAME
 
-from .utils import find_free_port, load_logs_from_file
-
-IP = "127.0.0.1"
-PORT = find_free_port()
-USERNAME = "testing"
-PASSWORD = "testing"
-EXPECTED_KEYS = ["action", "dest_ip", "dest_port", "server", "src_ip", "src_port", "timestamp"]
+PORT = 50022
 SERVER_CONFIG = {
     "honeypots": {
         "ssh": {
@@ -32,31 +25,11 @@ SERVER_CONFIG = {
 }
 
 
-@pytest.fixture
-def custom_config(config_for_testing: Path):
-    config = json.loads(config_for_testing.read_text())
-    config.update(SERVER_CONFIG)
-    config_for_testing.write_text(json.dumps(config))
-    yield config_for_testing
-
-
-@pytest.fixture
-def server_logs(custom_config: Path):
-    _server = QSSHServer(
-        ip=IP,
-        port=str(PORT),
-        username=USERNAME,
-        password=PASSWORD,
-        options="",
-        config=str(custom_config.absolute()),
-    )
-    server_process = Process(target=_server.run_server)
-    server_process.start()
-    yield custom_config.parent / "logs"
-    server_process.terminate()
-    server_process.join()
-
-
+@pytest.mark.parametrize(
+    "server_logs",
+    [{"server": QSSHServer, "port": str(PORT), "custom_config": SERVER_CONFIG}],
+    indirect=True,
+)
 def test_ssh_server(server_logs):
     ssh = SSHClient()
     ssh.set_missing_host_key_policy(AutoAddPolicy())
@@ -69,10 +42,8 @@ def test_ssh_server(server_logs):
     logs = load_logs_from_file(log_files[0])
 
     assert len(logs) == 2
-    assert all(k in logs[0] for k in EXPECTED_KEYS)
-    assert logs[0]["dest_ip"] == IP
-    assert logs[0]["dest_port"] == str(PORT)
-    assert logs[0]["action"] == "connection"
+    connect, login = logs
+    assert_connect_is_logged(connect, str(PORT))
 
-    assert logs[1]["action"] == "login"
-    assert logs[1]["username"] == USERNAME
+    assert login["action"] == "login"
+    assert login["username"] == USERNAME

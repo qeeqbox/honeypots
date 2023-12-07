@@ -4,16 +4,10 @@ import json
 import socket
 from pathlib import Path
 
-
-def find_free_port(start_port: int = 50_000, end_port: int = 60_000, sock_type: int = socket.SOCK_STREAM) -> int:
-    for port in range(start_port, end_port + 1):
-        with socket.socket(socket.AF_INET, sock_type) as s:
-            try:
-                s.bind(("", port))
-                return port
-            except OSError:
-                pass
-    raise Exception("No free port found")
+IP = "127.0.0.1"
+USERNAME = "testing"
+PASSWORD = "testing"
+EXPECTED_KEYS = ["action", "dest_ip", "dest_port", "server", "src_ip", "src_port", "timestamp"]
 
 
 def load_logs_from_file(file: Path) -> list[dict]:
@@ -23,3 +17,17 @@ def load_logs_from_file(file: Path) -> list[dict]:
             continue
         logs.append(json.loads(line))
     return logs
+
+
+def assert_connect_is_logged(connect: dict[str, str], port: str):
+    assert all(k in connect for k in EXPECTED_KEYS)
+    assert connect["dest_ip"] == IP
+    assert connect["dest_port"] == port
+    assert connect["action"] == "connection"
+
+
+def assert_login_is_logged(login: dict[str, str]):
+    assert all(k in login for k in ("username", "password"))
+    assert login["action"] == "login"
+    assert login["username"] == USERNAME
+    assert login["password"] == PASSWORD
