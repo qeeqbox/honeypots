@@ -17,11 +17,18 @@ from .utils import (
 )
 
 PORT = "50110"
+SERVER_CONFIG = {
+    "honeypots": {
+        "pop3": {
+            "options": ["capture_commands"],
+        },
+    }
+}
 
 
 @pytest.mark.parametrize(
     "server_logs",
-    [{"server": QPOP3Server, "port": PORT}],
+    [{"server": QPOP3Server, "port": PORT, "custom_config": SERVER_CONFIG}],
     indirect=True,
 )
 def test_pop3_server(server_logs):
@@ -36,7 +43,12 @@ def test_pop3_server(server_logs):
 
     logs = load_logs_from_file(server_logs)
 
-    assert len(logs) == 2
-    connect, login = logs
+    assert len(logs) == 4
+    connect, cmd1, cmd2, login = logs
     assert_connect_is_logged(connect, PORT)
     assert_login_is_logged(login)
+
+    assert cmd1["action"] == "command"
+    assert cmd1["data"] == {"args": "testing", "cmd": "USER"}
+    assert cmd2["action"] == "command"
+    assert cmd2["data"] == {"args": "testing", "cmd": "PASS"}

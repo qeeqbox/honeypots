@@ -12,14 +12,7 @@ PORT = 50022
 SERVER_CONFIG = {
     "honeypots": {
         "ssh": {
-            "backup_count": 10,
-            "ip": IP,
-            "log_file_name": "ssh.jsonl",
-            "max_bytes": 10000,
             "options": ["capture_commands"],
-            "password": PASSWORD,
-            "port": str(PORT),
-            "username": USERNAME,
         },
     }
 }

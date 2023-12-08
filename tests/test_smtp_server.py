@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from base64 import b64decode
 from smtplib import SMTP
 from time import sleep
 
@@ -16,11 +17,25 @@ from .utils import (
 )
 
 PORT = "50025"
+SERVER_CONFIG = {
+    "honeypots": {
+        "smtp": {
+            "options": ["capture_commands"],
+        },
+    }
+}
+EXPECTED_DATA = [
+    {"arg": "FROM:<fromtest>", "command": "MAIL", "data": "None"},
+    {"arg": "TO:<totest>", "command": "RCPT", "data": "None"},
+    {"arg": "None", "command": "DATA", "data": "None"},
+    {"arg": "None", "command": "NOTHING", "data": "None"},
+    {"arg": "None", "command": "QUIT", "data": "None"},
+]
 
 
 @pytest.mark.parametrize(
     "server_logs",
-    [{"server": QSMTPServer, "port": PORT}],
+    [{"server": QSMTPServer, "port": PORT, "custom_config": SERVER_CONFIG}],
     indirect=True,
 )
 def test_smtp_server(server_logs):
@@ -36,7 +51,13 @@ def test_smtp_server(server_logs):
 
     logs = load_logs_from_file(server_logs)
 
-    assert len(logs) == 2
-    connect, login = logs
+    assert len(logs) == 8
+    connect, auth, login, *additional = logs
     assert_connect_is_logged(connect, PORT)
     assert_login_is_logged(login)
+
+    assert auth["data"]["command"] == "AUTH"
+    assert b64decode(auth["data"]["data"]).decode() == f"\x00{USERNAME}\x00{PASSWORD}"
+
+    for entry, expected in zip(additional, EXPECTED_DATA):
+        assert entry
