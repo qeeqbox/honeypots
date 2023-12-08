@@ -20,7 +20,7 @@ setup(
         "twisted==21.7.0",
         "psutil==5.9.0",
         "psycopg2-binary==2.9.3",
-        "pycrypto==2.6.1",
+        "pycryptodome==3.19.0",
         "requests==2.28.2",
         "requests[socks]==2.28.2",
         "impacket==0.9.24",
