@@ -177,7 +177,7 @@ class QHTTPSServer():
                     request.responseHeaders.addRawHeader('Server', _q_s.mocking_server)
 
                 if request.method == b'GET' or request.method == b'POST':
-                    _q_s.logs.info({'server': 'https_server', 'action': request.method.decode(), 'src_ip': request.client_ip, 'src_port': request.getClientAddress().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
+                    _q_s.logs.info({'server': 'https_server', 'action': request.method.decode(), 'src_ip': client_ip, 'src_port': request.getClientAddress().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
 
                 if request.method == b'GET':
                     if request.uri == b'/login.html':
