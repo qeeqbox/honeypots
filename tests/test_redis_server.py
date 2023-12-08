@@ -4,9 +4,9 @@ from contextlib import suppress
 from time import sleep
 
 import pytest
-from honeypots import QRedisServer
 from redis import AuthenticationError, StrictRedis
 
+from honeypots import QRedisServer
 from .utils import (
     assert_connect_is_logged,
     assert_login_is_logged,

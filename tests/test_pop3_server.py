@@ -5,8 +5,8 @@ from poplib import error_proto, POP3
 from time import sleep
 
 import pytest
-from honeypots import QPOP3Server
 
+from honeypots import QPOP3Server
 from .utils import (
     assert_connect_is_logged,
     assert_login_is_logged,

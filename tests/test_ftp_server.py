@@ -8,7 +8,8 @@ import pytest
 from honeypots import QFTPServer
 from .utils import (
     assert_connect_is_logged,
-    assert_login_is_logged, IP,
+    assert_login_is_logged,
+    IP,
     load_logs_from_file,
     PASSWORD,
     USERNAME,
@@ -29,7 +30,7 @@ SERVER_CONFIG = {
     [{"server": QFTPServer, "port": PORT, "custom_config": SERVER_CONFIG}],
     indirect=True,
 )
-def test_http_proxy_server(server_logs):
+def test_ftp_server(server_logs):
     sleep(1)  # give the server some time to start
 
     client = FTP()

@@ -8,7 +8,6 @@ import requests
 from honeypots import QIPPServer
 from .utils import (
     assert_connect_is_logged,
-    connect_to,
     IP,
     load_logs_from_file,
 )

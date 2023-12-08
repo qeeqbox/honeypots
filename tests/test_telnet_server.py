@@ -1,11 +1,11 @@
 from __future__ import annotations
 
+from telnetlib import Telnet
 from time import sleep
 
 import pytest
-from honeypots import QTelnetServer
-from telnetlib import Telnet
 
+from honeypots import QTelnetServer
 from .utils import (
     assert_connect_is_logged,
     assert_login_is_logged,

@@ -4,8 +4,8 @@ from smtplib import SMTP
 from time import sleep
 
 import pytest
-from honeypots import QSMTPServer
 
+from honeypots import QSMTPServer
 from .utils import (
     assert_connect_is_logged,
     assert_login_is_logged,
@@ -29,7 +29,7 @@ def test_smtp_server(server_logs):
     client = SMTP(IP, int(PORT))
     client.ehlo()
     client.login(USERNAME, PASSWORD)
-    client.sendmail('fromtest', 'totest', 'Nothing')
+    client.sendmail("fromtest", "totest", "Nothing")
     client.quit()
 
     sleep(1)  # give the server process some time to write logs

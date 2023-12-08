@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from contextlib import suppress
-from socket import AF_INET, SOCK_STREAM, socket
 from time import sleep
 
 import pytest
@@ -9,7 +7,8 @@ import pytest
 from honeypots import QRDPServer
 from .utils import (
     assert_connect_is_logged,
-    connect_to, IP,
+    connect_to,
+    IP,
     load_logs_from_file,
 )
 
@@ -26,7 +25,9 @@ def test_rdp_server(server_logs):
 
     with connect_to(IP, PORT) as connection:
         connection.send(b"test")
-        connection.send(b"\x03\x00\x00*%\xe0\x00\x00\x00\x00\x00Cookie: mstshash=foobar\r\n\x01\x00\x08\x00\x03\x00\x00")
+        connection.send(
+            b"\x03\x00\x00*%\xe0\x00\x00\x00\x00\x00Cookie: mstshash=foobar\r\n\x01\x00\x08\x00\x03\x00\x00"
+        )
 
     sleep(1)  # give the server process some time to write logs
 

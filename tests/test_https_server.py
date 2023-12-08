@@ -6,7 +6,6 @@ import pytest
 import requests
 
 from honeypots import QHTTPSServer
-
 from .utils import (
     assert_connect_is_logged,
     assert_login_is_logged,
@@ -35,7 +34,7 @@ def test_https_server(server_logs):
     sleep(1)  # give the server some time to start
 
     url = f"https://{IP}:{PORT}"
-    data = {'username': USERNAME, 'password': PASSWORD}
+    data = {"username": USERNAME, "password": PASSWORD}
     requests.post(f"{url}/login.html", verify=False, data=data)
 
     sleep(1)  # give the server process some time to write logs

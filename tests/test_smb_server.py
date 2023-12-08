@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from impacket.smbconnection import SMBConnection
 from time import sleep
 
 import pytest
+from impacket.smbconnection import SMBConnection
 
 from honeypots import QSMBServer
 from .utils import (
