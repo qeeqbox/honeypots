@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import json
-from _socket import IPPROTO_UDP
 from contextlib import contextmanager
 from pathlib import Path
-from socket import AF_INET, SOCK_DGRAM, SOCK_STREAM, socket
+from socket import AF_INET, IPPROTO_UDP, SOCK_DGRAM, SOCK_STREAM, socket
 
 IP = "127.0.0.1"
 USERNAME = "testing"

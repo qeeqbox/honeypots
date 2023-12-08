@@ -33,6 +33,7 @@ setup(
         "test": [
             "redis",
             "mysql-connector",
+            "dnspython==2.4.2",
             "elasticsearch",
             "pymssql",
             "ldap3",
