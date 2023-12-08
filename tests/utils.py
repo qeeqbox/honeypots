@@ -26,17 +26,17 @@ def load_logs_from_file(log_folder: Path) -> list[dict]:
 
 @contextmanager
 def connect_to(host: str, port: str, udp: bool = False) -> socket:
-    client = None
+    connection = None
     try:
         if udp:
-            client = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
+            connection = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
         else:
-            client = socket(AF_INET, SOCK_STREAM)
-        client.connect((host, int(port)))
-        yield client
+            connection = socket(AF_INET, SOCK_STREAM)
+        connection.connect((host, int(port)))
+        yield connection
     finally:
-        if client:
-            client.close()
+        if connection:
+            connection.close()
 
 
 def assert_connect_is_logged(
