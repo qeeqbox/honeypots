@@ -31,10 +31,13 @@ SERVER_CONFIG = {
     indirect=True,
 )
 def test_ssh_server(server_logs):
+    sleep(1)  # give the server some time to start
+
     ssh = SSHClient()
     ssh.set_missing_host_key_policy(AutoAddPolicy())
     ssh.connect(IP, port=PORT, username=USERNAME, password=PASSWORD)
     ssh.close()
+
     sleep(1)  # give the server process some time to write logs
 
     logs = load_logs_from_file(server_logs)
