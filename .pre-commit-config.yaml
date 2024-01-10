@@ -1,0 +1,26 @@
+default_stages: [commit, push]
+exclude: ^src/bin/
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
+    hooks:
+    -   id: check-added-large-files
+        args: [--maxkb=10000]
+
+    -   id: check-toml
+
+    -   id: forbid-new-submodules
+
+    -   id: no-commit-to-branch
+
+-   repo: https://github.com/jumanjihouse/pre-commit-hooks
+    rev: 2.1.5
+    hooks:
+    -   id: shellcheck
+
+- repo: https://github.com/charliermarsh/ruff-pre-commit
+  rev: 'v0.1.11'
+  hooks:
+    - id: ruff
+      args: [ --fix, --exit-non-zero-on-fix ]
+    - id: ruff-format

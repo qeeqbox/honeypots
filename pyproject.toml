@@ -32,15 +32,16 @@ license = {text = "AGPL-3.0"}
 Homepage = "https://github.com/qeeqbox/honeypots"
 
 [project.optional-dependencies]
-test = [
-    "redis",
-    "mysql-connector",
+dev = [
     "dnspython==2.4.2",
     "elasticsearch",
-    "pymssql",
     "ldap3",
+    "mysql-connector",
+    "pre-commit",
+    "pymssql",
     "pysnmplib",
     "pytest",
+    "redis",
     "redis",
     "vncdotool",
 ]
@@ -53,3 +54,87 @@ packages = [
     "honeypots",
 ]
 include-package-data = true
+
+[tool.ruff]
+select = [
+    "F",
+    "E",
+    "W",
+    "C90",
+    "N",
+    "UP",
+    "B",
+    "A",
+    "C4",
+    "EXE",
+    "FA",
+    "ISC",
+    "PIE",
+    "T20",
+    "PT",
+    "Q",
+    "RET",
+    "SIM",
+    "TCH",
+    "ARG",
+    "PTH",
+    "ERA",
+    "PL",
+    "PLR",
+    "PLW",
+    "PERF",
+    "RUF",
+]
+ignore = [
+    "A003",
+    "PERF203",
+    "PERF401",
+    "RUF001",
+    "RUF002",
+    "RUF003",
+    "RUF015",
+    # pydantic only supports these from python>=3.9
+    "UP006",
+    "UP007",
+    # rules may cause conflicts when used with the formatter
+    "ISC001",
+    "Q001",
+]
+fixable = [
+    "F",
+    "E",
+    "W",
+    "C90",
+    "N",
+    "UP",
+    "B",
+    "A",
+    "C4",
+    "EXE",
+    "FA",
+    "ISC",
+    "PIE",
+    "T20",
+    "PT",
+    "Q",
+    "RET",
+    "SIM",
+    "TCH",
+    "ARG",
+    "PTH",
+    "ERA",
+    "PL",
+    "PLR",
+    "PLW",
+    "PERF",
+    "RUF",
+]
+exclude = [
+    ".git",
+    ".ruff_cache",
+    ".venv",
+    "venv",
+    "data",
+]
+line-length = 99
+target-version = "py38"
