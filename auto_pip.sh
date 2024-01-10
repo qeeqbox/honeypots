@@ -1,9 +1,7 @@
 #!/bin/bash
-echo "[x] Checking setup.py"
-python3 setup.py check -r -s
 echo "[x] Creating pypi Package"
 
-python3 setup.py sdist bdist_wheel 2>stderr.log 1>stdout.log
+python3 -m build 2>stderr.log 1>stdout.log
 
  if grep -q "error:" stderr.log
 	then
