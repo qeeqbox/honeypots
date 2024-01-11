@@ -192,9 +192,7 @@ class QHTTPProxyServer:
             _ip = ip or self.ip
             _port = port or self.port
             _domain = domain or "http://yahoo.com"
-            get(_domain, proxies={"http": "http://{}:{}".format(_ip, _port)}).text.encode(
-                "ascii", "ignore"
-            )
+            get(_domain, proxies={"http": f"http://{_ip}:{_port}"}).text.encode("ascii", "ignore")
 
 
 def _create_dummy_response(content: str) -> bytes:

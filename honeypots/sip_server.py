@@ -16,7 +16,6 @@ filterwarnings(action="ignore", module=".*OpenSSL.*")
 
 from twisted.protocols.sip import Base
 from twisted.internet import reactor
-from time import time
 from twisted.python import log as tlog
 from subprocess import Popen
 from os import path, getenv

@@ -358,17 +358,13 @@ class QElasticServer:
                                         "root_cause": [
                                             {
                                                 "type": "invalid_index_name_exception",
-                                                "reason": 'Invalid index name [{}], must not start with "_".'.format(
-                                                    _index
-                                                ),
+                                                "reason": f'Invalid index name [{_index}], must not start with "_".',
                                                 "index_uuid": "_na_",
                                                 "index": _index,
                                             }
                                         ],
                                         "type": "invalid_index_name_exception",
-                                        "reason": 'Invalid index name [{}], must not start with "_".'.format(
-                                            _index
-                                        ),
+                                        "reason": f'Invalid index name [{_index}], must not start with "_".',
                                         "index_uuid": "_na_",
                                         "index": _index,
                                     },
@@ -387,7 +383,7 @@ class QElasticServer:
                                         "root_cause": [
                                             {
                                                 "type": "index_not_found_exception",
-                                                "reason": "no such index [{}]".format(_search),
+                                                "reason": f"no such index [{_search}]",
                                                 "resource.type": "index_or_alias",
                                                 "resource.id": _search,
                                                 "index_uuid": "_na_",
@@ -395,7 +391,7 @@ class QElasticServer:
                                             }
                                         ],
                                         "type": "index_not_found_exception",
-                                        "reason": "no such index [{}]".format(_search),
+                                        "reason": f"no such index [{_search}]",
                                         "resource.type": "index_or_alias",
                                         "resource.id": _search,
                                         "index_uuid": "_na_",
@@ -481,9 +477,7 @@ class QElasticServer:
                 super().__init__(address, handlerClass)
 
             def set_auth_key(self, username, password):
-                self.key = b64encode("{}:{}".format(username, password).encode("utf-8")).decode(
-                    "ascii"
-                )
+                self.key = b64encode(f"{username}:{password}".encode()).decode("ascii")
 
             def get_auth_key(self):
                 return self.key
@@ -576,7 +570,7 @@ class QElasticServer:
             _username = username or self.username
             _password = password or self.password
             es = Elasticsearch(
-                ["https://{}:{}".format(_ip, _port)],
+                [f"https://{_ip}:{_port}"],
                 http_auth=(_username, _password),
                 verify_certs=False,
             )

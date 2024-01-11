@@ -70,7 +70,7 @@ class QMysqlServer:
     def load_words(
         self,
     ):
-        with open(self.file_name, "r", encoding="utf-8") as file:
+        with open(self.file_name, encoding="utf-8") as file:
             self.words = file.read().splitlines()
 
     def greeting(self):
@@ -201,7 +201,7 @@ class QMysqlServer:
                                     ret_access_denied = True
                             else:
                                 ret_access_denied = True
-                                password = ":".join(hex((c))[2:] for c in data)
+                                password = ":".join(hex(c)[2:] for c in data)
                         _q_s.logs.info(
                             {
                                 "server": "mysql_server",

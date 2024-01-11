@@ -15,10 +15,9 @@ from warnings import filterwarnings
 filterwarnings(action="ignore", module=".*OpenSSL.*")
 filterwarnings(action="ignore", module=".*socket.*")
 
-from twisted.internet.protocol import Protocol, Factory
+from twisted.internet.protocol import Factory
 from twisted.internet import reactor
 from twisted.words import service
-from time import time
 from twisted.python import log as tlog
 from subprocess import Popen
 from os import path, getenv
@@ -215,7 +214,6 @@ class QIRCServer:
 
             filterwarnings(action="ignore", module=".*socket.*")
             from socket import socket, AF_INET, SOCK_STREAM
-            from time import sleep
 
             _ip = ip or self.ip
             _port = port or self.port
@@ -224,7 +222,7 @@ class QIRCServer:
             c = socket(AF_INET, SOCK_STREAM)
             c.connect((_ip, _port))
             c.setblocking(False)
-            c.send("PASS {}\n".format(_password).encode())
+            c.send(f"PASS {_password}\n".encode())
             c.close()
 
 

@@ -18,11 +18,9 @@ from twisted.protocols.ftp import (
     FTPAnonymousShell,
     FTPFactory,
     FTP,
-    AUTH_FAILURE,
     IFTPShell,
     GUEST_LOGGED_IN_PROCEED,
     AuthorizationError,
-    BAD_CMD_SEQ,
     USR_LOGGED_IN_PROCEED,
 )
 from twisted.internet import reactor, defer

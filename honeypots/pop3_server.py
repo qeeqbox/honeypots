@@ -91,7 +91,7 @@ class QPOP3Server:
                     }
                 )
                 self._user = None
-                self.successResponse("{}".format(_q_s.mocking_server))
+                self.successResponse(f"{_q_s.mocking_server}")
 
             def processCommand(self, command: bytes, *args):
                 with suppress(Exception):
@@ -115,17 +115,17 @@ class QPOP3Server:
                     command.lower().startswith(b"user") or command.lower().startswith(b"pass")
                 ):
                     self.failResponse("Authentication failed")
-                    return
+                    return None
 
                 if self.blocked is not None:
                     self.blocked.append((command, args))
-                    return
+                    return None
 
                 command = command.upper()
                 authCmd = command in self.AUTH_CMDS
                 if not self.mbox and not authCmd:
                     raise POP3Error(b"not authenticated yet: cannot do " + command)
-                f = getattr(self, "do_{}".format(self.check_bytes(command)), None)
+                f = getattr(self, f"do_{self.check_bytes(command)}", None)
                 if f:
                     return f(*args)
                 raise POP3Error(b"Unknown protocol command: " + command)

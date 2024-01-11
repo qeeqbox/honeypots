@@ -398,10 +398,10 @@ class QIPPServer:
 
                 with suppress(Exception):
                     response += ""
-                    response = "VERSION {}.{}|".format(version[0], version[1])
-                    response += "REQUEST {}|".format(hex(request_id))
-                    response += "OPERATION {}|".format(operation)
-                    response += "GROUP {}|".format(group)
+                    response = f"VERSION {version[0]}.{version[1]}|"
+                    response += f"REQUEST {hex(request_id)}|"
+                    response += f"OPERATION {operation}|"
+                    response += f"GROUP {group}|"
                     if len(groups) > 0:
                         for i in groups:
                             groups_parsed += "ATTR " + i[0] + " " + ",".join(i[1]) + "|"
@@ -510,13 +510,13 @@ class QIPPServer:
 
             body = b"\x02\x00\x00\x0b\x00\x01/p\x01G\x00\x12attributes-charset\x00\x05utf-8H\x00\x1battributes-natural-language\x00\x02enE\x00\x0bprinter-uri\x00\x15ipp://127.0.0.1:631/D\x00\x14requested-attributes\x00\x03allD\x00\x00\x00\x12media-col-database\x03"
 
-            headers = """\
+            headers = f"""\
             POST / HTTP/1.1\r
             Content-Type: application/x-www-form-urlencoded\r
-            Content-Length: {}\r
-            Host: {}:{}\r
+            Content-Length: {len(body)}\r
+            Host: {_ip}:{_port}\r
             Connection: close\r
-            \r\n""".format(len(body), _ip, _port).encode()
+            \r\n""".encode()
 
             s = socket(AF_INET, SOCK_STREAM)
             s.connect((_ip, _port))

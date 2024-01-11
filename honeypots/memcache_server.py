@@ -155,7 +155,7 @@ class QMemcacheServer:
                     key = key.decode()
                     if isinstance(value, bytes):
                         value = value.decode()
-                    ret += "STAT {} {}\r\n".format(key, value)
+                    ret += f"STAT {key} {value}\r\n"
 
                 ret = ret.encode() + b"END\r\n"
                 return ret
@@ -164,9 +164,7 @@ class QMemcacheServer:
                 ret = b""
                 with suppress(Exception):
                     random = randint(80000000, 90000000)
-                    temp = "VALUE {} 0 {}\r\n{}\r\nEND\r\n".format(
-                        key.decode(), len(str(random)), random
-                    )
+                    temp = f"VALUE {key.decode()} 0 {len(str(random))}\r\n{random}\r\nEND\r\n"
                     ret = temp.encode()
                 return ret
 

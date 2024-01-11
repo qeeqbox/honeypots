@@ -73,7 +73,7 @@ class QVNCServer:
     def load_words(
         self,
     ):
-        with open(self.file_name, "r") as file:
+        with open(self.file_name) as file:
             self.words = file.read().splitlines()
 
     def decode(self, c, r):
@@ -82,8 +82,8 @@ class QVNCServer:
                 temp = word
                 word = word.strip("\n").ljust(8, "\00")[:8]
                 rev_word = []
-                for i in range(0, 8):
-                    rev_word.append(chr(int("{:08b}".format(ord(word[i]))[::-1], 2)))
+                for i in range(8):
+                    rev_word.append(chr(int(f"{ord(word[i]):08b}"[::-1], 2)))
                 output = DES.new("".join(rev_word).encode("utf-8"), DES.MODE_ECB).encrypt(c)
                 if output == r:
                     return temp

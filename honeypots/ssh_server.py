@@ -20,13 +20,12 @@ from paramiko import (
     ServerInterface,
     Transport,
     OPEN_SUCCEEDED,
-    AUTH_PARTIALLY_SUCCESSFUL,
     AUTH_SUCCESSFUL,
     OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED,
     OPEN_SUCCEEDED,
     AUTH_FAILED,
 )
-from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR, getfqdn
+from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from _thread import start_new_thread
 from io import StringIO
 from random import choice
@@ -256,7 +255,7 @@ class QSSHServer:
                         elif line == "exit":
                             break
                         else:
-                            conn.send("\r\n{}: command not found\r\n".format(line))
+                            conn.send(f"\r\n{line}: command not found\r\n")
                 with suppress(Exception):
                     sshhandle.event.wait(2)
                 with suppress(Exception):

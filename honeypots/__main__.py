@@ -38,7 +38,7 @@ all_servers = [
 ]
 temp_honeypots = []
 
-from signal import signal, alarm, SIGALRM, SIG_IGN, SIGTERM, SIGINT, SIGTSTP
+from signal import signal, alarm, SIGALRM, SIGTERM, SIGINT, SIGTSTP
 from time import sleep
 from functools import wraps
 
@@ -101,50 +101,17 @@ def list_all_honeypots():
 @timeout(5)
 def server_timeout(object, name):
     try:
-        print("[x] Start testing {}".format(name))
+        print(f"[x] Start testing {name}")
         object.test_server()
     except BaseException:
-        print("[x] Timeout {}".format(name))
-    print("[x] Done testing {}".format(name))
+        print(f"[x] Timeout {name}")
+    print(f"[x] Done testing {name}")
 
 
 def main_logic():
     from honeypots import (
-        QDNSServer,
-        QFTPServer,
-        QHTTPProxyServer,
-        QHTTPServer,
-        QHTTPSServer,
-        QIMAPServer,
-        QMysqlServer,
-        QPOP3Server,
-        QPostgresServer,
-        QRedisServer,
-        QSMBServer,
-        QSMTPServer,
-        QSOCKS5Server,
-        QSSHServer,
-        QTelnetServer,
-        QVNCServer,
-        QMSSQLServer,
-        QElasticServer,
-        QLDAPServer,
-        QNTPServer,
-        QMemcacheServer,
-        QOracleServer,
-        QSNMPServer,
-        QSIPServer,
-        QIRCServer,
-        QRDPServer,
-        QDHCPServer,
-        QPJLServer,
-        QIPPServer,
-        server_arguments,
         clean_all,
-        postgres_class,
         setup_logger,
-        QBSniffer,
-        get_running_servers,
         check_privileges,
     )
     from atexit import register
@@ -154,7 +121,7 @@ def main_logic():
     from netifaces import ifaddresses, AF_INET, AF_LINK, interfaces
     from psutil import Process, net_io_counters
     from uuid import uuid4
-    from json import JSONEncoder, dumps, load
+    from json import load
     from os import geteuid
 
     def exit_handler():
@@ -241,10 +208,10 @@ def main_logic():
                 uuid = "honeypotslogger" + "_" + "main" + "_" + str(uuid4())[:8]
                 if "db_options" in config_data:
                     if "drop" in config_data["db_options"]:
-                        print("[x] Setup Logger {} with a db, drop is on".format(uuid))
+                        print(f"[x] Setup Logger {uuid} with a db, drop is on")
                         logs = setup_logger("main", uuid, ARGV.config, True)
                     else:
-                        print("[x] Setup Logger {} with a db, drop is off".format(uuid))
+                        print(f"[x] Setup Logger {uuid} with a db, drop is off")
                         logs = setup_logger("main", uuid, ARGV.config, False)
                 else:
                     logs = setup_logger("main", uuid, ARGV.config, True)
@@ -305,7 +272,7 @@ def main_logic():
                 print("[x] Parsing honeypot [hard]")
                 for honeypot in config_data["honeypots"]:
                     for _honeypot in all_servers:
-                        if "q{}server".format(honeypot).lower() == _honeypot.lower():
+                        if f"q{honeypot}server".lower() == _honeypot.lower():
                             if ARGV.port != "":
                                 ARGV.port = int(ARGV.port)
                             PARSED_ARG_PARSER_OPTIONAL["port"] = ARGV.port
@@ -325,7 +292,7 @@ def main_logic():
                     exit()
                 for server in config_data["honeypots"].split(","):
                     for honeypot in all_servers:
-                        if "q{}server".format(server).lower() == honeypot.lower():
+                        if f"q{server}server".lower() == honeypot.lower():
                             if ARGV.port != "":
                                 ARGV.port = int(ARGV.port)
                             PARSED_ARG_PARSER_OPTIONAL["port"] = ARGV.port
@@ -380,7 +347,7 @@ def main_logic():
                 if len(temp_honeypots) > 0:
                     for server in temp_honeypots:
                         try:
-                            print("[x] Killing {} tester".format(server.__class__.__name__))
+                            print(f"[x] Killing {server.__class__.__name__} tester")
                             server.kill_server()
                         except Exception as e:
                             print(e)
@@ -426,7 +393,7 @@ def main_logic():
                             temp_honeypots.append([x, honeypot, status])
                 elif ARGV.port != "":
                     for honeypot in all_servers:
-                        if "q{}server".format(server).lower() == honeypot.lower():
+                        if f"q{server}server".lower() == honeypot.lower():
                             x = locals()[honeypot](**PARSED_ARG_PARSER_OPTIONAL)
                             status = False
                             if not ARGV.test:
@@ -437,7 +404,7 @@ def main_logic():
                             temp_honeypots.append([x, honeypot, status])
                 else:
                     for honeypot in all_servers:
-                        if "q{}server".format(server).lower() == honeypot.lower():
+                        if f"q{server}server".lower() == honeypot.lower():
                             x = locals()[honeypot](**PARSED_ARG_PARSER_OPTIONAL)
                             status = False
                             if not ARGV.test:
@@ -476,9 +443,9 @@ def main_logic():
             for server in temp_honeypots:
                 try:
                     if not ARGV.test:
-                        print("[x] Killing {} honeypot".format(server[0].__class__.__name__))
+                        print(f"[x] Killing {server[0].__class__.__name__} honeypot")
                     else:
-                        print("[x] Killing {} tester".format(server[0].__class__.__name__))
+                        print(f"[x] Killing {server[0].__class__.__name__} tester")
                     server[0].kill_server()
                 except Exception as e:
                     print(e)

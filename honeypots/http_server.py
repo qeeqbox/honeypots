@@ -366,9 +366,9 @@ class QHTTPServer:
             _port = port or self.port
             _username = username or self.username
             _password = password or self.password
-            get("http://{}:{}".format(_ip, _port), verify=False)
+            get(f"http://{_ip}:{_port}", verify=False)
             post(
-                "http://{}:{}/login.html".format(_ip, _port),
+                f"http://{_ip}:{_port}/login.html",
                 data={"username": (None, _username), "password": (None, _password)},
             )
 

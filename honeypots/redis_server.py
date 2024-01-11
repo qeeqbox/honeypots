@@ -227,9 +227,7 @@ class QRedisServer:
             _port = port or self.port
             _username = username or self.username
             _password = password or self.password
-            r = StrictRedis.from_url(
-                "redis://{}:{}@{}:{}/1".format(_username, _password, _ip, _port)
-            )
+            r = StrictRedis.from_url(f"redis://{_username}:{_password}@{_ip}:{_port}/1")
             for key in r.scan_iter("user:*"):
                 pass
 

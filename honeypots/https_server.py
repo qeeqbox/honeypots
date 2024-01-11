@@ -388,9 +388,9 @@ class QHTTPSServer:
             _port = port or self.port
             _username = username or self.username
             _password = password or self.password
-            get("https://{}:{}".format(_ip, _port), verify=False)
+            get(f"https://{_ip}:{_port}", verify=False)
             post(
-                "https://{}:{}".format(_ip, _port),
+                f"https://{_ip}:{_port}",
                 data={"username": (None, _username), "password": (None, _password)},
                 verify=False,
             )

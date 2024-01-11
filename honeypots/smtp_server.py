@@ -117,7 +117,7 @@ class QSMTPServer:
                     self.push("503 Duplicate HELO/EHLO")
                 else:
                     self._SMTPChannel__greeting = arg
-                    self.push("250-{0} Hello {1}".format(self._SMTPChannel__fqdn, arg))
+                    self.push(f"250-{self._SMTPChannel__fqdn} Hello {arg}")
                     self.push("250-8BITMIME")
                     self.push("250-AUTH LOGIN PLAIN")
                     self.push("250 STARTTLS")

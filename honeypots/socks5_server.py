@@ -199,8 +199,8 @@ class QSOCKS5Server:
             get(
                 "https://yahoo.com",
                 proxies=dict(
-                    http="socks5://{}:{}@{}:{}".format(_username, _password, _ip, _port),
-                    https="socks5://{}:{}@{}:{}".format(_username, _password, _ip, _port),
+                    http=f"socks5://{_username}:{_password}@{_ip}:{_port}",
+                    https=f"socks5://{_username}:{_password}@{_ip}:{_port}",
                 ),
             )
 

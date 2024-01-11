@@ -29,8 +29,7 @@ from honeypots.helper import (
 )
 from uuid import uuid4
 from contextlib import suppress
-from threading import Event, Thread
-from binascii import hexlify
+from threading import Thread
 from struct import unpack
 from OpenSSL import crypto
 from tempfile import gettempdir, _get_candidate_names

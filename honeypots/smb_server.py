@@ -24,8 +24,7 @@ from impacket.ntlm import compute_lmhash, compute_nthash
 from logging import DEBUG, getLogger
 from os import path, getenv
 from subprocess import Popen
-from six.moves import configparser, socketserver
-from threading import enumerate as threading_enumerate
+from six.moves import socketserver
 from random import randint
 from threading import current_thread
 from honeypots.helper import (
@@ -79,7 +78,7 @@ class QSMBServer:
     def smb_server_main(self):
         _q_s = self
 
-        class Logger(object):
+        class Logger:
             def write(self, message):
                 with suppress(Exception):
                     temp = current_thread().name
@@ -125,9 +124,7 @@ class QSMBServer:
                 self.__request = request
                 self.__select_poll = select_poll
                 self.__ip, self.__port = client_address[:2]
-                self.__connId = "thread_{}_{}_{}".format(
-                    self.__ip, self.__port, randint(1000, 9999)
-                )
+                self.__connId = f"thread_{self.__ip}_{self.__port}_{randint(1000, 9999)}"
                 current_thread().name = self.__connId
                 socketserver.BaseRequestHandler.__init__(self, request, client_address, server)
 

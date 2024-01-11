@@ -21,7 +21,7 @@ from signal import SIGTERM
 from argparse import ArgumentParser
 from socket import socket, AF_INET, SOCK_STREAM
 from json import JSONEncoder, dumps, load
-from logging import Handler, Formatter, DEBUG, getLogger, addLevelName, INFO, Logger
+from logging import Handler, Formatter, DEBUG, getLogger
 from sys import stdout
 from datetime import datetime
 from logging.handlers import RotatingFileHandler, SysLogHandler
@@ -30,7 +30,6 @@ from os import makedirs, path, scandir, devnull, getuid
 from psycopg2 import sql
 from psycopg2 import connect as psycopg2_connect
 from time import sleep
-from traceback import format_exc
 from collections.abc import Mapping
 from urllib.parse import urlparse
 from sqlite3 import connect as sqlite3_connect
@@ -63,7 +62,7 @@ def set_local_vars(self, config):
                 for var in honeypots[honeypot]:
                     setattr(self, var, honeypots[honeypot][var])
                     if var == "port":
-                        setattr(self, "auto_disabled", True)
+                        self.auto_disabled = True
 
 
 def parse_record(record, custom_filter, type_):
@@ -289,7 +288,7 @@ def close_port_wrapper(server_name, ip, port, logs):
     if sock.connect_ex((ip, port)) != 0 and ret:
         return True
     else:
-        logs.error({"server": server_name, "error": "port_open.. {} still open..".format(ip)})
+        logs.error({"server": server_name, "error": f"port_open.. {ip} still open.."})
         return False
 
 
@@ -396,7 +395,7 @@ class CustomHandler(Handler):
             if self.custom_filter is not None:
                 if "honeypots" in self.custom_filter:
                     if "remove_errors" in self.custom_filter["honeypots"]["options"]:
-                        return None
+                        return
             stdout.write(
                 dumps(
                     {"error": repr(e), "logger": repr(record)}, sort_keys=True, cls=ComplexEncoder
@@ -453,7 +452,7 @@ class postgres_class:
         test = True
         while test:
             with suppress(Exception):
-                print("{} - Waiting on postgres connection".format(self.uuid))
+                print(f"{self.uuid} - Waiting on postgres connection")
                 stdout.flush()
                 conn = psycopg2_connect(
                     host=self.host,
@@ -465,7 +464,7 @@ class postgres_class:
                 conn.close()
                 test = False
             sleep(1)
-        print("{} - postgres connection is good".format(self.uuid))
+        print(f"{self.uuid} - postgres connection is good")
 
     def addattr(self, x, val):
         self.__dict__[x] = val
@@ -483,7 +482,7 @@ class postgres_class:
 
     def drop_db(self):
         with suppress(Exception):
-            print("[x] Dropping {} db".format(self.db))
+            print(f"[x] Dropping {self.db} db")
             if self.check_db_if_exists():
                 self.cur.execute(
                     sql.SQL("drop DATABASE IF EXISTS {}").format(sql.Identifier(self.db))
@@ -558,12 +557,12 @@ class sqlite_class:
         test = True
         while test:
             with suppress(Exception):
-                print("{} - Waiting on sqlite connection".format(self.uuid))
+                print(f"{self.uuid} - Waiting on sqlite connection")
                 conn = sqlite3_connect(self.file, timeout=1, check_same_thread=False)
                 conn.close()
                 test = False
             sleep(1)
-        print("{} - sqlite connection is good".format(self.uuid))
+        print(f"{self.uuid} - sqlite connection is good")
 
     def drop_db_test(self):
         with suppress(Exception):
@@ -587,7 +586,7 @@ class sqlite_class:
     ):
         with suppress(Exception):
             for x in self.mapped_tables:
-                self.cur.execute("DROP TABLE IF EXISTS '{:s}'".format(x))
+                self.cur.execute(f"DROP TABLE IF EXISTS '{x:s}'")
 
     def create_tables(self):
         with suppress(Exception):

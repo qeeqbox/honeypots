@@ -216,7 +216,7 @@ class QPostgresServer:
 
     def test_server(self, ip=None, port=None, username=None, password=None):
         with suppress(Exception):
-            from psycopg2 import sql, connect
+            from psycopg2 import connect
 
             _ip = ip or self.ip
             _port = port or self.port

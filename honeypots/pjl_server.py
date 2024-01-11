@@ -19,9 +19,6 @@ from twisted.internet import reactor
 from twisted.python import log as tlog
 from subprocess import Popen
 from os import path, getenv
-from re import split as resplit
-from struct import unpack
-from binascii import unhexlify
 from honeypots.helper import (
     close_port_wrapper,
     get_free_port,
