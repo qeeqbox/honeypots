@@ -30,7 +30,7 @@ SERVER_CONFIG = {
 def test_http_proxy_server(server_logs):
     sleep(1)  # give the server some time to start
 
-    response = requests.get("http://example.com/", proxies={"http": f"http://{IP}:{PORT}"})
+    response = requests.get("http://example.com/", proxies={"http": f"http://{IP}:{PORT}"}, timeout=2)
 
     sleep(1)  # give the server process some time to write logs
 
@@ -42,3 +42,6 @@ def test_http_proxy_server(server_logs):
 
     assert query["data"] == "example.com"
     assert query["action"] == "query"
+
+    assert response.ok
+    assert "Example Website" in response.text, "dummy response is missing"

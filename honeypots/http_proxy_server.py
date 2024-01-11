@@ -9,13 +9,14 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 '''
-
+from pathlib import Path
 from warnings import filterwarnings
+
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 
 from dns.resolver import query as dsnquery
 from twisted.internet import reactor
-from twisted.internet.protocol import Protocol, ClientFactory, Factory
+from twisted.internet.protocol import Protocol, Factory
 from twisted.python import log as tlog
 from subprocess import Popen
 from email.parser import BytesParser
@@ -23,6 +24,9 @@ from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
 from contextlib import suppress
+
+
+DUMMY_TEMPLATE = (Path(__file__).parent / "data" / "dummy_page.html").read_text()
 
 
 class QHTTPProxyServer():
@@ -62,30 +66,19 @@ class QHTTPProxyServer():
 
             def dataReceived(self, data):
                 _q_s.logs.info({'server': 'http_proxy_server', 'action': 'connection', 'src_ip': self.transport.getPeer().host, 'src_port': self.transport.getPeer().port, 'dest_ip': _q_s.ip, 'dest_port': _q_s.port})
-                with suppress(Exception):
-                    ip = self.resolve_domain(data)
-                    if ip:
-                        factory = ClientFactory()
-                        factory.CustomProtocolParent_ = self
-                        factory.protocol = CustomProtocolChild
-                        reactor.connectTCP(ip, 80, factory)
-                    else:
-                        self.transport.loseConnection()
+                ip = self.resolve_domain(data)
+                if ip:
+                    self.write(_create_dummy_response(DUMMY_TEMPLATE))
+                else:
+                    self.transport.loseConnection()
 
-                    if self.client:
-                        self.client.write(data)
-                    else:
-                        self.buffer = data
+                if self.client:
+                    self.client.write(data)
+                else:
+                    self.buffer = data
 
             def write(self, data):
                 self.transport.write(data)
-
-        class CustomProtocolChild(Protocol):
-            def connectionMade(self):
-                self.write(self.factory.CustomProtocolParent_.buffer)
-
-            def dataReceived(self, data):
-                self.factory.CustomProtocolParent_.write(data)
 
             def write(self, data):
                 self.transport.write(data)
@@ -137,6 +130,16 @@ class QHTTPProxyServer():
             _port = port or self.port
             _domain = domain or 'http://yahoo.com'
             get(_domain, proxies={'http': 'http://{}:{}'.format(_ip, _port)}).text.encode('ascii', 'ignore')
+
+
+def _create_dummy_response(content: str) -> bytes:
+    response = [
+        "HTTP/1.1 200 OK",
+        f"Content-Length: {len(content)}",
+        "",
+        f"{content}",
+    ]
+    return "\r\n".join(response).encode()
 
 
 if __name__ == '__main__':
