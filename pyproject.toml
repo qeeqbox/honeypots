@@ -1,0 +1,146 @@
+[build-system]
+requires = [
+    "setuptools>=61.2",
+]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "honeypots"
+version = "0.64"
+authors = [
+    { name = "QeeqBox", email = "gigaqeeq@gmail.com" },
+]
+description = "30 different honeypots in one package! (dhcp, dns, elastic, ftp, http proxy, https proxy, http, https, imap, ipp, irc, ldap, memcache, mssql, mysql, ntp, oracle, pjl, pop3, postgres, rdp, redis, sip, smb, smtp, snmp, socks5, ssh, telnet, vnc)"
+readme = "README.rst"
+requires-python = ">=3.8"
+dependencies = [
+    "twisted==21.7.0",
+    "psutil==5.9.0",
+    "psycopg2-binary==2.9.3",
+    "pycryptodome==3.19.0",
+    "requests==2.28.2",
+    "requests[socks]==2.28.2",
+    "impacket==0.9.24",
+    "paramiko==3.1.0",
+    "scapy==2.4.5",
+    "service_identity==21.1.0",
+    "netifaces==0.11.0",
+]
+license = {text = "AGPL-3.0"}
+
+[project.urls]
+Homepage = "https://github.com/qeeqbox/honeypots"
+
+[project.optional-dependencies]
+dev = [
+    "dnspython==2.4.2",
+    "elasticsearch",
+    "ldap3",
+    "mysql-connector",
+    "pre-commit",
+    "pymssql",
+    "pysnmplib",
+    "pytest",
+    "redis",
+    "redis",
+    "vncdotool",
+]
+
+[project.scripts]
+honeypots = "honeypots.__main__:main_logic"
+
+[tool.setuptools]
+packages = [
+    "honeypots",
+    "honeypots.data",
+]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"honeypots.data" = [
+    "*.html",
+]
+
+[tool.ruff]
+select = [
+    "F",
+    "E",
+    "W",
+    "C90",
+    "N",
+    "UP",
+    "B",
+    "A",
+    "C4",
+    "EXE",
+    "FA",
+    "ISC",
+    "PIE",
+    "T20",
+    "PT",
+    "Q",
+    "RET",
+    "SIM",
+    "TCH",
+    "ARG",
+    "PTH",
+    "ERA",
+    "PL",
+    "PLR",
+    "PLW",
+    "PERF",
+    "RUF",
+]
+ignore = [
+    "A003",
+    "PERF203",
+    "PERF401",
+    "RUF001",
+    "RUF002",
+    "RUF003",
+    "RUF015",
+    # pydantic only supports these from python>=3.9
+    "UP006",
+    "UP007",
+    # rules may cause conflicts when used with the formatter
+    "ISC001",
+    "Q001",
+]
+fixable = [
+    "F",
+    "E",
+    "W",
+    "C90",
+    "N",
+    "UP",
+    "B",
+    "A",
+    "C4",
+    "EXE",
+    "FA",
+    "ISC",
+    "PIE",
+    "T20",
+    "PT",
+    "Q",
+    "RET",
+    "SIM",
+    "TCH",
+    "ARG",
+    "PTH",
+    "ERA",
+    "PL",
+    "PLR",
+    "PLW",
+    "PERF",
+    "RUF",
+]
+exclude = [
+    ".git",
+    ".ruff_cache",
+    ".venv",
+    "venv",
+    "data",
+]
+line-length = 99
+target-version = "py38"
