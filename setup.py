@@ -13,9 +13,10 @@ setup(
     license="AGPL-3.0",
     license_files=("LICENSE"),
     url="https://github.com/qeeqbox/honeypots",
-    packages=["honeypots"],
+    packages=["honeypots", "honeypots.data"],
     entry_points={"console_scripts": ["honeypots=honeypots.__main__:main_logic"]},
     include_package_data=True,
+    package_data={"honeypots.data": ["*.html"]},
     install_requires=[
         "twisted==21.7.0",
         "psutil==5.9.0",
