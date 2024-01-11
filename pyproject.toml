@@ -52,8 +52,14 @@ honeypots = "honeypots.__main__:main_logic"
 [tool.setuptools]
 packages = [
     "honeypots",
+    "honeypots.data",
 ]
 include-package-data = true
+
+[tool.setuptools.package-data]
+"honeypots.data" = [
+    "*.html",
+]
 
 [tool.ruff]
 select = [
