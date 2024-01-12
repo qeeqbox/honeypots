@@ -9,38 +9,36 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 """
-
+import logging
+import os
 import sys
-
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*requests.*")
-
-from psutil import process_iter
-from signal import SIGTERM
 from argparse import ArgumentParser
-from socket import socket, AF_INET, SOCK_STREAM
+from collections.abc import Mapping
+from contextlib import suppress
+from datetime import datetime
 from json import JSONEncoder, dumps, load
 from logging import Handler, Formatter, DEBUG, getLogger
-from sys import stdout
-from datetime import datetime
 from logging.handlers import RotatingFileHandler, SysLogHandler
-from tempfile import _get_candidate_names, gettempdir
 from os import makedirs, path, scandir, devnull, getuid
-from psycopg2 import sql
-from psycopg2 import connect as psycopg2_connect
-from time import sleep
-from collections.abc import Mapping
-from urllib.parse import urlparse
-from sqlite3 import connect as sqlite3_connect
 from pathlib import Path
-from contextlib import suppress
+from signal import SIGTERM
+from socket import socket, AF_INET, SOCK_STREAM
+from sqlite3 import connect as sqlite3_connect
+from sys import stdout
+from tempfile import _get_candidate_names, gettempdir
+from time import sleep
+from urllib.parse import urlparse
 
-old_stderr = sys.stderr
-sys.stderr = open(devnull, "w")
+from psutil import process_iter
+from psycopg2 import connect as psycopg2_connect
+from psycopg2 import sql
+
+if not os.getenv("DEBUG"):
+    old_stderr = sys.stderr
+    sys.stderr = open(devnull, "w")  # noqa: PTH123,SIM115
 
 
-def check_privileges():
+def is_privileged():
     with suppress(Exception):
         return getuid() == 0
     with suppress(Exception):
@@ -50,19 +48,31 @@ def check_privileges():
     return False
 
 
+def set_up_error_logging():
+    _logger = logging.getLogger("simple_example")
+    _logger.setLevel(logging.INFO)
+    handler = logging.StreamHandler(sys.stdout)
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter("[%(levelname)s] %(message)s")
+    handler.setFormatter(formatter)
+    _logger.addHandler(handler)
+    return _logger
+
+
 def set_local_vars(self, config):
-    with suppress(Exception):
-        honeypot = None
-        if config and config != "":
+    try:
+        if config:
             with open(config) as f:
                 config_data = load(f)
                 honeypots = config_data["honeypots"]
                 honeypot = self.__class__.__name__[1:-6].lower()
             if honeypot and honeypot in honeypots:
-                for var in honeypots[honeypot]:
-                    setattr(self, var, honeypots[honeypot][var])
-                    if var == "port":
+                for attr, value in honeypots[honeypot].items():
+                    setattr(self, attr, value)
+                    if attr == "port":
                         self.auto_disabled = True
+    except Exception as error:
+        logging.exception(f"Setting local variables failed: {error}")
 
 
 def parse_record(record, custom_filter, type_):

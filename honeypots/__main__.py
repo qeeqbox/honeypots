@@ -1,46 +1,95 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
-from warnings import filterwarnings
+from __future__ import annotations
 
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-filterwarnings("ignore", category=RuntimeWarning, module="runpy")
-
-all_servers = [
-    "QDNSServer",
-    "QFTPServer",
-    "QHTTPProxyServer",
-    "QHTTPServer",
-    "QHTTPSServer",
-    "QIMAPServer",
-    "QMysqlServer",
-    "QPOP3Server",
-    "QPostgresServer",
-    "QRedisServer",
-    "QSMBServer",
-    "QSMTPServer",
-    "QSOCKS5Server",
-    "QSSHServer",
-    "QTelnetServer",
-    "QVNCServer",
-    "QElasticServer",
-    "QMSSQLServer",
-    "QLDAPServer",
-    "QNTPServer",
-    "QMemcacheServer",
-    "QOracleServer",
-    "QSNMPServer",
-    "QSIPServer",
-    "QIRCServer",
-    "QRDPServer",
-    "QDHCPServer",
-    "QPJLServer",
-    "QIPPServer",
-]
-temp_honeypots = []
-
-from signal import signal, alarm, SIGALRM, SIGTERM, SIGINT, SIGTSTP
-from time import sleep
+import logging
+import sys
+from argparse import ArgumentParser, SUPPRESS, Namespace
+from atexit import register
 from functools import wraps
+from json import loads
+from os import geteuid
+from pathlib import Path
+from signal import alarm, SIGALRM, SIGINT, signal, SIGTERM, SIGTSTP
+from subprocess import Popen
+from sys import stdout
+from time import sleep
+from typing import Any
+from uuid import uuid4
+
+from netifaces import ifaddresses, AF_INET, AF_LINK, interfaces
+from psutil import net_io_counters, Process
+
+from honeypots import (
+    QBSniffer,
+    QDHCPServer,
+    QDNSServer,
+    QElasticServer,
+    QFTPServer,
+    QHTTPProxyServer,
+    QHTTPSServer,
+    QHTTPServer,
+    QIMAPServer,
+    QIPPServer,
+    QIRCServer,
+    QLDAPServer,
+    QMSSQLServer,
+    QMemcacheServer,
+    QMysqlServer,
+    QNTPServer,
+    QOracleServer,
+    QPJLServer,
+    QPOP3Server,
+    QPostgresServer,
+    QRDPServer,
+    QRedisServer,
+    QSIPServer,
+    QSMBServer,
+    QSMTPServer,
+    QSNMPServer,
+    QSOCKS5Server,
+    QSSHServer,
+    QTelnetServer,
+    QVNCServer,
+    is_privileged,
+    clean_all,
+    setup_logger,
+    set_up_error_logging,
+)
+
+all_servers = {
+    "dhcp": QDHCPServer,
+    "dns": QDNSServer,
+    "elastic": QElasticServer,
+    "ftp": QFTPServer,
+    "httpproxy": QHTTPProxyServer,
+    "https": QHTTPSServer,
+    "http": QHTTPServer,
+    "imap": QIMAPServer,
+    "ipp": QIPPServer,
+    "irc": QIRCServer,
+    "ldap": QLDAPServer,
+    "mssql": QMSSQLServer,
+    "memcache": QMemcacheServer,
+    "mysql": QMysqlServer,
+    "ntp": QNTPServer,
+    "oracle": QOracleServer,
+    "pjl": QPJLServer,
+    "pop3": QPOP3Server,
+    "postgres": QPostgresServer,
+    "rdp": QRDPServer,
+    "redis": QRedisServer,
+    "sip": QSIPServer,
+    "smb": QSMBServer,
+    "smtp": QSMTPServer,
+    "snmp": QSNMPServer,
+    "socks5": QSOCKS5Server,
+    "ssh": QSSHServer,
+    "telnet": QTelnetServer,
+    "vnc": QVNCServer,
+}
+
+logger = set_up_error_logging()
 
 
 class SignalFence:
@@ -51,7 +100,7 @@ class SignalFence:
         for signal_to_listen_on in signals_to_listen_on:
             signal(signal_to_listen_on, self.handle_signal)
 
-    def handle_signal(self, signum, frame):
+    def handle_signal(self, signum, frame):  # noqa: ARG002
         self.fence_up = False
 
     def wait_on_fence(self):
@@ -69,19 +118,18 @@ class Termination:
         elif self.strategy == "signal":
             SignalFence([SIGTERM, SIGINT, SIGTSTP]).wait_on_fence()
         else:
-            raise Exception("Unknown termination strategy: " + strategy)
+            raise Exception(f"Unknown termination strategy: {self.strategy}")
 
 
 def timeout(seconds=10):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            def handle_timeout(signum, frame):
-                raise Exception()
+            def handle_timeout(signum, frame):  # noqa: ARG001
+                raise TimeoutError()
 
             signal(SIGALRM, handle_timeout)
             alarm(seconds)
-            result = None
             try:
                 result = func(*args, **kwargs)
             finally:
@@ -93,364 +141,366 @@ def timeout(seconds=10):
     return decorator
 
 
-def list_all_honeypots():
-    for honeypot in all_servers:
-        print(honeypot[1:].replace("Server", "").lower())
-
-
 @timeout(5)
-def server_timeout(object, name):
+def server_timeout(obj, name):
     try:
-        print(f"[x] Start testing {name}")
-        object.test_server()
-    except BaseException:
-        print(f"[x] Timeout {name}")
-    print(f"[x] Done testing {name}")
+        logger.info(f"Start testing {name}")
+        obj.test_server()
+    except TimeoutError:
+        logging.error(f"Timeout during test {name}")
+    logger.info(f"Done testing {name}")
 
 
-def main_logic():
-    from honeypots import (
-        clean_all,
-        setup_logger,
-        check_privileges,
-    )
-    from atexit import register
-    from argparse import ArgumentParser, SUPPRESS
-    from sys import stdout
-    from subprocess import Popen
-    from netifaces import ifaddresses, AF_INET, AF_LINK, interfaces
-    from psutil import Process, net_io_counters
-    from uuid import uuid4
-    from json import load
-    from os import geteuid
+class HoneypotsManager:
+    def __init__(self, options: Namespace, server_args: dict[str, str | int]):
+        self.options = options
+        self.server_args = server_args
+        self.config_data = self._load_config() if self.options.config else None
+        self.auto = options.auto if geteuid() != 0 else False
+        self.honeypots: list[tuple[Any, str, bool]] = []
 
-    def exit_handler():
-        print("[x] Cleaning")
-        clean_all()
-        sleep(1)
+    def main(self):
+        logger.info("For updates, check https://github.com/qeeqbox/honeypots")
+        if not is_privileged():
+            logger.warning(
+                "Using system or well-known ports requires higher privileges (E.g. sudo -E)"
+            )
 
-    class _ArgumentParser(ArgumentParser):
-        def error(self, message):
-            self.exit(2, "Error: %s\n" % (message))
+        if self.options.list:
+            for service in all_servers:
+                print(service)  # noqa: T201
+        elif self.options.kill:
+            clean_all()
+        elif self.options.chameleon and self.config_data is not None:
+            self._start_chameleon_mode()
+        elif self.options.setup:
+            self._set_up_honeypots()
 
-    ARG_PARSER = _ArgumentParser(
-        description="Qeeqbox/honeypots customizable honeypots for monitoring network traffic, bots activities, and username\\password credentials",
+    def _load_config(self):
+        config_path = Path(self.options.config)
+        if not config_path.is_file():
+            logger.error(f'Config file "{config_path}" not found')
+            sys.exit(1)
+        try:
+            return loads(config_path.read_text())
+        except Exception as error:
+            logger.exception(f"Unable to load or parse config.json file: {error}")
+            sys.exit(1)
+
+    def _set_up_honeypots(self):  # noqa: C901
+        register(_exit_handler)
+        if self.options.termination_strategy == "input":
+            logger.info("Use [Enter] to exit or python3 -m honeypots --kill")
+        if self.options.config != "":
+            logger.warning("config.json file overrides --ip, --port, --username and --password")
+        if self.options.setup == "all":
+            self._start_all_servers()
+        else:
+            self._start_configured_servers()
+
+        running_honeypots = {"good": [], "bad": []}
+        if len(self.honeypots) > 0:
+            for _, server_name, status in self.honeypots:
+                if status is False or status is None:
+                    running_honeypots["bad"].append(server_name)
+                else:
+                    running_honeypots["good"].append(server_name)
+
+            if len(running_honeypots["good"]) > 0:
+                running_servers = ", ".join(running_honeypots["good"])
+                logger.info(f"servers {running_servers} running...")
+
+            if len(running_honeypots["bad"]) > 0:
+                not_running_servers = ", ".join(running_honeypots["bad"])
+                logger.warning(f"servers {not_running_servers} not running...")
+
+            if len(running_honeypots["bad"]) == 0:
+                logger.info("Everything looks good!")
+
+            if len(running_honeypots["good"]) > 0 and not self.options.test:
+                Termination(self.options.termination_strategy).await_termination()
+
+            self._stop_servers()
+
+    def _start_all_servers(self):
+        try:
+            for service in all_servers:
+                self._start_server(service)
+        except Exception as error:
+            logger.exception(f"Starting honeypots failed: {error}")
+
+    def _start_configured_servers(self):
+        for service in self.options.setup.split(","):
+            logger.info("Parsing honeypot [normal]")
+            if ":" in service:
+                service, port = service.split(":")  # noqa: PLW2901
+                auto = False
+                self.options.port = int(port)
+                self.server_args["port"] = self.options.port
+            elif self.options.port:
+                auto = False
+            elif self.options.test:
+                logger.error(
+                    f"server {service} was configured with random port, unable to test..."
+                )
+                continue
+            else:
+                auto = True
+            self._start_server(service, auto)
+
+    def _start_server(self, service: str, auto: bool | None = None):
+        if auto is None:
+            auto = self.auto
+        server_class = all_servers.get(service.lower())
+        if not server_class:
+            logger.warning(f"Skipping unknown service {service}")
+            return
+        server = server_class(**self.server_args)
+        if not self.options.test:
+            status = server.run_server(process=True, auto=auto)
+        else:
+            server_timeout(server, service)
+            server.kill_server()
+            status = False
+        self.honeypots.append((server, service, status))
+
+    def _stop_servers(self):
+        logger.info("[x] Stopping servers...")
+        for server, name, _ in self.honeypots:
+            try:
+                logger.info(f"[x] Killing {server.__class__.__name__} server")
+                server.kill_server()
+            except Exception as error:
+                logger.exception(f"Error when killing server {name}: {error}")
+        logger.info("[x] Please wait few seconds")
+        sleep(5)
+
+    def _start_chameleon_mode(self):  # noqa: C901,PLR0912
+        logger.info("[x] Chameleon mode")
+        if "db_sqlite" in self.config_data["logs"] or "db_postgres" in self.config_data["logs"]:
+            logs = self._setup_logging()
+        else:
+            logger.error("logging must be configured with db_sqlite or db_postgres")
+            sys.exit(1)
+
+        sniffer_filter = self.config_data.get("sniffer_filter")
+        sniffer_interface = self.config_data.get("sniffer_interface")
+        if not (sniffer_filter and sniffer_interface):
+            return
+
+        if not self.options.test and self.options.sniffer:
+            _check_interfaces(sniffer_interface)
+            if self.options.iptables:
+                _fix_ip_tables()
+            logger.info("[x] Wait for 10 seconds...")
+            stdout.flush()
+            sleep(2)
+
+        if self.options.config != "":
+            logger.warning(
+                "[x] Config.json file overrides --ip, --port, --username and --password"
+            )
+
+        if self.options.port:
+            self.options.port = int(self.options.port)
+        self.server_args["port"] = self.options.port
+
+        honeypots = self.config_data["honeypots"]
+        if isinstance(honeypots, dict):
+            logger.info("[x] Parsing honeypot [hard]")
+            for honeypot in honeypots:
+                self._start_server(honeypot)
+        elif isinstance(honeypots, str):
+            logger.info("[x] Parsing honeypot [easy]")
+            if ":" in honeypots:
+                logger.error(
+                    "[!] You cannot bind ports with [:] in this mode, "
+                    "use the honeypots dict instead"
+                )
+                sys.exit(1)
+            for server in honeypots.split(","):
+                self._start_server(server)
+        else:
+            logger.error(f"[!] Unable to parse honeypots from config: {honeypots}")
+            sys.exit(1)
+
+        if self.options.sniffer:
+            self._start_sniffer(sniffer_filter, sniffer_interface)
+
+        if not self.options.test:
+            logger.info("[x] Everything looks good!")
+            self._stats_loop(logs)
+        else:
+            self._stop_servers()
+
+    def _setup_logging(self) -> logging.Logger:
+        uuid = f"honeypotslogger_main_{str(uuid4())[:8]}"
+        if "db_options" in self.config_data:
+            drop = "drop" in self.config_data["db_options"]
+            logger.info(f"[x] Setup Logger {uuid} with a db, drop is {drop}")
+        else:
+            drop = True
+        return setup_logger("main", uuid, self.options.config, drop)
+
+    def _start_sniffer(self, sniffer_filter, sniffer_interface):
+        logger.info("[x] Starting sniffer")
+        sniffer = QBSniffer(
+            filter=sniffer_filter,
+            interface=sniffer_interface,
+            config=self.options.config,
+        )
+        sniffer.run_sniffer(process=True)
+        self.honeypots.append((sniffer, "sniffer", True))
+
+    def _stats_loop(self, logs):
+        while True:
+            try:
+                network_stats = {
+                    "type": "network",
+                    "bytes_sent": net_io_counters().bytes_sent,
+                    "bytes_recv": net_io_counters().bytes_recv,
+                    "packets_sent": net_io_counters().packets_sent,
+                    "packets_recv": net_io_counters().packets_recv,
+                }
+                logs.info(["system", network_stats])
+                load_stats = {
+                    server.__class__.__name__: {
+                        "memory": Process(server.process.pid).memory_percent(),
+                        "cpu": Process(server.process.pid).cpu_percent(),
+                    }
+                    for server, *_ in self.honeypots
+                }
+                logs.info(["system", load_stats])
+            except Exception as error:
+                logger.exception(f"An error occurred during stats logging: {error}")
+            sleep(20)
+
+
+def _fix_ip_tables():
+    try:
+        logger.info("[x] Fixing iptables")
+        Popen(
+            "iptables -A OUTPUT -p tcp -m tcp --tcp-flags RST RST -j DROP",
+            shell=True,
+        )
+    except Exception as error:
+        logger.exception(f"Could not fix iptables: {error}")
+
+
+def _check_interfaces(sniffer_interface):
+    current_interfaces = "unknown"
+    try:
+        current_interfaces = " ".join(interfaces())
+        if sniffer_interface not in current_interfaces:
+            logger.error(
+                f"[!] Sniffer interface {sniffer_interface} not found in current interfaces"
+            )
+            sys.exit(1)
+        ip_address = ifaddresses(sniffer_interface)[AF_INET][0]["addr"]
+        logger.info(f"[x] Your IP: {ip_address}")
+        mac_address = ifaddresses(sniffer_interface)[AF_LINK][0]["addr"]
+        logger.info(f"[x] Your MAC: {mac_address}")
+    except Exception as error:
+        logger.exception(
+            f"[!] Unable to detect IP or MAC for [{sniffer_interface}] interface, "
+            f"current interfaces are [{current_interfaces}]: {error}"
+        )
+        sys.exit(1)
+
+
+def _exit_handler():
+    logger.info("[x] Cleaning")
+    clean_all()
+    sleep(1)
+
+
+class _ArgumentParser(ArgumentParser):
+    def error(self, message):
+        logger.error(message)
+        self.exit(2, f"Error: {message}\n")
+
+
+def _parse_args() -> tuple[Namespace, dict[str, str | int]]:
+    arg_parser = _ArgumentParser(
+        description=(
+            "Qeeqbox/honeypots customizable honeypots for monitoring network traffic, bots "
+            "activities, and username\\password credentials"
+        ),
         usage=SUPPRESS,
     )
-    ARG_PARSER._action_groups.pop()
-    ARG_PARSER_SETUP = ARG_PARSER.add_argument_group("Arguments")
-    ARG_PARSER_SETUP.add_argument(
+    arg_parser._action_groups.pop()
+    arg_parser_setup = arg_parser.add_argument_group("Arguments")
+    arg_parser_setup.add_argument(
         "--setup",
         help="target honeypot E.g. ssh or you can have multiple E.g ssh,http,https",
         metavar="",
         default="",
     )
-    ARG_PARSER_SETUP.add_argument(
+    arg_parser_setup.add_argument(
         "--list", action="store_true", help="list all available honeypots"
     )
-    ARG_PARSER_SETUP.add_argument("--kill", action="store_true", help="kill all honeypots")
-    ARG_PARSER_SETUP.add_argument("--verbose", action="store_true", help="Print error msgs")
-    ARG_PARSER_OPTIONAL = ARG_PARSER.add_argument_group("Honeypots options")
-    ARG_PARSER_OPTIONAL.add_argument("--ip", help="Override the IP", metavar="", default="")
-    ARG_PARSER_OPTIONAL.add_argument(
-        "--port", help="Override the Port (Do not use on multiple!)", metavar="", default=""
+    arg_parser_setup.add_argument("--kill", action="store_true", help="kill all honeypots")
+    arg_parser_setup.add_argument("--verbose", action="store_true", help="Print error msgs")
+    arg_parser_optional = arg_parser.add_argument_group("Honeypots options")
+    arg_parser_optional.add_argument("--ip", help="Override the IP", metavar="", default="")
+    arg_parser_optional.add_argument(
+        "--port",
+        help="Override the Port (Do not use on multiple!)",
+        metavar="",
+        default="",
     )
-    ARG_PARSER_OPTIONAL.add_argument(
+    arg_parser_optional.add_argument(
         "--username", help="Override the username", metavar="", default=""
     )
-    ARG_PARSER_OPTIONAL.add_argument(
+    arg_parser_optional.add_argument(
         "--password", help="Override the password", metavar="", default=""
     )
-    ARG_PARSER_OPTIONAL.add_argument(
-        "--config", help="Use a config file for honeypots settings", metavar="", default=""
+    arg_parser_optional.add_argument(
+        "--config",
+        help="Use a config file for honeypots settings",
+        metavar="",
+        default="",
     )
-    ARG_PARSER_OPTIONAL.add_argument(
+    arg_parser_optional.add_argument(
         "--options", type=str, help="Extra options", metavar="", default=""
     )
-    ARG_PARSER_OPTIONAL_2 = ARG_PARSER.add_argument_group("General options")
-    ARG_PARSER_OPTIONAL_2.add_argument(
+    arg_parser_optional_2 = arg_parser.add_argument_group("General options")
+    arg_parser_optional_2.add_argument(
         "--termination-strategy",
         help="Determines the strategy to terminate by",
         default="input",
         choices=["input", "signal"],
     )
-    ARG_PARSER_OPTIONAL_2.add_argument("--test", default="", metavar="", help="Test a honeypot")
-    ARG_PARSER_OPTIONAL_2.add_argument(
+    arg_parser_optional_2.add_argument("--test", action="store_true", help="Test a honeypot")
+    arg_parser_optional_2.add_argument(
         "--auto", help="Setup the honeypot with random port", action="store_true"
     )
-    ARG_PARSER_CHAMELEON = ARG_PARSER.add_argument_group("Chameleon")
-    ARG_PARSER_CHAMELEON.add_argument(
+    arg_parser_chameleon = arg_parser.add_argument_group("Chameleon")
+    arg_parser_chameleon.add_argument(
         "--chameleon", action="store_true", help="reserved for chameleon project"
     )
-    ARG_PARSER_CHAMELEON.add_argument(
-        "--sniffer", action="store_true", help="sniffer - reserved for chameleon project"
+    arg_parser_chameleon.add_argument(
+        "--sniffer",
+        action="store_true",
+        help="sniffer - reserved for chameleon project",
     )
-    ARG_PARSER_CHAMELEON.add_argument(
-        "--iptables", action="store_true", help="iptables - reserved for chameleon project"
+    arg_parser_chameleon.add_argument(
+        "--iptables",
+        action="store_true",
+        help="iptables - reserved for chameleon project",
     )
-    ARGV = ARG_PARSER.parse_args()
-    PARSED_ARG_PARSER_OPTIONAL = {
-        action.dest: getattr(ARGV, action.dest, "")
-        for action in ARG_PARSER_OPTIONAL._group_actions
+    argv = arg_parser.parse_args()
+    server_args = {
+        action.dest: getattr(argv, action.dest, "")
+        for action in arg_parser_optional._group_actions
     }
-    config_data = None
-    print("[!] For updates, check https://github.com/qeeqbox/honeypots")
-    if check_privileges() == False:
-        print("[!] Using system or well-known ports requires higher privileges (E.g. sudo -E)")
-    if ARGV.config != "":
-        with open(ARGV.config) as f:
-            try:
-                config_data = load(f)
-            except Exception as e:
-                print("[!] Unable to load or parse config.json file", e)
-                exit()
-            if "db_sqlite" in config_data["logs"] or "db_postgres" in config_data["logs"]:
-                uuid = "honeypotslogger" + "_" + "main" + "_" + str(uuid4())[:8]
-                if "db_options" in config_data:
-                    if "drop" in config_data["db_options"]:
-                        print(f"[x] Setup Logger {uuid} with a db, drop is on")
-                        logs = setup_logger("main", uuid, ARGV.config, True)
-                    else:
-                        print(f"[x] Setup Logger {uuid} with a db, drop is off")
-                        logs = setup_logger("main", uuid, ARGV.config, False)
-                else:
-                    logs = setup_logger("main", uuid, ARGV.config, True)
-    if ARGV.list:
-        list_all_honeypots()
-    elif ARGV.kill:
-        clean_all()
-    elif ARGV.chameleon and config_data is not None:
-        print("[x] Chameleon mode")
-        if config_data["sniffer_filter"] and config_data["sniffer_interface"]:
-            if not ARGV.test:
-                if ARGV.sniffer:
-                    current_interfaces = "unknown"
-                    try:
-                        current_interfaces = " ".join(interfaces())
-                        if config_data["sniffer_interface"] in current_interfaces:
-                            print(
-                                "[x] Your IP: {}".format(
-                                    ifaddresses(config_data["sniffer_interface"])[AF_INET][0][
-                                        "addr"
-                                    ]
-                                )
-                            )
-                            print(
-                                "[x] Your MAC: {}".format(
-                                    ifaddresses(config_data["sniffer_interface"])[AF_LINK][0][
-                                        "addr"
-                                    ]
-                                )
-                            )
-                        else:
-                            exit()
-                    except Exception as e:
-                        print(
-                            "[!] Unable to detect IP or MAC for [{}] interface, current interfaces are [{}]".format(
-                                config_data["sniffer_interface"], current_interfaces
-                            ),
-                            e,
-                        )
-                        exit()
-                    if ARGV.iptables:
-                        try:
-                            print("[x] Fixing iptables")
-                            Popen(
-                                "iptables -A OUTPUT -p tcp -m tcp --tcp-flags RST RST -j DROP",
-                                shell=True,
-                            )
-                        except Exception as e:
-                            print(e)
-                    print("[x] Wait for 10 seconds..")
-                    stdout.flush()
-                    sleep(2)
+    return argv, server_args
 
-            if ARGV.config != "":
-                print("[x] Config.json file overrides --ip, --port, --username and --password")
 
-            if isinstance(config_data["honeypots"], dict):
-                print("[x] Parsing honeypot [hard]")
-                for honeypot in config_data["honeypots"]:
-                    for _honeypot in all_servers:
-                        if f"q{honeypot}server".lower() == _honeypot.lower():
-                            if ARGV.port != "":
-                                ARGV.port = int(ARGV.port)
-                            PARSED_ARG_PARSER_OPTIONAL["port"] = ARGV.port
-                            x = locals()[_honeypot](**PARSED_ARG_PARSER_OPTIONAL)
-                            if not ARGV.test:
-                                x.run_server(process=True)
-                            else:
-                                server_timeout(x, _honeypot)
-                                x.kill_server()
-                            temp_honeypots.append(x)
-            elif isinstance(config_data["honeypots"], str):
-                print("[x] Parsing honeypot [easy]")
-                if ":" in config_data["honeypots"]:
-                    print(
-                        "[!] You cannot bind ports with [:] in this mode, use the honeypots dict instead"
-                    )
-                    exit()
-                for server in config_data["honeypots"].split(","):
-                    for honeypot in all_servers:
-                        if f"q{server}server".lower() == honeypot.lower():
-                            if ARGV.port != "":
-                                ARGV.port = int(ARGV.port)
-                            PARSED_ARG_PARSER_OPTIONAL["port"] = ARGV.port
-                            x = locals()[honeypot](**PARSED_ARG_PARSER_OPTIONAL)
-                            if not ARGV.test:
-                                x.run_server(process=True)
-                            else:
-                                server_timeout(x, honeypot)
-                                x.kill_server()
-                            temp_honeypots.append(x)
-            else:
-                print("[!] Unable to parse honeypot from config.json file")
-                exit()
-
-            if ARGV.sniffer:
-                print("[x] Start sniffer")
-                x = locals()["QBSniffer"](
-                    filter=config_data["sniffer_filter"],
-                    interface=config_data["sniffer_interface"],
-                    config=ARGV.config,
-                )
-                x.run_sniffer(process=True)
-                temp_honeypots.append(x)
-
-            if not ARGV.test:
-                print("[x] Everything looks good!")
-                while True:
-                    try:
-                        _servers = {}
-                        logs.info(
-                            [
-                                "system",
-                                {
-                                    "type": "network",
-                                    "bytes_sent": net_io_counters().bytes_sent,
-                                    "bytes_recv": net_io_counters().bytes_recv,
-                                    "packets_sent": net_io_counters().packets_sent,
-                                    "packets_recv": net_io_counters().packets_recv,
-                                },
-                            ]
-                        )
-                        for server in temp_honeypots:
-                            _servers[server.__class__.__name__] = {
-                                "memory": Process(server.process.pid).memory_percent(),
-                                "cpu": Process(server.process.pid).cpu_percent(),
-                            }
-                        logs.info(["system", _servers])
-                    except Exception as e:
-                        print(e)
-                    sleep(20)
-            else:
-                if len(temp_honeypots) > 0:
-                    for server in temp_honeypots:
-                        try:
-                            print(f"[x] Killing {server.__class__.__name__} tester")
-                            server.kill_server()
-                        except Exception as e:
-                            print(e)
-                    print("[x] Please wait few seconds")
-                    sleep(5)
-    elif ARGV.setup != "":
-        register(exit_handler)
-        auto = ARGV.auto
-        if ARGV.termination_strategy == "input":
-            print("[x] Use [Enter] to exit or python3 -m honeypots --kill")
-
-        if ARGV.config != "":
-            print("[x] config.json file overrides --ip, --port, --username and --password")
-
-        if geteuid() == 0:
-            auto = False
-
-        if ARGV.setup == "all":
-            try:
-                for honeypot in all_servers:
-                    status = False
-                    x = locals()[honeypot](**PARSED_ARG_PARSER_OPTIONAL)
-                    status = x.run_server(process=True, auto=auto)
-                    temp_honeypots.append([x, honeypot, status])
-            except Exception as e:
-                print(e)
-        else:
-            servers = ARGV.setup.split(",")
-            for server in servers:
-                print("[x] Parsing honeypot [normal]")
-                if ":" in server:
-                    for honeypot in all_servers:
-                        if "q{}server".format(server.split(":")[0]).lower() == honeypot.lower():
-                            ARGV.port = int(server.split(":")[1])
-                            PARSED_ARG_PARSER_OPTIONAL["port"] = ARGV.port
-                            x = locals()[honeypot](**PARSED_ARG_PARSER_OPTIONAL)
-                            status = False
-                            if not ARGV.test:
-                                status = x.run_server(process=True)
-                            else:
-                                server_timeout(x, honeypot)
-                                x.kill_server()
-                            temp_honeypots.append([x, honeypot, status])
-                elif ARGV.port != "":
-                    for honeypot in all_servers:
-                        if f"q{server}server".lower() == honeypot.lower():
-                            x = locals()[honeypot](**PARSED_ARG_PARSER_OPTIONAL)
-                            status = False
-                            if not ARGV.test:
-                                status = x.run_server(process=True)
-                            else:
-                                server_timeout(x, honeypot)
-                                x.kill_server()
-                            temp_honeypots.append([x, honeypot, status])
-                else:
-                    for honeypot in all_servers:
-                        if f"q{server}server".lower() == honeypot.lower():
-                            x = locals()[honeypot](**PARSED_ARG_PARSER_OPTIONAL)
-                            status = False
-                            if not ARGV.test:
-                                status = x.run_server(process=True, auto=auto)
-                            else:
-                                print(
-                                    "[x] {} was configured with random port, unable to test..".format(
-                                        honeypot
-                                    )
-                                )
-                            temp_honeypots.append([x, honeypot, status])
-
-        running_honeypots = {"good": [], "bad": []}
-
-        if len(temp_honeypots) > 0:
-            good = True
-            for server in temp_honeypots:
-                if server[2] == False or server[2] is None:
-                    running_honeypots["bad"].append(server[1])
-                else:
-                    running_honeypots["good"].append(server[1])
-
-            if len(running_honeypots["good"]) > 0:
-                print("[x] {} running..".format(", ".join(running_honeypots["good"])))
-
-            if len(running_honeypots["bad"]) > 0:
-                print("[x] {} not running..".format(", ".join(running_honeypots["bad"])))
-
-            if len(running_honeypots["bad"]) == 0:
-                print("[x] Everything looks good!")
-
-            if len(running_honeypots["good"]) > 0:
-                if not ARGV.test:
-                    Termination(ARGV.termination_strategy).await_termination()
-
-            for server in temp_honeypots:
-                try:
-                    if not ARGV.test:
-                        print(f"[x] Killing {server[0].__class__.__name__} honeypot")
-                    else:
-                        print(f"[x] Killing {server[0].__class__.__name__} tester")
-                    server[0].kill_server()
-                except Exception as e:
-                    print(e)
-            print("[x] Please wait few seconds")
-            sleep(5)
+def main_logic():
+    argv, server_args = _parse_args()
+    manager = HoneypotsManager(argv, server_args)
+    manager.main()
 
 
 if __name__ == "__main__":
