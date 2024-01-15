@@ -138,7 +138,7 @@ class QRedisServer:
                     self.parse_data(c, data)
                     self.transport.write(b"-ERR invalid password\r\n")
                 else:
-                    self.transport.write(b'-ERR unknown command "{}"\r\n'.format(command))
+                    self.transport.write(f'-ERR unknown command "{command}"\r\n'.encode())
                 self.transport.loseConnection()
 
         factory = Factory()
