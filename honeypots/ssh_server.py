@@ -10,11 +10,6 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*paramiko.*")
-filterwarnings(action="ignore", module=".*socket.*")
-
 from paramiko import (
     RSAKey,
     ServerInterface,

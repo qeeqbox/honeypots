@@ -10,15 +10,9 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-filterwarnings(action="ignore", module=".*socket.*")
-
 from twisted.internet.protocol import Factory
 from twisted.internet import reactor
 from twisted.words import service
-from twisted.python import log as tlog
 from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import (
@@ -27,7 +21,6 @@ from honeypots.helper import (
     kill_server_wrapper,
     server_arguments,
     setup_logger,
-    disable_logger,
     set_local_vars,
     check_if_server_is_running,
 )
@@ -64,7 +57,6 @@ class QIRCServer:
             or getenv("HONEYPOTS_OPTIONS", "")
             or ""
         )
-        disable_logger(1, tlog)
 
     def irc_server_main(self):
         _q_s = self

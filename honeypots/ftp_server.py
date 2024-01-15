@@ -10,10 +10,6 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-
 from twisted.protocols.ftp import (
     FTPAnonymousShell,
     FTPFactory,
@@ -26,11 +22,10 @@ from twisted.protocols.ftp import (
 from twisted.internet import reactor, defer
 from twisted.cred.portal import Portal
 from twisted.cred import portal, credentials
-from twisted.cred.error import UnauthorizedLogin, UnauthorizedLogin, UnhandledCredentials
+from twisted.cred.error import UnauthorizedLogin, UnhandledCredentials
 from twisted.cred.checkers import ICredentialsChecker
 from zope.interface import implementer
 from twisted.python import filepath
-from twisted.python import log as tlog
 from random import choice
 from subprocess import Popen
 from os import path, getenv
@@ -40,7 +35,6 @@ from honeypots.helper import (
     kill_server_wrapper,
     server_arguments,
     setup_logger,
-    disable_logger,
     set_local_vars,
     check_if_server_is_running,
 )
@@ -89,7 +83,6 @@ class QFTPServer:
             or ""
         )
         self.temp_folder = TemporaryDirectory()
-        disable_logger(1, tlog)
 
     def ftp_server_main(self):
         _q_s = self

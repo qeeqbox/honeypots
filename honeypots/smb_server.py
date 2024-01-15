@@ -10,23 +10,21 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", category=DeprecationWarning)
-filterwarnings(action="ignore", module=".*impacket.*")
-
-from logging import StreamHandler, getLogger, DEBUG
-from impacket import smbserver
-from tempfile import mkdtemp
-from shutil import rmtree
-from time import sleep
-from impacket.ntlm import compute_lmhash, compute_nthash
-from logging import DEBUG, getLogger
-from os import path, getenv
-from subprocess import Popen
-from six.moves import socketserver
+from contextlib import suppress
+from logging import DEBUG, getLogger, StreamHandler
+from os import getenv, path
 from random import randint
+from shutil import rmtree
+from subprocess import Popen
+from tempfile import mkdtemp
 from threading import current_thread
+from time import sleep
+from uuid import uuid4
+
+from impacket import smbserver
+from impacket.ntlm import compute_lmhash, compute_nthash
+from six.moves import socketserver
+
 from honeypots.helper import (
     check_if_server_is_running,
     close_port_wrapper,
@@ -36,8 +34,6 @@ from honeypots.helper import (
     set_local_vars,
     setup_logger,
 )
-from uuid import uuid4
-from contextlib import suppress
 
 
 class QSMBServer:
@@ -70,10 +66,6 @@ class QSMBServer:
             or getenv("HONEYPOTS_OPTIONS", "")
             or ""
         )
-        self.disable_logger()
-
-    def disable_logger(self):
-        getLogger("impacket").propagate = False
 
     def smb_server_main(self):
         _q_s = self

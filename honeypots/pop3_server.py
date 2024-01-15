@@ -9,30 +9,26 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 """
-from typing import Tuple
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-
-from twisted.mail.pop3 import POP3, POP3Error
-from twisted.internet.protocol import Factory
-from twisted.internet import reactor
+from contextlib import suppress
+from os import getenv, path
 from random import choice
-from twisted.python import log as tlog
 from subprocess import Popen
-from os import path, getenv
+from typing import Tuple
+from uuid import uuid4
+
+from twisted.internet import reactor
+from twisted.internet.protocol import Factory
+from twisted.mail.pop3 import POP3, POP3Error
+
 from honeypots.helper import (
+    check_if_server_is_running,
     close_port_wrapper,
     get_free_port,
     kill_server_wrapper,
     server_arguments,
-    setup_logger,
-    disable_logger,
     set_local_vars,
-    check_if_server_is_running,
+    setup_logger,
 )
-from uuid import uuid4
-from contextlib import suppress
 
 
 class QPOP3Server:
@@ -65,7 +61,6 @@ class QPOP3Server:
             or getenv("HONEYPOTS_OPTIONS", "")
             or ""
         )
-        disable_logger(1, tlog)
 
     def pop3_server_main(self):
         _q_s = self

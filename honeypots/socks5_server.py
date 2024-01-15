@@ -10,10 +10,6 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-
 from socketserver import TCPServer, StreamRequestHandler, ThreadingMixIn
 from struct import unpack
 from os import path, getenv
