@@ -1,5 +1,0 @@
-#!/usr/bin/env python
-from importlib import import_module
-if __name__ == '__main__':
-    module = import_module('honeypots')
-    module.main_logic()
