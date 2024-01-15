@@ -99,9 +99,7 @@ class QSNMPServer:
                             "data": {"version": version, "community": community, "oids": oids},
                         }
                     )
-                    self.transport.write("Error", addr)
-
-                self.transport.loseConnection()
+                    self.transport.write(b"Error", addr)
 
         reactor.listenUDP(
             port=self.port, protocol=CustomDatagramProtocolProtocol(), interface=self.ip
