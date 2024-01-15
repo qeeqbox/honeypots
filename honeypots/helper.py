@@ -58,7 +58,7 @@ def set_local_vars(self, config):
         if config:
             with open(config) as f:
                 config_data = load(f)
-                honeypots = config_data["honeypots"]
+                honeypots = config_data.get("honeypots", [])
                 honeypot = self.__class__.__name__[1:-6].lower()
             if honeypot and honeypot in honeypots:
                 for attr, value in honeypots[honeypot].items():
