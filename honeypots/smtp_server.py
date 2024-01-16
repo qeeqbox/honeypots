@@ -10,10 +10,6 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", category=DeprecationWarning)
-
 from smtpd import SMTPChannel, SMTPServer
 from asyncore import loop
 from base64 import b64decode

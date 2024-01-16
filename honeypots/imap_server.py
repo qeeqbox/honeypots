@@ -10,10 +10,6 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-
 from twisted.mail.imap4 import IMAP4Server
 from twisted.internet.protocol import Factory
 from twisted.internet import reactor

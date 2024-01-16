@@ -10,29 +10,25 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-
-from twisted.internet.protocol import DatagramProtocol
-from twisted.internet import reactor
-from struct import unpack, calcsize, pack
-from time import time
-from twisted.python import log as tlog
+from contextlib import suppress
+from os import getenv, path
+from struct import calcsize, pack, unpack
 from subprocess import Popen
-from os import path, getenv
+from time import time
+from uuid import uuid4
+
+from twisted.internet import reactor
+from twisted.internet.protocol import DatagramProtocol
+
 from honeypots.helper import (
+    check_if_server_is_running,
     close_port_wrapper,
     get_free_port,
     kill_server_wrapper,
     server_arguments,
-    setup_logger,
-    disable_logger,
     set_local_vars,
-    check_if_server_is_running,
+    setup_logger,
 )
-from uuid import uuid4
-from contextlib import suppress
 
 
 class QNTPServer:
@@ -64,7 +60,6 @@ class QNTPServer:
             or getenv("HONEYPOTS_OPTIONS", "")
             or ""
         )
-        disable_logger(1, tlog)
 
     def ntp_server_main(self):
         _q_s = self

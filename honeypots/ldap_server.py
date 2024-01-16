@@ -10,13 +10,8 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-
 from twisted.internet.protocol import Protocol, Factory
 from twisted.internet import reactor
-from twisted.python import log as tlog
 from subprocess import Popen
 from os import path, getenv
 from struct import unpack
@@ -27,7 +22,6 @@ from honeypots.helper import (
     kill_server_wrapper,
     server_arguments,
     setup_logger,
-    disable_logger,
     set_local_vars,
     check_if_server_is_running,
 )
@@ -64,7 +58,6 @@ class QLDAPServer:
             or getenv("HONEYPOTS_OPTIONS", "")
             or ""
         )
-        disable_logger(1, tlog)
 
     def ldap_server_main(self):
         _q_s = self

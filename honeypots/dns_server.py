@@ -10,14 +10,9 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-
 from twisted.names import dns, error, client
 from twisted.names.server import DNSServerFactory
 from twisted.internet import defer, reactor
-from twisted.python import log as tlog
 from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import (
@@ -26,7 +21,6 @@ from honeypots.helper import (
     kill_server_wrapper,
     server_arguments,
     setup_logger,
-    disable_logger,
     set_local_vars,
     check_if_server_is_running,
 )
@@ -58,7 +52,6 @@ class QDNSServer:
             or getenv("HONEYPOTS_OPTIONS", "")
             or ""
         )
-        disable_logger(1, tlog)
 
     def dns_server_main(self):
         _q_s = self

@@ -10,29 +10,25 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-
-from twisted.internet.protocol import Protocol, Factory
-from twisted.internet import reactor
-from twisted.python import log as tlog
-from struct import pack
+from contextlib import suppress
 from hashlib import sha1
+from os import getenv, path
+from struct import pack
 from subprocess import Popen
-from os import path, getenv
+from uuid import uuid4
+
+from twisted.internet import reactor
+from twisted.internet.protocol import Factory, Protocol
+
 from honeypots.helper import (
+    check_if_server_is_running,
     close_port_wrapper,
     get_free_port,
     kill_server_wrapper,
     server_arguments,
-    setup_logger,
-    disable_logger,
     set_local_vars,
-    check_if_server_is_running,
+    setup_logger,
 )
-from uuid import uuid4
-from contextlib import suppress
 
 
 class QMysqlServer:
@@ -65,7 +61,6 @@ class QMysqlServer:
             or ""
         )
         self.words = [self.password.encode()]
-        disable_logger(1, tlog)
 
     def load_words(
         self,

@@ -10,29 +10,25 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-
-from twisted.internet.protocol import Protocol, Factory
-from twisted.internet import reactor
-from twisted.python import log as tlog
-from subprocess import Popen
-from os import path, getenv
+from contextlib import suppress
+from os import getenv, path
 from random import randint, uniform
+from subprocess import Popen
 from time import time
+from uuid import uuid4
+
+from twisted.internet import reactor
+from twisted.internet.protocol import Factory, Protocol
+
 from honeypots.helper import (
+    check_if_server_is_running,
     close_port_wrapper,
     get_free_port,
     kill_server_wrapper,
     server_arguments,
-    setup_logger,
-    disable_logger,
     set_local_vars,
-    check_if_server_is_running,
+    setup_logger,
 )
-from uuid import uuid4
-from contextlib import suppress
 
 
 class QMemcacheServer:
@@ -58,7 +54,6 @@ class QMemcacheServer:
             or getenv("HONEYPOTS_OPTIONS", "")
             or ""
         )
-        disable_logger(1, tlog)
 
     def memcache_server_main(self):
         _q_s = self

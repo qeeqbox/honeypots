@@ -10,35 +10,28 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
+from cgi import FieldStorage
+from contextlib import suppress
+from os import getenv, path
+from random import choice
+from subprocess import Popen
+from tempfile import _get_candidate_names, gettempdir
+from uuid import uuid4
 
 from OpenSSL import crypto
-from cgi import FieldStorage
-from requests.packages.urllib3 import disable_warnings
-from tempfile import gettempdir, _get_candidate_names
 from twisted.internet import reactor, ssl
-from twisted.web.server import Site
 from twisted.web.resource import Resource
-from random import choice
-from twisted.python import log as tlog
-from subprocess import Popen
-from os import path, getenv
+from twisted.web.server import Site
+
 from honeypots.helper import (
+    check_if_server_is_running,
     close_port_wrapper,
     get_free_port,
     kill_server_wrapper,
     server_arguments,
-    setup_logger,
-    disable_logger,
     set_local_vars,
-    check_if_server_is_running,
+    setup_logger,
 )
-from uuid import uuid4
-from contextlib import suppress
-
-disable_warnings()
 
 
 class QHTTPSServer:
@@ -95,7 +88,6 @@ class QHTTPSServer:
             or getenv("HONEYPOTS_OPTIONS", "")
             or ""
         )
-        disable_logger(1, tlog)
 
     def CreateCert(self, host_name, key, cert):
         pk = crypto.PKey()

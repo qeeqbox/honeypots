@@ -10,33 +10,26 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-
-from typing import Dict
-from requests.packages.urllib3 import disable_warnings
-from twisted.internet import reactor
-from twisted.web.server import Site
-from twisted.web.resource import Resource
-from twisted.python import log as tlog
+from contextlib import suppress
+from os import getenv, path
+from struct import unpack
 from subprocess import Popen
-from os import path, getenv
+from typing import Dict
+from uuid import uuid4
+
+from twisted.internet import reactor
+from twisted.web.resource import Resource
+from twisted.web.server import Site
+
 from honeypots.helper import (
+    check_if_server_is_running,
     close_port_wrapper,
     get_free_port,
     kill_server_wrapper,
     server_arguments,
-    setup_logger,
-    disable_logger,
     set_local_vars,
-    check_if_server_is_running,
+    setup_logger,
 )
-from uuid import uuid4
-from contextlib import suppress
-from struct import unpack
-
-disable_warnings()
 
 STATUS_CODE_OK = b"\x00\x00"
 STATUS_CODE_BAD_REQUEST = b"\x04\x00"
@@ -65,7 +58,6 @@ class QIPPServer:
             or getenv("HONEYPOTS_OPTIONS", "")
             or ""
         )
-        disable_logger(1, tlog)
 
     def ipp_server_main(self):
         _q_s = self

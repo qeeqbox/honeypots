@@ -10,27 +10,23 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-
-from twisted.internet.protocol import Protocol, Factory
-from twisted.internet import reactor
-from twisted.python import log as tlog
+from contextlib import suppress
+from os import getenv, path
 from subprocess import Popen
-from os import path, getenv
+from uuid import uuid4
+
+from twisted.internet import reactor
+from twisted.internet.protocol import Factory, Protocol
+
 from honeypots.helper import (
+    check_if_server_is_running,
     close_port_wrapper,
     get_free_port,
     kill_server_wrapper,
     server_arguments,
-    setup_logger,
-    disable_logger,
     set_local_vars,
-    check_if_server_is_running,
+    setup_logger,
 )
-from uuid import uuid4
-from contextlib import suppress
 
 
 class QPJLServer:
@@ -75,7 +71,6 @@ class QPJLServer:
             "IPAddress": "172.17.0.2",
             "HWAddress": "0025B395EA01",
         }
-        disable_logger(1, tlog)
 
     def pjl_server_main(self):
         _q_s = self
