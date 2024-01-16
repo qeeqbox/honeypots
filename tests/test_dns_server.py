@@ -27,8 +27,10 @@ def test_dns_server(server_logs):
     resolver.nameservers = [IP]
     resolver.port = int(PORT)
     domain = "example.org"
-    response = resolver.resolve(domain, "a", tcp=False)
-    response = resolver.resolve(domain, "a", tcp=True)
+    responses = [
+        resolver.resolve(domain, "a", tcp=False),
+        resolver.resolve(domain, "a", tcp=True),
+    ]
 
     sleep(1)  # give the server process some time to write logs
 
@@ -43,4 +45,5 @@ def test_dns_server(server_logs):
         assert "data" in query
         assert "<A address=" in query["data"]
 
-    assert domain in response.canonical_name.to_text()
+    for response in responses:
+        assert domain in response.canonical_name.to_text()
