@@ -43,13 +43,14 @@ def is_privileged():
 
 
 def set_up_error_logging():
-    _logger = logging.getLogger("simple_example")
-    _logger.setLevel(logging.INFO)
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.INFO)
-    formatter = logging.Formatter("[%(levelname)s] %(message)s")
-    handler.setFormatter(formatter)
-    _logger.addHandler(handler)
+    _logger = logging.getLogger("honeypots.error")
+    if not _logger.handlers:
+        _logger.setLevel(logging.INFO)
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(logging.INFO)
+        formatter = logging.Formatter("[%(levelname)s] %(message)s")
+        handler.setFormatter(formatter)
+        _logger.addHandler(handler)
     return _logger
 
 
