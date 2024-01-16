@@ -83,7 +83,7 @@ class QIRCServer:
                     _q_s.logs.info(
                         {
                             "server": _q_s.NAME,
-                            "action": "command2",
+                            "action": "command",
                             "data": {
                                 "command": check_bytes(command),
                                 "prefix": check_bytes(prefix),
