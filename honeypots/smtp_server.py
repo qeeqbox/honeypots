@@ -62,17 +62,10 @@ class QSMTPServer:
         _q_s = self
 
         class CustomSMTPChannel(SMTPChannel):
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
-
             def found_terminator(self):
                 with suppress(Exception):
                     if "capture_commands" in _q_s.options:
                         line = self._emptystring.join(self.received_lines).decode()
-                        command = None
                         arg = None
                         data = None
                         if line.find(" ") < 0:
@@ -122,14 +115,12 @@ class QSMTPServer:
                 with suppress(Exception):
                     if arg.startswith("PLAIN "):
                         _, username, password = (
-                            b64decode(arg.split(" ")[1].strip()).decode("utf-8").split("\0")
+                            b64decode(arg.split(" ")[1].strip())
+                            .decode("utf-8", errors="replace")
+                            .split("\0")
                         )
-                        username = self.check_bytes(username)
-                        password = self.check_bytes(password)
                         status = "failed"
                         if username == _q_s.username and password == _q_s.password:
-                            username = _q_s.username
-                            password = _q_s.password
                             status = "success"
                         _q_s.logs.info(
                             {
@@ -151,9 +142,6 @@ class QSMTPServer:
                 self.smtp_QUIT(0)
 
         class CustomSMTPServer(SMTPServer):
-            def __init__(self, localaddr, remoteaddr):
-                SMTPServer.__init__(self, localaddr, remoteaddr)
-
             def process_message(
                 self, peer, mailfrom, rcpttos, data, mail_options=None, rcpt_options=None
             ):
@@ -161,6 +149,16 @@ class QSMTPServer:
 
             def handle_accept(self):
                 conn, addr = self.accept()
+                _q_s.logs.info(
+                    {
+                        "server": "smtp_server",
+                        "action": "connection",
+                        "src_ip": addr[0],
+                        "src_port": addr[1],
+                        "dest_ip": _q_s.ip,
+                        "dest_port": _q_s.port,
+                    }
+                )
                 CustomSMTPChannel(self, conn, addr)
 
         CustomSMTPServer((self.ip, self.port), None)
