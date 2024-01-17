@@ -51,9 +51,10 @@ def test_smtp_server(server_logs):
 
     logs = load_logs_from_file(server_logs)
 
-    assert len(logs) == 8
-    connect, auth, login, *additional = logs
-    assert_connect_is_logged(connect, PORT)
+    assert len(logs) == 9
+    connect1, connect2, auth, login, *additional = logs
+    assert_connect_is_logged(connect1, PORT)
+    assert_connect_is_logged(connect2, PORT)
     assert_login_is_logged(login)
 
     assert auth["data"]["command"] == "AUTH"

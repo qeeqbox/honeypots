@@ -80,7 +80,7 @@ class QPJLServer:
 
             def check_bytes(self, string):
                 if isinstance(string, bytes):
-                    return string.decode()
+                    return string.decode(errors="replace")
                 else:
                     return str(string)
 
@@ -109,7 +109,7 @@ class QPJLServer:
                     self.transport.write(prodinfo.encode("utf-8") + b"\x1b")
                 _q_s.logs.info(
                     {
-                        "server": "ntp_server",
+                        "server": "pjl_server",
                         "action": "query",
                         "status": "success",
                         "src_ip": self.transport.getPeer().host,

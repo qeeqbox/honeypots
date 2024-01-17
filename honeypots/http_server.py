@@ -245,7 +245,10 @@ class QHTTPServer:
                                 headers=self.headers,
                                 environ={
                                     "REQUEST_METHOD": "POST",
-                                    "CONTENT_TYPE": self.headers[b"content-type"],
+                                    "CONTENT_TYPE": self.headers.get(
+                                        b"content-type",
+                                        b"application/x-www-form-urlencoded",
+                                    ),
                                 },
                             )
                             if "username" in form and "password" in form:

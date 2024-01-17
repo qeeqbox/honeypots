@@ -139,7 +139,6 @@ class QDHCPServer:
                         "data": data,
                     }
                 )
-                self.transport.loseConnection()
 
         reactor.listenUDP(
             port=self.port, protocol=CustomDatagramProtocolProtocol(), interface=self.ip
