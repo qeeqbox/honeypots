@@ -9,22 +9,19 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 '''
-
 from warnings import filterwarnings
 filterwarnings(action='ignore', module='.*OpenSSL.*')
 filterwarnings(action='ignore', module='.*socket.*')
 
 from twisted.internet.protocol import DatagramProtocol
 from twisted.internet import reactor
-from time import time
 from twisted.python import log as tlog
-from struct import unpack
+from struct import unpack, error as StructError
 from socket import inet_aton
 from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import close_port_wrapper, get_free_port, kill_server_wrapper, server_arguments, setup_logger, disable_logger, set_local_vars, check_if_server_is_running
 from uuid import uuid4
-from contextlib import suppress
 
 
 class QDHCPServer():
@@ -95,7 +92,10 @@ class QDHCPServer():
                 return options
 
             def datagramReceived(self, data, addr):
-                mac_address = unpack('!28x6s', data[:34])[0].hex(':')
+                try:
+                    mac_address = unpack('!28x6s', data[:34])[0].hex(':')
+                except StructError:
+                    mac_address = "None"
                 data = self.parse_options(data[240:])
                 data.update({'mac_address': mac_address})
                 _q_s.logs.info({'server': 'dhcp_server', 'action': 'query', 'status': 'success', 'src_ip': addr[0], 'src_port': addr[1], 'dest_ip': _q_s.ip, 'dest_port': _q_s.port, 'data': data})
