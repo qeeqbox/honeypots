@@ -123,7 +123,6 @@ class QNTPServer:
                         "data": {"version": version, "mode": mode},
                     }
                 )
-                self.transport.loseConnection()
 
         reactor.listenUDP(
             port=self.port, protocol=CustomDatagramProtocolProtocol(), interface=self.ip
