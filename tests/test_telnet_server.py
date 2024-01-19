@@ -24,6 +24,8 @@ PORT = "50023"
     indirect=True,
 )
 def test_telnet_server(server_logs):
+    sleep(1)  # give the server some time to start
+
     telnet_client = Telnet(IP, int(PORT))
     telnet_client.read_until(b"login: ")
     telnet_client.write(USERNAME.encode() + b"\n")
