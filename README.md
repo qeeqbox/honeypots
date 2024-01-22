@@ -253,19 +253,21 @@ qsshserver.kill_server()
     - Port: 21/tcp
     - Lib: Twisted.ftp
     - Logs: ip, port, username and password (default)
-    - Options: Capture all threat actor commands and data (avalible)
+    - Options: Capture all threat actor commands and data (available)
 - QHTTPProxyServer
     - Server: HTTP Proxy
     - Port: 8080/tcp
     - Lib: Twisted (low level emulation)
     - Logs: ip, port and data
-    - Options: Capture all threat actor commands and data (avalible)
+    - Options: Capture all threat actor commands and data (available)
+    - Returns a dummy template by default
+      - A custom template can be provided by setting `"template"` for this server in `config.json` (should be an absolute path) 
 - QHTTPServer
     - Server: HTTP
     - Port: 80/tcp
     - Lib: Twisted.http
     - Logs: ip, port, username and password
-    - Options: Capture all threat actor commands and data (avalible)
+    - Options: Capture all threat actor commands and data (available)
 - QHTTPSServer
     - Server: HTTPS
     - Port: 443/tcp
@@ -276,7 +278,7 @@ qsshserver.kill_server()
     - Port: 143/tcp
     - Lib: Twisted.imap
     - Logs: ip, port, username and password (default)
-    - Options: Capture all threat actor commands and data (avalible)
+    - Options: Capture all threat actor commands and data (available)
 - QMysqlServer
     - Emulator: Mysql
     - Port: 3306/tcp
@@ -287,7 +289,7 @@ qsshserver.kill_server()
     - Port: 110/tcp
     - Lib: Twisted.pop3
     - Logs: ip, port, username and password (default)
-    - Options: Capture all threat actor commands and data (avalible)
+    - Options: Capture all threat actor commands and data (available)
 - QPostgresServer
     - Emulator: Postgres
     - Port: 5432/tcp
@@ -308,7 +310,7 @@ qsshserver.kill_server()
     - Port: 25/tcp
     - Lib: smtpd
     - Logs: ip, port, username and password (default)
-    - Options: Capture all threat actor commands and data (avalible)
+    - Options: Capture all threat actor commands and data (available)
 - QSOCKS5Server
     - Server: SOCK5
     - Port: 1080/tcp
@@ -319,7 +321,7 @@ qsshserver.kill_server()
     - Port: 22/tcp
     - Lib: paramiko
     - Logs: ip, port, username and password
-    - Options: Capture all threat actor commands and data (avalible)
+    - Options: Capture all threat actor commands and data (available)
 - QTelnetServer
     - Server: Telnet
     - Port: 23/tcp
@@ -359,7 +361,7 @@ qsshserver.kill_server()
     - Emulator: Oracle
     - Port: 1521/tcp
     - Lib: Twisted (low level emulation)
-    - Logs: ip, port and connet data
+    - Logs: ip, port and connect data
 - QSNMPServer
     - Emulator: SNMP
     - Port: 161/udp
@@ -370,31 +372,31 @@ qsshserver.kill_server()
     - Port: 5060/udp
     - Lib: Twisted.sip
     - Logs: ip, port and data
-    - Options: Capture all threat actor commands and data (avalible)
+    - Options: Capture all threat actor commands and data (available)
 - QIRCServer
     - Emulator: IRC
     - Port: 6667/tcp
     - Lib: Twisted.irc
     - Logs: ip, port, username and password
-    - Options: Capture all threat actor commands and data (avalible)
+    - Options: Capture all threat actor commands and data (available)
 - QPJLServer
     - Emulator: PJL
     - Port: 9100/tcp
     - Lib: Twisted
     - Logs: ip, port
-    - Options: Capture all threat actor commands and data (avalible)
+    - Options: Capture all threat actor commands and data (available)
 - QIPPServer
     - Emulator: IPP
     - Port: 631/tcp
     - Lib: Twisted
-    - Logs: ip, por
-    - Options: Capture all threat actor commands and data (avalible)
+    - Logs: ip, port
+    - Options: Capture all threat actor commands and data (available)
 - QRDPServer
     - Emulator: RDP
     - Port: 3389/tcp
     - Lib: Sockets
     - Logs: ip, port, username and password
-    - Options: Capture all threat actor commands and data (avalible)
+    - Options: Capture all threat actor commands and data (available)
 - QDHCPServer
     - Emulator: DHCP
     - Port: 67/udp
