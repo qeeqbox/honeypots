@@ -7,7 +7,7 @@ import sys
 from argparse import ArgumentParser, SUPPRESS, Namespace
 from atexit import register
 from functools import wraps
-from json import loads
+from json import JSONDecodeError, loads
 from os import geteuid
 from pathlib import Path
 from signal import alarm, SIGALRM, SIGINT, signal, SIGTERM, SIGTSTP
@@ -182,9 +182,14 @@ class HoneypotsManager:
             logger.error(f'Config file "{config_path}" not found')
             sys.exit(1)
         try:
-            return loads(config_path.read_text())
-        except Exception as error:
-            logger.exception(f"Unable to load or parse config.json file: {error}")
+            config_data = loads(config_path.read_text())
+            logger.info(f"Successfully loaded config file {config_path}")
+            return config_data
+        except FileNotFoundError:
+            logger.error(f"Unable to load config file: File {config_path} not found")
+            sys.exit(1)
+        except JSONDecodeError as error:
+            logger.error(f"Unable to parse config file as JSON: {error}")
             sys.exit(1)
 
     def _set_up_honeypots(self):  # noqa: C901
