@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from time import sleep
-
 import pytest
 
 from honeypots import QMemcacheServer
@@ -10,6 +8,7 @@ from .utils import (
     connect_to,
     IP,
     load_logs_from_file,
+    wait_for_server,
 )
 
 PORT = "61211"
@@ -21,13 +20,9 @@ PORT = "61211"
     indirect=True,
 )
 def test_memcache_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    with connect_to(IP, PORT) as connection:
+    with wait_for_server(PORT), connect_to(IP, PORT) as connection:
         connection.send(b"stats\r\n")
         data, _ = connection.recvfrom(10000)
-
-    sleep(1)  # give the server process some time to write logs
 
     logs = load_logs_from_file(server_logs)
 

@@ -2,8 +2,14 @@ from __future__ import annotations
 
 import json
 from contextlib import contextmanager
-from pathlib import Path
 from socket import AF_INET, IPPROTO_UDP, SOCK_DGRAM, SOCK_STREAM, socket
+from time import sleep, time
+from typing import TYPE_CHECKING
+
+import psutil
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 IP = "127.0.0.1"
 USERNAME = "testing"
@@ -12,7 +18,7 @@ EXPECTED_KEYS = ("action", "dest_ip", "dest_port", "server", "src_ip", "src_port
 
 
 def load_logs_from_file(log_folder: Path) -> list[dict]:
-    log_files = [f for f in log_folder.iterdir()]
+    log_files = list(log_folder.iterdir())
     assert len(log_files) == 1
     log_file = log_files[0]
     logs = []
@@ -53,3 +59,24 @@ def assert_login_is_logged(login: dict[str, str]):
     assert login["username"] == USERNAME
     assert login["password"] == PASSWORD
     assert login["status"] == "success"
+
+
+@contextmanager
+def wait_for_server(port: str | int):
+    _wait_for_service(int(port))
+    yield
+    sleep(0.5)  # give the server process some time to write logs
+
+
+def _wait_for_service(port: int, interval: float = 0.1, timeout: int = 5.0):
+    start_time = time()
+    while True:
+        if _service_runs(port):
+            return
+        sleep(interval)
+        if time() - start_time > timeout:
+            raise TimeoutError()
+
+
+def _service_runs(port: int) -> bool:
+    return any(service.laddr.port == port for service in psutil.net_connections())

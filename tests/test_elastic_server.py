@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from time import sleep
 
 import pytest
 from elasticsearch import Elasticsearch, NotFoundError
@@ -14,6 +13,7 @@ from .utils import (
     load_logs_from_file,
     PASSWORD,
     USERNAME,
+    wait_for_server,
 )
 
 PORT = "59200"
@@ -25,17 +25,13 @@ PORT = "59200"
     indirect=True,
 )
 def test_elastic_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    with suppress(NotFoundError):
+    with wait_for_server(PORT), suppress(NotFoundError):
         elastic = Elasticsearch(
             [f"https://{IP}:{PORT}"],
             basic_auth=(USERNAME, PASSWORD),
             verify_certs=False,
         )
         elastic.search(index="test", body={}, size=99)
-
-    sleep(1)  # give the server process some time to write logs
 
     logs = load_logs_from_file(server_logs)
 

@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from time import sleep
-
 import pytest
 
 from honeypots import QRDPServer
@@ -10,6 +8,7 @@ from .utils import (
     connect_to,
     IP,
     load_logs_from_file,
+    wait_for_server,
 )
 
 PORT = "53389"
@@ -21,15 +20,12 @@ PORT = "53389"
     indirect=True,
 )
 def test_rdp_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    with connect_to(IP, PORT) as connection:
+    with wait_for_server(PORT), connect_to(IP, PORT) as connection:
         connection.send(b"test")
         connection.send(
-            b"\x03\x00\x00*%\xe0\x00\x00\x00\x00\x00Cookie: mstshash=foobar\r\n\x01\x00\x08\x00\x03\x00\x00"
+            b"\x03\x00\x00*%\xe0\x00\x00\x00\x00\x00Cookie: "
+            b"mstshash=foobar\r\n\x01\x00\x08\x00\x03\x00\x00"
         )
-
-    sleep(1)  # give the server process some time to write logs
 
     logs = load_logs_from_file(server_logs)
 

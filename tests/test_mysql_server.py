@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from time import sleep
 
 import mysql.connector
 import pytest
@@ -14,6 +13,7 @@ from .utils import (
     load_logs_from_file,
     PASSWORD,
     USERNAME,
+    wait_for_server,
 )
 
 PORT = "53306"
@@ -25,9 +25,7 @@ PORT = "53306"
     indirect=True,
 )
 def test_mysql_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    with suppress(mysql.connector.errors.OperationalError):
+    with wait_for_server(PORT), suppress(mysql.connector.errors.OperationalError):
         connection = mysql.connector.connect(
             user=USERNAME,
             password=PASSWORD,
@@ -37,8 +35,6 @@ def test_mysql_server(server_logs):
             connect_timeout=1000,
         )
         connection.close()
-
-    sleep(1)  # give the server process some time to write logs
 
     logs = load_logs_from_file(server_logs)
 

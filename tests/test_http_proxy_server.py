@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-from time import sleep
 
 import pytest
 import requests
@@ -11,9 +10,11 @@ from .utils import (
     assert_connect_is_logged,
     IP,
     load_logs_from_file,
+    wait_for_server,
 )
 
 PORT = "58080"
+PORT_2 = "58081"
 SERVER_CONFIG = {
     "honeypots": {
         "httpproxy": {
@@ -29,19 +30,16 @@ SERVER_CONFIG = {
     indirect=True,
 )
 def test_http_proxy_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    response = requests.get(
-        "http://example.com/",
-        proxies={"http": f"http://{IP}:{PORT}"},
-        timeout=2,
-    )
-
-    sleep(1)  # give the server process some time to write logs
+    with wait_for_server(PORT):
+        response = requests.get(
+            "http://example.com/",
+            proxies={"http": f"http://{IP}:{PORT}"},
+            timeout=2,
+        )
 
     logs = load_logs_from_file(server_logs)
 
-    assert len(logs) == 2  # noqa: PLR2004
+    assert len(logs) == 2
     connect, query = logs
     assert_connect_is_logged(connect, PORT)
 
@@ -67,22 +65,19 @@ CUSTOM_TEMPLATE_CONFIG = {
     [
         {
             "server": QHTTPProxyServer,
-            "port": str(int(PORT) + 1),
+            "port": PORT_2,
             "custom_config": CUSTOM_TEMPLATE_CONFIG,
         }
     ],
     indirect=True,
 )
 def test_custom_template(server_logs):  # noqa: ARG001
-    sleep(1)  # give the server some time to start
-
-    response = requests.get(
-        "http://example.com/",
-        proxies={"http": f"http://{IP}:{int(PORT) + 1!s}"},
-        timeout=2,
-    )
-
-    sleep(1)  # give the server process some time to write logs
+    with wait_for_server(PORT_2):
+        response = requests.get(
+            "http://example.com/",
+            proxies={"http": f"http://{IP}:{PORT_2}"},
+            timeout=2,
+        )
 
     assert response.ok
     assert "This is a template for testing!" in response.text, "custom template is missing"

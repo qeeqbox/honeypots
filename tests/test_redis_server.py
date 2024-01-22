@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from time import sleep
 
 import pytest
 from redis import AuthenticationError, StrictRedis
@@ -14,6 +13,7 @@ from .utils import (
     load_logs_from_file,
     PASSWORD,
     USERNAME,
+    wait_for_server,
 )
 
 PORT = "56379"
@@ -25,12 +25,10 @@ PORT = "56379"
     indirect=True,
 )
 def test_redis_server(server_logs):
-    with suppress(AuthenticationError):
+    with wait_for_server(PORT), suppress(AuthenticationError):
         redis = StrictRedis.from_url(f"redis://{USERNAME}:{PASSWORD}@{IP}:{PORT}/1")
         for _ in redis.scan_iter("user:*"):
             pass
-
-    sleep(1)  # give the server process some time to write logs
 
     logs = load_logs_from_file(server_logs)
 
