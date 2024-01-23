@@ -12,33 +12,27 @@
 
 from cgi import FieldStorage
 from contextlib import suppress
-from os import getenv, path
+from os import path
 from random import choice
-from subprocess import Popen
 from tempfile import _get_candidate_names, gettempdir
-from uuid import uuid4
 
 from OpenSSL import crypto
 from twisted.internet import reactor, ssl
 from twisted.web.resource import Resource
 from twisted.web.server import Site
 
+from honeypots.base_server import BaseServer
 from honeypots.helper import (
-    check_if_server_is_running,
-    close_port_wrapper,
-    get_free_port,
-    kill_server_wrapper,
     server_arguments,
-    set_local_vars,
-    setup_logger,
 )
 
 
-class QHTTPSServer:
+class QHTTPSServer(BaseServer):
+    NAME = "https_server"
+    DEFAULT_PORT = 443
+
     def __init__(self, **kwargs):
-        self.auto_disabled = None
-        self.key = path.join(gettempdir(), next(_get_candidate_names()))
-        self.cert = path.join(gettempdir(), next(_get_candidate_names()))
+        super().__init__(**kwargs)
         self.mocking_server = choice(
             [
                 "Apache",
@@ -62,32 +56,8 @@ class QHTTPSServer:
                 "Apache/2.2.22",
             ]
         )
-        self.process = None
-        self.uuid = "honeypotslogger" + "_" + __class__.__name__ + "_" + str(uuid4())[:8]
-        self.config = kwargs.get("config", "")
-        if self.config:
-            self.logs = setup_logger(__class__.__name__, self.uuid, self.config)
-            set_local_vars(self, self.config)
-        else:
-            self.logs = setup_logger(__class__.__name__, self.uuid, None)
-        self.ip = kwargs.get("ip", None) or (hasattr(self, "ip") and self.ip) or "0.0.0.0"
-        self.port = (
-            (kwargs.get("port", None) and int(kwargs.get("port", None)))
-            or (hasattr(self, "port") and self.port)
-            or 443
-        )
-        self.username = (
-            kwargs.get("username", None) or (hasattr(self, "username") and self.username) or "test"
-        )
-        self.password = (
-            kwargs.get("password", None) or (hasattr(self, "password") and self.password) or "test"
-        )
-        self.options = (
-            kwargs.get("options", "")
-            or (hasattr(self, "options") and self.options)
-            or getenv("HONEYPOTS_OPTIONS", "")
-            or ""
-        )
+        self.key = path.join(gettempdir(), next(_get_candidate_names()))
+        self.cert = path.join(gettempdir(), next(_get_candidate_names()))
 
     def CreateCert(self, host_name, key, cert):
         pk = crypto.PKey()
@@ -109,7 +79,7 @@ class QHTTPSServer:
         open(cert, "wb").write(crypto.dump_certificate(crypto.FILETYPE_PEM, c))
         open(key, "wb").write(crypto.dump_privatekey(crypto.FILETYPE_PEM, pk))
 
-    def https_server_main(self):
+    def server_main(self):
         _q_s = self
 
         class MainResource(Resource):
@@ -307,73 +277,6 @@ class QHTTPSServer:
         ssl_context = ssl.DefaultOpenSSLContextFactory(self.key, self.cert)
         reactor.listenSSL(self.port, Site(MainResource()), ssl_context)
         reactor.run()
-
-    def run_server(self, process=False, auto=False):
-        status = "error"
-        run = False
-        if process:
-            if auto and not self.auto_disabled:
-                port = get_free_port()
-                if port > 0:
-                    self.port = port
-                    run = True
-            elif self.close_port() and self.kill_server():
-                run = True
-
-            if run:
-                self.process = Popen(
-                    [
-                        "python3",
-                        path.realpath(__file__),
-                        "--custom",
-                        "--ip",
-                        str(self.ip),
-                        "--port",
-                        str(self.port),
-                        "--username",
-                        str(self.username),
-                        "--password",
-                        str(self.password),
-                        "--options",
-                        str(self.options),
-                        "--config",
-                        str(self.config),
-                        "--uuid",
-                        str(self.uuid),
-                    ]
-                )
-                if self.process.poll() is None and check_if_server_is_running(self.uuid):
-                    status = "success"
-
-            self.logs.info(
-                {
-                    "server": "https_server",
-                    "action": "process",
-                    "status": status,
-                    "src_ip": self.ip,
-                    "src_port": self.port,
-                    "username": self.username,
-                    "password": self.password,
-                    "dest_ip": self.ip,
-                    "dest_port": self.port,
-                }
-            )
-
-            if status == "success":
-                return True
-            else:
-                self.kill_server()
-                return False
-        else:
-            self.https_server_main()
-
-    def close_port(self):
-        ret = close_port_wrapper("https_server", self.ip, self.port, self.logs)
-        return ret
-
-    def kill_server(self):
-        ret = kill_server_wrapper("https_server", self.uuid, self.process)
-        return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
         with suppress(Exception):
