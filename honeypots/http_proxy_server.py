@@ -154,7 +154,7 @@ class QHTTPProxyServer:
             self.process = Popen(
                 split(
                     f"python3 {Path(__file__)} --custom --ip {self.ip} --port {self.port} "
-                    f"--options {self.options} --config {self.config} --uuid {self.uuid}"
+                    f"--options '{self.options}' --config '{self.config}' --uuid {self.uuid}"
                 )
             )
             if self.process.poll() is None and check_if_server_is_running(self.uuid):
