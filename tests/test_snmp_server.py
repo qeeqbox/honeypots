@@ -1,7 +1,15 @@
 from __future__ import annotations
 
 import pytest
-from pysnmp.hlapi import CommunityData, ContextData, getCmd, ObjectIdentity, ObjectType, SnmpEngine, UdpTransportTarget
+from pysnmp.hlapi import (
+    CommunityData,
+    ContextData,
+    getCmd,
+    ObjectIdentity,
+    ObjectType,
+    SnmpEngine,
+    UdpTransportTarget,
+)
 
 from honeypots import QSNMPServer
 from .utils import (
@@ -35,4 +43,8 @@ def test_snmp_server(server_logs):
     assert_connect_is_logged(connect, PORT)
 
     assert query["action"] == "query"
-    assert query["data"] == {"community": "public", "oids": "1.3.6.1.4.1.9.9.618.1.4.1.0", "version": "1"}
+    assert query["data"] == {
+        "community": "public",
+        "oids": "1.3.6.1.4.1.9.9.618.1.4.1.0",
+        "version": "1",
+    }

@@ -27,7 +27,7 @@ def config_for_testing(custom_config: dict) -> Iterator[Path]:
         yield config
 
 
-@pytest.fixture
+@pytest.fixture()
 def server_logs(request):
     custom_config = request.param.get("custom_config", {})
     with config_for_testing(custom_config) as config_file:
