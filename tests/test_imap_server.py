@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from contextlib import suppress
 from imaplib import IMAP4
-from time import sleep
 
 import pytest
 
@@ -14,6 +13,7 @@ from .utils import (
     load_logs_from_file,
     PASSWORD,
     USERNAME,
+    wait_for_server,
 )
 
 PORT = "50143"
@@ -32,13 +32,9 @@ SERVER_CONFIG = {
     indirect=True,
 )
 def test_imap_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    with suppress(IMAP4.error):
+    with wait_for_server(PORT), suppress(IMAP4.error):
         imap_test = IMAP4(IP, int(PORT))
         imap_test.login(USERNAME, PASSWORD)
-
-    sleep(1)  # give the server process some time to write logs
 
     logs = load_logs_from_file(server_logs)
 

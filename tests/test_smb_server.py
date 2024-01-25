@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from time import sleep
-
 import pytest
 from impacket.smbconnection import SMBConnection
 
@@ -12,6 +10,7 @@ from .utils import (
     load_logs_from_file,
     PASSWORD,
     USERNAME,
+    wait_for_server,
 )
 
 PORT = "50445"
@@ -23,13 +22,10 @@ PORT = "50445"
     indirect=True,
 )
 def test_smb_server(server_logs):
-    sleep(5)  # give the server some time to start
-
-    smb_client = SMBConnection(IP, IP, sess_port=PORT)
-    smb_client.login(USERNAME, PASSWORD)
-    smb_client.close()
-
-    sleep(1)  # give the server process some time to write logs
+    with wait_for_server(PORT):
+        smb_client = SMBConnection(IP, IP, sess_port=PORT)
+        smb_client.login(USERNAME, PASSWORD)
+        smb_client.close()
 
     logs = load_logs_from_file(server_logs)
 

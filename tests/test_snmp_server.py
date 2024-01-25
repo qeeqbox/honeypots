@@ -16,6 +16,7 @@ from .utils import (
     assert_connect_is_logged,
     IP,
     load_logs_from_file,
+    wait_for_server,
 )
 
 PORT = "50161"
@@ -27,14 +28,15 @@ PORT = "50161"
     indirect=True,
 )
 def test_snmp_server(server_logs):
-    g = getCmd(
-        SnmpEngine(),
-        CommunityData("public"),
-        UdpTransportTarget((IP, int(PORT))),
-        ContextData(),
-        ObjectType(ObjectIdentity("1.3.6.1.4.1.9.9.618.1.4.1.0")),
-    )
-    next(g)
+    with wait_for_server(PORT):
+        g = getCmd(
+            SnmpEngine(),
+            CommunityData("public"),
+            UdpTransportTarget((IP, int(PORT))),
+            ContextData(),
+            ObjectType(ObjectIdentity("1.3.6.1.4.1.9.9.618.1.4.1.0")),
+        )
+        next(g)
 
     logs = load_logs_from_file(server_logs)
 

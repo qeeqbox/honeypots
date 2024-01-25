@@ -1,12 +1,17 @@
 from __future__ import annotations
 
-from time import sleep
-
 import pytest
 from paramiko import AutoAddPolicy, SSHClient
 
 from honeypots import QSSHServer
-from .utils import assert_connect_is_logged, IP, load_logs_from_file, PASSWORD, USERNAME
+from .utils import (
+    assert_connect_is_logged,
+    IP,
+    load_logs_from_file,
+    PASSWORD,
+    USERNAME,
+    wait_for_server,
+)
 
 PORT = 50022
 SERVER_CONFIG = {
@@ -24,14 +29,11 @@ SERVER_CONFIG = {
     indirect=True,
 )
 def test_ssh_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    ssh = SSHClient()
-    ssh.set_missing_host_key_policy(AutoAddPolicy())
-    ssh.connect(IP, port=PORT, username=USERNAME, password=PASSWORD)
-    ssh.close()
-
-    sleep(1)  # give the server process some time to write logs
+    with wait_for_server(PORT):
+        ssh = SSHClient()
+        ssh.set_missing_host_key_policy(AutoAddPolicy())
+        ssh.connect(IP, port=PORT, username=USERNAME, password=PASSWORD)
+        ssh.close()
 
     logs = load_logs_from_file(server_logs)
 

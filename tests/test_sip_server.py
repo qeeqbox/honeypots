@@ -1,11 +1,9 @@
 from __future__ import annotations
 
-from time import sleep
-
 import pytest
 
 from honeypots import QSIPServer
-from .utils import connect_to, IP, load_logs_from_file
+from .utils import connect_to, IP, load_logs_from_file, wait_for_server
 
 PORT = "55060"
 EXPECTED_KEYS = ("action", "server", "src_ip", "src_port", "timestamp")
@@ -21,9 +19,7 @@ TO = "<sip:user_2@test.test>"
     indirect=True,
 )
 def test_sip_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    with connect_to(IP, PORT, udp=True) as connection:
+    with wait_for_server(PORT), connect_to(IP, PORT, udp=True) as connection:
         payload = (
             "INVITE sip:user_1@test.test SIP/2.0\r\n"
             f"To: {TO}\r\n"
@@ -37,8 +33,6 @@ def test_sip_server(server_logs):
             "T"
         )
         connection.send(payload.encode())
-
-    sleep(1)  # give the server process some time to write logs
 
     logs = load_logs_from_file(server_logs)
 

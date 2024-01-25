@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from time import sleep
 
 import pytest
 from psycopg2 import connect, OperationalError
@@ -14,6 +13,7 @@ from .utils import (
     load_logs_from_file,
     PASSWORD,
     USERNAME,
+    wait_for_server,
 )
 
 PORT = "55432"
@@ -25,12 +25,8 @@ PORT = "55432"
     indirect=True,
 )
 def test_postgres_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    with suppress(OperationalError):
-        db = connect(host=IP, port=PORT, user=USERNAME, password=PASSWORD)
-
-    sleep(1)  # give the server process some time to write logs
+    with wait_for_server(PORT), suppress(OperationalError):
+        connect(host=IP, port=PORT, user=USERNAME, password=PASSWORD)
 
     logs = load_logs_from_file(server_logs)
 

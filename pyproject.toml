@@ -144,3 +144,7 @@ exclude = [
 ]
 line-length = 99
 target-version = "py38"
+
+[tool.ruff.lint.per-file-ignores]
+# don't check for "magic value" in tests
+"tests/*" = ["PLR2004"]
