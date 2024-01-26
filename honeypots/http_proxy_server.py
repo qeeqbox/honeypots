@@ -11,59 +11,29 @@
 """
 from __future__ import annotations
 
+from contextlib import suppress
+from email.parser import BytesParser
 from pathlib import Path
-from shlex import split
 
 from dns.resolver import resolve as dsnquery
 from twisted.internet import reactor
 from twisted.internet.protocol import Protocol, Factory
-from subprocess import Popen
-from email.parser import BytesParser
-from os import getenv
-from honeypots.helper import (
-    close_port_wrapper,
-    get_free_port,
-    kill_server_wrapper,
-    server_arguments,
-    set_up_error_logging,
-    setup_logger,
-    set_local_vars,
-    check_if_server_is_running,
-)
-from uuid import uuid4
-from contextlib import suppress
 
+from honeypots.base_server import BaseServer
+from honeypots.helper import (
+    server_arguments,
+)
 
 DUMMY_TEMPLATE = (Path(__file__).parent / "data" / "dummy_page.html").read_text()
 
 
-class QHTTPProxyServer:
+class QHTTPProxyServer(BaseServer):
     NAME = "http_proxy_server"
+    DEFAULT_PORT = 8080
 
     def __init__(self, **kwargs):
-        self.auto_disabled = None
-        self.process = None
-        self.uuid = "honeypotslogger" + "_" + __class__.__name__ + "_" + str(uuid4())[:8]
-        self.config = kwargs.get("config", "")
         self.template: str | None = None
-        if self.config:
-            self.logs = setup_logger(__class__.__name__, self.uuid, self.config)
-            set_local_vars(self, self.config)
-        else:
-            self.logs = setup_logger(__class__.__name__, self.uuid, None)
-        self.ip = kwargs.get("ip", None) or (hasattr(self, "ip") and self.ip) or "0.0.0.0"
-        self.port = (
-            (kwargs.get("port", None) and int(kwargs.get("port", None)))
-            or (hasattr(self, "port") and self.port)
-            or 8080
-        )
-        self.options = (
-            kwargs.get("options", "")
-            or (hasattr(self, "options") and self.options)
-            or getenv("HONEYPOTS_OPTIONS", "")
-            or ""
-        )
-        self.logger = set_up_error_logging()
+        super().__init__(**kwargs)
         self.template_contents: str | None = self._load_template()
 
     def _load_template(self) -> str | None:
@@ -78,7 +48,7 @@ class QHTTPProxyServer:
                 self.logger.error(f"[{self.NAME}]: Template file {self.template} not found")
         return None
 
-    def http_proxy_server_main(self):
+    def server_main(self):
         _q_s = self
 
         class CustomProtocolParent(Protocol):
@@ -134,54 +104,6 @@ class QHTTPProxyServer:
         factory.protocol = CustomProtocolParent
         reactor.listenTCP(port=self.port, factory=factory, interface=self.ip)
         reactor.run()
-
-    def run_server(self, process=False, auto=False) -> bool | None:
-        status = "error"
-        run = False
-        if not process:
-            self.http_proxy_server_main()
-            return None
-
-        if auto and not self.auto_disabled:
-            port = get_free_port()
-            if port > 0:
-                self.port = port
-                run = True
-        elif self.close_port() and self.kill_server():
-            run = True
-
-        if run:
-            self.process = Popen(
-                split(
-                    f"python3 {Path(__file__)} --custom --ip {self.ip} --port {self.port} "
-                    f"--options '{self.options}' --config '{self.config}' --uuid {self.uuid}"
-                )
-            )
-            if self.process.poll() is None and check_if_server_is_running(self.uuid):
-                status = "success"
-
-        self.logs.info(
-            {
-                "server": self.NAME,
-                "action": "process",
-                "status": status,
-                "src_ip": self.ip,
-                "src_port": self.port,
-                "dest_ip": self.ip,
-                "dest_port": self.port,
-            }
-        )
-
-        if status == "success":
-            return True
-        self.kill_server()
-        return False
-
-    def close_port(self):
-        return close_port_wrapper(self.NAME, self.ip, self.port, self.logs)
-
-    def kill_server(self):
-        return kill_server_wrapper(self.NAME, self.uuid, self.process)
 
     def test_server(self, ip=None, port=None, domain=None):
         with suppress(Exception):
