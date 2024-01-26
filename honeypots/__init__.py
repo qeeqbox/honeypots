@@ -1,11 +1,9 @@
-#!/usr/bin/env python
-from .__main__ import main_logic
 from .dhcp_server import QDHCPServer
 from .dns_server import QDNSServer
 from .elastic_server import QElasticServer
 from .ftp_server import QFTPServer
 from .helper import (
-    check_privileges,
+    is_privileged,
     clean_all,
     close_port_wrapper,
     disable_logger,
@@ -17,6 +15,7 @@ from .helper import (
     server_arguments,
     set_local_vars,
     setup_logger,
+    set_up_error_logging,
 )
 from .http_proxy_server import QHTTPProxyServer
 from .http_server import QHTTPServer
@@ -76,7 +75,7 @@ __all__ = [
     "QSSHServer",
     "QTelnetServer",
     "QVNCServer",
-    "check_privileges",
+    "is_privileged",
     "clean_all",
     "close_port_wrapper",
     "disable_logger",
@@ -84,9 +83,9 @@ __all__ = [
     "get_running_servers",
     "kill_server_wrapper",
     "kill_servers",
-    "main_logic",
     "postgres_class",
     "server_arguments",
     "set_local_vars",
     "setup_logger",
+    "set_up_error_logging",
 ]
