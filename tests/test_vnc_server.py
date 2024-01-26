@@ -32,5 +32,9 @@ def test_vnc_server(server_logs):
 
     logs = load_logs_from_file(server_logs)
 
-    assert len(logs) == 1
-    assert_connect_is_logged(logs[0], PORT)
+    assert len(logs) == 2
+    connection, login = logs
+    assert_connect_is_logged(connection, PORT)
+    assert login["action"] == "login"
+    assert login["username"] == "None"  # FixMe: seems to be "None" even with a user
+    assert login["password"]  # we can't check the PW because it is encrypted
