@@ -102,7 +102,7 @@ class QVNCServer(BaseServer):
                             {
                                 "server": "vnc_server",
                                 "action": "login",
-                                status: "failed",
+                                "status": status,
                                 "src_ip": self.transport.getPeer().host,
                                 "src_port": self.transport.getPeer().port,
                                 "dest_ip": _q_s.ip,
