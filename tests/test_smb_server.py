@@ -27,12 +27,15 @@ def test_smb_server(server_logs):
         smb_client.login(USERNAME, PASSWORD)
         smb_client.close()
 
-    logs = load_logs_from_file(server_logs)
+    *connects, login = load_logs_from_file(server_logs)
 
-    assert len(logs) == 3
-    for entry in logs:
+    assert len(connects) == 3
+    for entry in connects:
         assert_connect_is_logged(entry, PORT)
 
-    assert "Incoming connection" in logs[0]["data"]
-    assert "AUTHENTICATE_MESSAGE" in logs[1]["data"]
-    assert "authenticated successfully" in logs[2]["data"]
+    assert "Incoming connection" in connects[0]["data"]
+    assert "AUTHENTICATE_MESSAGE" in connects[1]["data"]
+    assert "authenticated successfully" in connects[2]["data"]
+
+    assert login["action"] == "login"
+    assert login["username"] == USERNAME
