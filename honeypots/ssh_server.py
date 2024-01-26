@@ -184,11 +184,11 @@ class QSSHServer(BaseServer):
                 conn = t.accept(30)
                 if "interactive" in _q_s.options and conn is not None:
                     conn.send(
-                        "Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.10.60.1-microsoft-standard-WSL2 x86_64)\r\n\r\n"
+                        b"Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.10.60.1-microsoft-standard-WSL2 x86_64)\r\n\r\n"
                     )
                     current_time = time()
                     while True and time() < current_time + 10:
-                        conn.send("/$ ")
+                        conn.send(b"/$ ")
                         line = ""
                         while (
                             not line.endswith("\x0d")
@@ -199,7 +199,7 @@ class QSSHServer(BaseServer):
                             recv = conn.recv(1).decode()
                             conn.settimeout(None)
                             if _q_s.ansi.match(recv) is None and recv != "\x7f":
-                                conn.send(recv)
+                                conn.send(recv.encode())
                                 line += recv
                         line = line.rstrip()
                         _q_s.logs.info(
@@ -215,16 +215,18 @@ class QSSHServer(BaseServer):
                         )
                         if line == "ls":
                             conn.send(
-                                "\r\nbin cdrom etc lib lib64 lost+found mnt proc run snap swapfile tmp var boot dev home lib32 libx32 media opt root sbin srv sys usr\r\n"
+                                b"\r\nbin cdrom etc lib lib64 lost+found mnt proc run snap "
+                                b"swapfile tmp var boot dev home lib32 libx32 media opt root "
+                                b"sbin srv sys usr\r\n"
                             )
                         elif line == "pwd":
-                            conn.send("\r\n/\r\n")
+                            conn.send(b"\r\n/\r\n")
                         elif line == "whoami":
-                            conn.send("\r\nroot\r\n")
+                            conn.send(b"\r\nroot\r\n")
                         elif line == "exit":
                             break
                         else:
-                            conn.send(f"\r\n{line}: command not found\r\n")
+                            conn.send(f"\r\n{line}: command not found\r\n".encode())
                 with suppress(Exception):
                     sshhandle.event.wait(2)
                 with suppress(Exception):
