@@ -42,42 +42,42 @@ class QSMBServer(BaseServer):
 
         class Logger:
             def write(self, message):
-                with suppress(Exception):
-                    temp = current_thread().name
-                    if temp.startswith("thread_"):
-                        ip = temp.split("_")[1]
-                        port = temp.split("_")[2]
-                        if (
-                            "Incoming connection" in message.strip()
-                            or "AUTHENTICATE_MESSAGE" in message.strip()
-                            or "authenticated successfully" in message.strip()
-                        ):
+                temp = current_thread().name
+                if temp.startswith("thread_"):
+                    ip = temp.split("_")[1]
+                    port = temp.split("_")[2]
+                    if (
+                        "Incoming connection" in message.strip()
+                        or "AUTHENTICATE_MESSAGE" in message.strip()
+                        or "authenticated successfully" in message.strip()
+                    ):
+                        _q_s.logs.info(
+                            {
+                                "server": _q_s.NAME,
+                                "action": "connection",
+                                "data": message.strip(),
+                                "src_ip": ip,
+                                "src_port": port,
+                                "dest_ip": _q_s.ip,
+                                "dest_port": _q_s.port,
+                            }
+                        )
+                    elif ":aaaaaaaaaaaaaaaa:" in message.strip():
+                        parsed = message.strip().split(":")
+                        if len(parsed) == 6:
+                            username, _, _, _, nt_res_1, nt_res_2 = parsed
                             _q_s.logs.info(
                                 {
                                     "server": _q_s.NAME,
-                                    "action": "connection",
-                                    "data": message.strip(),
+                                    "action": "login",
+                                    "username": username,
                                     "src_ip": ip,
                                     "src_port": port,
                                     "dest_ip": _q_s.ip,
                                     "dest_port": _q_s.port,
+                                    "data": {"nt_data_1": nt_res_1, "nt_data_2": nt_res_2},
                                 }
                             )
-                        elif ":4141414141414141:" in message.strip():
-                            parsed = message.strip().split(":")
-                            if len(parsed) > 2:
-                                _q_s.logs.info(
-                                    {
-                                        "server": _q_s.NAME,
-                                        "action": "login",
-                                        "workstation": parsed[0],
-                                        "test": parsed[1],
-                                        "src_ip": ip,
-                                        "src_port": port,
-                                        "dest_ip": _q_s.ip,
-                                        "dest_port": _q_s.port,
-                                    }
-                                )
 
         class SMBSERVERHandler(smbserver.SMBSERVERHandler):
             def __init__(self, request, client_address, server, select_poll=False):
