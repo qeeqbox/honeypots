@@ -228,7 +228,7 @@ class QHTTPSServer(BaseServer):
 
                 elif request.method == b"POST":
                     self.headers = request.getAllHeaders()
-                    if request.uri == b"/login.html" or b"/":
+                    if request.uri in (b"/login.html", b"/"):
                         if _q_s.username != "" and _q_s.password != "":
                             form = FieldStorage(
                                 fp=request.content,
