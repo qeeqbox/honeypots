@@ -26,6 +26,7 @@ from twisted.mail.imap4 import (
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -43,12 +44,6 @@ class QIMAPServer(BaseServer):
         _q_s = self
 
         class CustomIMAP4Server(IMAP4Server):
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
-
             def parse_command(self, line):
                 args = line.split(None, 2)
                 rest = None
@@ -71,12 +66,12 @@ class QIMAPServer(BaseServer):
                     if "capture_commands" in _q_s.options:
                         _q_s.logs.info(
                             {
-                                "server": "imap_server",
+                                "server": _q_s.NAME,
                                 "action": "command",
                                 "data": {
-                                    "cmd": self.check_bytes(cmd),
-                                    "tag": self.check_bytes(tag),
-                                    "data": self.check_bytes(rest),
+                                    "cmd": check_bytes(cmd),
+                                    "tag": check_bytes(tag),
+                                    "data": check_bytes(rest),
                                 },
                                 "src_ip": self.transport.getPeer().host,
                                 "src_port": self.transport.getPeer().port,
@@ -97,7 +92,7 @@ class QIMAPServer(BaseServer):
             def connectionMade(self):
                 _q_s.logs.info(
                     {
-                        "server": "imap_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
@@ -108,8 +103,8 @@ class QIMAPServer(BaseServer):
                 self.sendPositiveResponse(message=_q_s.mocking_server)
 
             def authenticateLogin(self, user, passwd):
-                username = self.check_bytes(user)
-                password = self.check_bytes(passwd)
+                username = check_bytes(user)
+                password = check_bytes(passwd)
                 status = "failed"
                 if username == _q_s.username and password == _q_s.password:
                     username = _q_s.username
@@ -117,7 +112,7 @@ class QIMAPServer(BaseServer):
                     status = "success"
                 _q_s.logs.info(
                     {
-                        "server": "imap_server",
+                        "server": _q_s.NAME,
                         "action": "login",
                         "status": status,
                         "src_ip": self.transport.getPeer().host,

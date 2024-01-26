@@ -19,6 +19,7 @@ from twisted.words import service
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -114,13 +115,6 @@ class QIRCServer(BaseServer):
             c.setblocking(False)
             c.send(f"PASS {_password}\n".encode())
             c.close()
-
-
-def check_bytes(string):
-    if isinstance(string, bytes):
-        return string.decode(errors="replace")
-    else:
-        return str(string)
 
 
 if __name__ == "__main__":

@@ -34,6 +34,7 @@ from paramiko.ssh_exception import SSHException
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -64,13 +65,6 @@ class QSSHServer(BaseServer):
                 self.ip = ip
                 self.port = port
                 self.event = Event()
-                # ServerInterface.__init__(self)
-
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
 
             def check_channel_request(self, kind, chanid):
                 if kind == "session":
@@ -78,8 +72,8 @@ class QSSHServer(BaseServer):
                 return OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
 
             def check_auth_password(self, username, password):
-                username = self.check_bytes(username)
-                password = self.check_bytes(password)
+                username = check_bytes(username)
+                password = check_bytes(password)
                 status = "failed"
                 if username == _q_s.username and password == _q_s.password:
                     username = _q_s.username
@@ -88,7 +82,7 @@ class QSSHServer(BaseServer):
                 if status == "success":
                     _q_s.logs.info(
                         {
-                            "server": "ssh_server",
+                            "server": _q_s.NAME,
                             "action": "login",
                             "status": status,
                             "src_ip": self.ip,
@@ -102,7 +96,7 @@ class QSSHServer(BaseServer):
                     return AUTH_SUCCESSFUL
                 _q_s.logs.info(
                     {
-                        "server": "ssh_server",
+                        "server": _q_s.NAME,
                         "action": "login",
                         "status": status,
                         "src_ip": self.ip,
@@ -119,13 +113,13 @@ class QSSHServer(BaseServer):
                 if "capture_commands" in _q_s.options:
                     _q_s.logs.info(
                         {
-                            "server": "ssh_server",
+                            "server": _q_s.NAME,
                             "action": "command",
                             "src_ip": self.ip,
                             "src_port": self.port,
                             "dest_ip": _q_s.ip,
                             "dest_port": _q_s.port,
-                            "data": {"command": self.check_bytes(command)},
+                            "data": {"command": check_bytes(command)},
                         }
                     )
                 self.event.set()
@@ -137,14 +131,14 @@ class QSSHServer(BaseServer):
             def check_auth_publickey(self, username, key):
                 _q_s.logs.info(
                     {
-                        "server": "ssh_server",
+                        "server": _q_s.NAME,
                         "action": "login",
                         "src_ip": self.ip,
                         "src_port": self.port,
                         "dest_ip": _q_s.ip,
                         "dest_port": _q_s.port,
-                        "username": self.check_bytes(username),
-                        "key_fingerprint": self.check_bytes(hexlify(key.get_fingerprint())),
+                        "username": check_bytes(username),
+                        "key_fingerprint": check_bytes(hexlify(key.get_fingerprint())),
                     }
                 )
                 return AUTH_SUCCESSFUL
@@ -166,7 +160,7 @@ class QSSHServer(BaseServer):
                 ip, port = client.getpeername()
                 _q_s.logs.info(
                     {
-                        "server": "ssh_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": ip,
                         "src_port": port,
@@ -204,7 +198,7 @@ class QSSHServer(BaseServer):
                         line = line.rstrip()
                         _q_s.logs.info(
                             {
-                                "server": "ssh_server",
+                                "server": _q_s.NAME,
                                 "action": "interactive",
                                 "src_ip": ip,
                                 "src_port": port,

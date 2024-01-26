@@ -18,6 +18,7 @@ from twisted.internet.protocol import Factory, Protocol
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -53,17 +54,11 @@ class QPJLServer(BaseServer):
         class Custompjlrotocol(Protocol):
             _state = None
 
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode(errors="replace")
-                else:
-                    return str(string)
-
             def connectionMade(self):
                 self._state = 1
                 _q_s.logs.info(
                     {
-                        "server": "pjl_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
@@ -84,14 +79,14 @@ class QPJLServer(BaseServer):
                     self.transport.write(prodinfo.encode("utf-8") + b"\x1b")
                 _q_s.logs.info(
                     {
-                        "server": "pjl_server",
+                        "server": _q_s.NAME,
                         "action": "query",
                         "status": "success",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
                         "dest_ip": _q_s.ip,
                         "dest_port": _q_s.port,
-                        "data": {"command": self.check_bytes(data)},
+                        "data": {"command": check_bytes(data)},
                     }
                 )
                 self.transport.loseConnection()

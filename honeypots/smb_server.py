@@ -54,7 +54,7 @@ class QSMBServer(BaseServer):
                         ):
                             _q_s.logs.info(
                                 {
-                                    "server": "smb_server",
+                                    "server": _q_s.NAME,
                                     "action": "connection",
                                     "data": message.strip(),
                                     "src_ip": ip,
@@ -68,7 +68,7 @@ class QSMBServer(BaseServer):
                             if len(parsed) > 2:
                                 _q_s.logs.info(
                                     {
-                                        "server": "smb_server",
+                                        "server": _q_s.NAME,
                                         "action": "login",
                                         "workstation": parsed[0],
                                         "test": parsed[1],

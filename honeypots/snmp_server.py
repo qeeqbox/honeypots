@@ -47,7 +47,7 @@ class QSNMPServer(BaseServer):
             def datagramReceived(self, data, addr):
                 _q_s.logs.info(
                     {
-                        "server": "snmp_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "status": "fail",
                         "src_ip": addr[0],
@@ -60,7 +60,7 @@ class QSNMPServer(BaseServer):
                 if version or community or oids:
                     _q_s.logs.info(
                         {
-                            "server": "snmp_server",
+                            "server": _q_s.NAME,
                             "action": "query",
                             "status": "success",
                             "src_ip": addr[0],

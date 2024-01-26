@@ -19,6 +19,7 @@ from twisted.internet.protocol import Factory
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -42,12 +43,6 @@ class QTelnetServer(BaseServer):
             _user = None
             _pass = None
 
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
-
             def connectionMade(self):
                 self._state = None
                 self._user = None
@@ -56,7 +51,7 @@ class QTelnetServer(BaseServer):
                 self._state = b"Username"
                 _q_s.logs.info(
                     {
-                        "server": "telnet_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
@@ -72,17 +67,15 @@ class QTelnetServer(BaseServer):
                     self._state = b"Password"
                     self.transport.write(b"Password: ")
                 elif self._state == b"Password":
-                    username = self.check_bytes(self._user)
-                    password = self.check_bytes(data)
+                    username = check_bytes(self._user)
+                    password = check_bytes(data)
                     status = "failed"
                     # may need decode
                     if username == _q_s.username and password == _q_s.password:
-                        username = _q_s.username
-                        password = _q_s.password
                         status = "success"
                     _q_s.logs.info(
                         {
-                            "server": "telnet_server",
+                            "server": _q_s.NAME,
                             "action": "login",
                             "status": status,
                             "src_ip": self.transport.getPeer().host,

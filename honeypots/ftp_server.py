@@ -34,6 +34,7 @@ from zope.interface import implementer
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -74,16 +75,10 @@ class QFTPServer(BaseServer):
         class CustomAccess:
             credentialInterfaces = (credentials.IAnonymous, credentials.IUsernamePassword)
 
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
-
             def requestAvatarId(self, credentials):
                 with suppress(Exception):
-                    username = self.check_bytes(credentials.username)
-                    password = self.check_bytes(credentials.password)
+                    username = check_bytes(credentials.username)
+                    password = check_bytes(credentials.password)
                     if username == _q_s.username and password == _q_s.password:
                         username = _q_s.username
                         password = _q_s.password
@@ -91,16 +86,10 @@ class QFTPServer(BaseServer):
                 return defer.fail(UnauthorizedLogin())
 
         class CustomFTPProtocol(FTP):
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
-
             def connectionMade(self):
                 _q_s.logs.info(
                     {
-                        "server": "ftp_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
@@ -117,11 +106,11 @@ class QFTPServer(BaseServer):
                     if "capture_commands" in _q_s.options:
                         _q_s.logs.info(
                             {
-                                "server": "ftp_server",
+                                "server": _q_s.NAME,
                                 "action": "command",
                                 "data": {
-                                    "cmd": self.check_bytes(cmd.upper()),
-                                    "args": self.check_bytes(params),
+                                    "cmd": check_bytes(cmd.upper()),
+                                    "args": check_bytes(params),
                                 },
                                 "src_ip": self.transport.getPeer().host,
                                 "src_port": self.transport.getPeer().port,
@@ -132,16 +121,14 @@ class QFTPServer(BaseServer):
                 return super().processCommand(cmd, *params)
 
             def ftp_PASS(self, password):
-                username = self.check_bytes(self._user)
-                password = self.check_bytes(password)
+                username = check_bytes(self._user)
+                password = check_bytes(password)
                 status = "failed"
                 if username == _q_s.username and password == _q_s.password:
-                    username = _q_s.username
-                    password = _q_s.password
                     status = "success"
                 _q_s.logs.info(
                     {
-                        "server": "ftp_server",
+                        "server": _q_s.NAME,
                         "action": "login",
                         "status": status,
                         "src_ip": self.transport.getPeer().host,

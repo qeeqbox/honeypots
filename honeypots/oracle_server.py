@@ -72,7 +72,7 @@ class QOracleServer(BaseServer):
             def connectionMade(self):
                 _q_s.logs.info(
                     {
-                        "server": "oracle_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
@@ -86,7 +86,7 @@ class QOracleServer(BaseServer):
                 if service_name or program or local_user:
                     _q_s.logs.info(
                         {
-                            "server": "oracle_server",
+                            "server": _q_s.NAME,
                             "action": "login",
                             "src_ip": self.transport.getPeer().host,
                             "src_port": self.transport.getPeer().port,
