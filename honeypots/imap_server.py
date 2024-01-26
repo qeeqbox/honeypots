@@ -16,7 +16,12 @@ from random import choice
 from twisted import cred
 from twisted.internet import reactor
 from twisted.internet.protocol import Factory
-from twisted.mail.imap4 import IMAP4Server
+from twisted.mail.imap4 import (
+    IMAP4Server,
+    IllegalClientResponse,
+    IllegalOperation,
+    IllegalMailboxEncoding,
+)
 
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
