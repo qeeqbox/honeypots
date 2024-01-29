@@ -107,7 +107,7 @@ class QNTPServer:
                     self.transport.write(response, addr)
                     status = "success"
                 except (struct.error, TypeError, IndexError):
-                    status = "error"
+                    status = "failed"
 
                 _q_s.logs.info(
                     {
