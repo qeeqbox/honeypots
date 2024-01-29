@@ -10,14 +10,11 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
+from __future__ import annotations
 
 from twisted.names import dns, error, client
 from twisted.names.server import DNSServerFactory
 from twisted.internet import defer, reactor
-from twisted.python import log as tlog
 from subprocess import Popen
 from os import path, getenv
 from honeypots.helper import (
@@ -26,7 +23,6 @@ from honeypots.helper import (
     kill_server_wrapper,
     server_arguments,
     setup_logger,
-    disable_logger,
     set_local_vars,
     check_if_server_is_running,
 )
@@ -58,12 +54,11 @@ class QDNSServer:
             or getenv("HONEYPOTS_OPTIONS", "")
             or ""
         )
-        disable_logger(1, tlog)
 
     def dns_server_main(self):
         _q_s = self
 
-        class CustomCilentResolver(client.Resolver):
+        class CustomClientResolver(client.Resolver):
             def queryUDP(self, queries, timeout=2):
                 res = client.Resolver.queryUDP(self, queries, timeout)
 
@@ -75,36 +70,43 @@ class QDNSServer:
 
         class CustomDNSServerFactory(DNSServerFactory):
             def gotResolverResponse(self, response, protocol, message, address):
-                args = (self, response, protocol, message, address)
+                if address is None:
+                    src_ip, src_port = "None", "None"
+                else:
+                    src_ip, src_port = address
+                for items in response:
+                    for item in items:
+                        _q_s.logs.info(
+                            {
+                                "server": "dns_server",
+                                "action": "query",
+                                "src_ip": src_ip,
+                                "src_port": src_port,
+                                "dest_ip": _q_s.ip,
+                                "dest_port": _q_s.port,
+                                "data": item.payload,
+                            }
+                        )
+                return super().gotResolverResponse(response, protocol, message, address)
+
+        class CustomDnsUdpProtocol(dns.DNSDatagramProtocol):
+            def datagramReceived(self, data: bytes, addr: tuple[str, int]):
                 _q_s.logs.info(
                     {
                         "server": "dns_server",
                         "action": "connection",
-                        "src_ip": address[0],
-                        "src_port": address[1],
+                        "src_ip": addr[0],
+                        "src_port": addr[1],
                         "dest_ip": _q_s.ip,
                         "dest_port": _q_s.port,
+                        "data": data.decode(errors="replace"),
                     }
                 )
-                with suppress(Exception):
-                    for items in response:
-                        for item in items:
-                            _q_s.logs.info(
-                                {
-                                    "server": "dns_server",
-                                    "action": "query",
-                                    "src_ip": address[0],
-                                    "src_port": address[1],
-                                    "dest_ip": _q_s.ip,
-                                    "dest_port": _q_s.port,
-                                    "data": item.payload,
-                                }
-                            )
-                return DNSServerFactory.gotResolverResponse(*args)
+                super().datagramReceived(data, addr)
 
-        self.resolver = CustomCilentResolver(servers=self.resolver_addresses)
+        self.resolver = CustomClientResolver(servers=self.resolver_addresses)
         self.factory = CustomDNSServerFactory(clients=[self.resolver])
-        self.protocol = dns.DNSDatagramProtocol(controller=self.factory)
+        self.protocol = CustomDnsUdpProtocol(controller=self.factory)
         reactor.listenUDP(self.port, self.protocol, interface=self.ip)
         reactor.listenTCP(self.port, self.factory, interface=self.ip)
         reactor.run()

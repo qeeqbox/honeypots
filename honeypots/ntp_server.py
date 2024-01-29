@@ -9,30 +9,26 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 """
-
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-
-from twisted.internet.protocol import DatagramProtocol
-from twisted.internet import reactor
-from struct import unpack, calcsize, pack
-from time import time
-from twisted.python import log as tlog
+import struct
+from contextlib import suppress
+from os import getenv, path
+from struct import pack, unpack
 from subprocess import Popen
-from os import path, getenv
+from time import time
+from uuid import uuid4
+
+from twisted.internet import reactor
+from twisted.internet.protocol import DatagramProtocol
+
 from honeypots.helper import (
+    check_if_server_is_running,
     close_port_wrapper,
     get_free_port,
     kill_server_wrapper,
     server_arguments,
-    setup_logger,
-    disable_logger,
     set_local_vars,
-    check_if_server_is_running,
+    setup_logger,
 )
-from uuid import uuid4
-from contextlib import suppress
 
 
 class QNTPServer:
@@ -64,7 +60,6 @@ class QNTPServer:
             or getenv("HONEYPOTS_OPTIONS", "")
             or ""
         )
-        disable_logger(1, tlog)
 
     def ntp_server_main(self):
         _q_s = self
@@ -77,14 +72,12 @@ class QNTPServer:
 
             def ntp_to_system_time(self, time_):
                 i = float(time_ >> 32) - 2208988800.0
-                f = float(int(i) & 0xFFFFFFFF) / (4294967296)
+                f = float(int(i) & 0xFFFFFFFF) / 4294967296
                 return i, f
 
             def datagramReceived(self, data, addr):
                 version = "UnKnown"
                 mode = "UnKnown"
-                success = "failed"
-                unpacked = None
                 _q_s.logs.info(
                     {
                         "server": "ntp_server",
@@ -93,34 +86,34 @@ class QNTPServer:
                         "src_port": addr[1],
                     }
                 )
-                if len(data) == calcsize("!B B B b I I I Q Q Q Q"):
+                try:
                     version = data[0] >> 3 & 0x7
                     mode = data[0] & 0x7
-                    unpacked = unpack("!B B B b I I I Q Q Q Q", data)
-                    if unpacked is not None:
-                        i, f = self.system_time_to_ntp(time())
-                        response = pack(
-                            "!B B B b I I I Q Q Q Q",
-                            0 << 6 | 3 << 3 | 2,
-                            data[1],
-                            data[2],
-                            data[3],
-                            0,
-                            0,
-                            0,
-                            0,
-                            data[10],
-                            0,
-                            i + f,
-                        )
-                        self.transport.write(response, addr)
-                        success = "success"
+                    i, f = self.system_time_to_ntp(time())
+                    response = pack(
+                        "!B B B b I I I Q Q Q Q",
+                        0 << 6 | 3 << 3 | 2,
+                        data[1],
+                        data[2],
+                        data[3],
+                        0,
+                        0,
+                        0,
+                        0,
+                        data[10],
+                        0,
+                        i + f,
+                    )
+                    self.transport.write(response, addr)
+                    status = "success"
+                except (struct.error, TypeError, IndexError):
+                    status = "failed"
 
                 _q_s.logs.info(
                     {
                         "server": "ntp_server",
                         "action": "query",
-                        "status": "success",
+                        "status": status,
                         "src_ip": addr[0],
                         "src_port": addr[1],
                         "dest_ip": _q_s.ip,
@@ -128,7 +121,6 @@ class QNTPServer:
                         "data": {"version": version, "mode": mode},
                     }
                 )
-                self.transport.loseConnection()
 
         reactor.listenUDP(
             port=self.port, protocol=CustomDatagramProtocolProtocol(), interface=self.ip

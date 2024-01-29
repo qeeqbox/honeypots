@@ -10,11 +10,6 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*paramiko.*")
-filterwarnings(action="ignore", module=".*socket.*")
-
 from paramiko import (
     RSAKey,
     ServerInterface,
@@ -31,6 +26,9 @@ from io import StringIO
 from random import choice
 from subprocess import Popen
 from os import path, getenv
+
+from paramiko.ssh_exception import SSHException
+
 from honeypots.helper import (
     check_if_server_is_running,
     close_port_wrapper,
@@ -211,7 +209,10 @@ class QSSHServer:
                 t.local_version = "SSH-2.0-" + _q_s.mocking_server
                 t.add_server_key(RSAKey(file_obj=StringIO(priv)))
                 sshhandle = SSHHandle(ip, port)
-                t.start_server(server=sshhandle)
+                try:
+                    t.start_server(server=sshhandle)
+                except SSHException:
+                    return
                 conn = t.accept(30)
                 if "interactive" in _q_s.options and conn is not None:
                     conn.send(

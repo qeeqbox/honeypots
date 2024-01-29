@@ -11,19 +11,20 @@
 """
 
 from warnings import filterwarnings
+from cryptography.utils import CryptographyDeprecationWarning
 
-filterwarnings(action="ignore", module=".*scapy.*")
+filterwarnings(action="ignore", category=CryptographyDeprecationWarning)
 
-from scapy.all import *
-from sys import stdout
-from binascii import hexlify
-from netifaces import ifaddresses, AF_INET, AF_LINK
 from binascii import hexlify
 from multiprocessing import Process
-from re import search as rsearch
-from re import compile as rcompile
-from honeypots.helper import server_arguments, setup_logger
+from re import compile as rcompile, search as rsearch
+from sys import stdout
 from uuid import uuid4
+
+from netifaces import AF_INET, AF_LINK, ifaddresses
+from scapy.all import *
+
+from honeypots.helper import setup_logger
 
 
 class QBSniffer:

@@ -10,10 +10,6 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*paramiko.*")
-
 from socket import socket, SHUT_RDWR, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from ssl import SSLContext, PROTOCOL_TLSv1_2, CERT_NONE
 from subprocess import Popen

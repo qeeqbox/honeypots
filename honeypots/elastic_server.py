@@ -10,13 +10,7 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-filterwarnings(action="ignore", module=".*elasticsearch.*")
-
 from base64 import b64encode, b64decode
-from requests.packages.urllib3 import disable_warnings
 from json import dumps
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import urlparse
@@ -37,8 +31,6 @@ from honeypots.helper import (
     setup_logger,
 )
 from contextlib import suppress
-
-disable_warnings()
 
 
 class QElasticServer:

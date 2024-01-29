@@ -27,18 +27,23 @@ def test_dns_server(server_logs):
     resolver.nameservers = [IP]
     resolver.port = int(PORT)
     domain = "example.org"
-    response = resolver.resolve(domain, "a")
+    responses = [
+        resolver.resolve(domain, "a", tcp=False),
+        resolver.resolve(domain, "a", tcp=True),
+    ]
 
     sleep(1)  # give the server process some time to write logs
 
     logs = load_logs_from_file(server_logs)
 
-    assert len(logs) == 2
-    connect, query = logs
+    assert len(logs) == 3  # noqa: PLR2004
+    connect, *queries = logs
     assert_connect_is_logged(connect, PORT)
 
-    assert query["action"] == "query"
-    assert "data" in query
-    assert "<A address=" in query["data"]
+    for query in queries:
+        assert query["action"] == "query"
+        assert "data" in query
+        assert "<A address=" in query["data"]
 
-    assert domain in response.canonical_name.to_text()
+    for response in responses:
+        assert domain in response.canonical_name.to_text()

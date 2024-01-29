@@ -10,19 +10,18 @@
 //  -------------------------------------------------------------
 """
 import logging
-import os
 import sys
 from argparse import ArgumentParser
 from collections.abc import Mapping
 from contextlib import suppress
 from datetime import datetime
-from json import JSONEncoder, dumps, load
-from logging import Handler, Formatter, DEBUG, getLogger
+from json import dumps, JSONEncoder, load
+from logging import DEBUG, Formatter, getLogger, Handler
 from logging.handlers import RotatingFileHandler, SysLogHandler
-from os import makedirs, path, scandir, devnull, getuid
+from os import getuid, makedirs, path, scandir
 from pathlib import Path
 from signal import SIGTERM
-from socket import socket, AF_INET, SOCK_STREAM
+from socket import AF_INET, SOCK_STREAM, socket
 from sqlite3 import connect as sqlite3_connect
 from sys import stdout
 from tempfile import _get_candidate_names, gettempdir
@@ -30,12 +29,7 @@ from time import sleep
 from urllib.parse import urlparse
 
 from psutil import process_iter
-from psycopg2 import connect as psycopg2_connect
-from psycopg2 import sql
-
-if not os.getenv("DEBUG"):
-    old_stderr = sys.stderr
-    sys.stderr = open(devnull, "w")  # noqa: PTH123,SIM115
+from psycopg2 import connect as psycopg2_connect, sql
 
 
 def is_privileged():
@@ -49,13 +43,14 @@ def is_privileged():
 
 
 def set_up_error_logging():
-    _logger = logging.getLogger("simple_example")
-    _logger.setLevel(logging.INFO)
-    handler = logging.StreamHandler(sys.stdout)
-    handler.setLevel(logging.INFO)
-    formatter = logging.Formatter("[%(levelname)s] %(message)s")
-    handler.setFormatter(formatter)
-    _logger.addHandler(handler)
+    _logger = logging.getLogger("honeypots.error")
+    if not _logger.handlers:
+        _logger.setLevel(logging.INFO)
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(logging.INFO)
+        formatter = logging.Formatter("[%(levelname)s] %(message)s")
+        handler.setFormatter(formatter)
+        _logger.addHandler(handler)
     return _logger
 
 
@@ -64,7 +59,7 @@ def set_local_vars(self, config):
         if config:
             with open(config) as f:
                 config_data = load(f)
-                honeypots = config_data["honeypots"]
+                honeypots = config_data.get("honeypots", [])
                 honeypot = self.__class__.__name__[1:-6].lower()
             if honeypot and honeypot in honeypots:
                 for attr, value in honeypots[honeypot].items():

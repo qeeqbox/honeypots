@@ -9,15 +9,13 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 """
-
-from warnings import filterwarnings
-
-filterwarnings(action="ignore", module=".*OpenSSL.*")
-
+import struct
 from socketserver import TCPServer, StreamRequestHandler, ThreadingMixIn
 from struct import unpack
 from os import path, getenv
 from subprocess import Popen
+
+from honeypots import set_up_error_logging
 from honeypots.helper import (
     check_if_server_is_running,
     close_port_wrapper,
@@ -32,6 +30,8 @@ from contextlib import suppress
 
 
 class QSOCKS5Server:
+    NAME = "socks5_server"
+
     def __init__(self, **kwargs):
         self.auto_disabled = None
         self.process = None
@@ -60,6 +60,7 @@ class QSOCKS5Server:
             or getenv("HONEYPOTS_OPTIONS", "")
             or ""
         )
+        self.logger = set_up_error_logging()
 
     def socks5_server_main(self):
         _q_s = self
@@ -72,45 +73,51 @@ class QSOCKS5Server:
                     return str(string)
 
             def handle(self):
+                src_ip, src_port = self.client_address
                 _q_s.logs.info(
                     {
-                        "server": "socks5_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
-                        "src_ip": self.client_address[0],
-                        "src_port": self.client_address[1],
+                        "src_ip": src_ip,
+                        "src_port": src_port,
                         "dest_ip": _q_s.ip,
                         "dest_port": _q_s.port,
                     }
                 )
-                v, m = unpack("!BB", self.connection.recv(2))
-                if v == 5:
-                    if 2 in unpack("!" + "B" * m, self.connection.recv(m)):
-                        self.connection.sendall(b"\x05\x02")
-                        if 1 in unpack("B", self.connection.recv(1)):
-                            _len = ord(self.connection.recv(1))
-                            username = self.connection.recv(_len)
-                            _len = ord(self.connection.recv(1))
-                            password = self.connection.recv(_len)
-                            username = self.check_bytes(username)
-                            password = self.check_bytes(password)
-                            status = "failed"
-                            if username == _q_s.username and password == _q_s.password:
-                                username = _q_s.username
-                                password = _q_s.password
-                                status = "success"
-                            _q_s.logs.info(
-                                {
-                                    "server": "socks5_server",
-                                    "action": "login",
-                                    "status": status,
-                                    "src_ip": self.client_address[0],
-                                    "src_port": self.client_address[1],
-                                    "dest_ip": _q_s.ip,
-                                    "dest_port": _q_s.port,
-                                    "username": username,
-                                    "password": password,
-                                }
-                            )
+                try:
+                    v, m = unpack("!BB", self.connection.recv(2))
+                    if v == 5:
+                        if 2 in unpack("!" + "B" * m, self.connection.recv(m)):
+                            self.connection.sendall(b"\x05\x02")
+                            if 1 in unpack("B", self.connection.recv(1)):
+                                _len = ord(self.connection.recv(1))
+                                username = self.connection.recv(_len)
+                                _len = ord(self.connection.recv(1))
+                                password = self.connection.recv(_len)
+                                username = self.check_bytes(username)
+                                password = self.check_bytes(password)
+                                status = "failed"
+                                if username == _q_s.username and password == _q_s.password:
+                                    status = "success"
+                                _q_s.logs.info(
+                                    {
+                                        "server": _q_s.NAME,
+                                        "action": "login",
+                                        "status": status,
+                                        "src_ip": src_ip,
+                                        "src_port": src_port,
+                                        "dest_ip": _q_s.ip,
+                                        "dest_port": _q_s.port,
+                                        "username": username,
+                                        "password": password,
+                                    }
+                                )
+                except ConnectionResetError:
+                    _q_s.logger.debug(
+                        f"[{_q_s.NAME}]: Connection reset error when trying to handle connection"
+                    )
+                except struct.error:
+                    _q_s.logger.debug(f"[{_q_s.NAME}]: Could not parse data to handle connection")
 
                 self.server.close_request(self.request)
 
@@ -160,7 +167,7 @@ class QSOCKS5Server:
 
             self.logs.info(
                 {
-                    "server": "socks5_server",
+                    "server": self.NAME,
                     "action": "process",
                     "status": status,
                     "src_ip": self.ip,
@@ -181,11 +188,11 @@ class QSOCKS5Server:
             self.socks5_server_main()
 
     def close_port(self):
-        ret = close_port_wrapper("socks5_server", self.ip, self.port, self.logs)
+        ret = close_port_wrapper(self.NAME, self.ip, self.port, self.logs)
         return ret
 
     def kill_server(self):
-        ret = kill_server_wrapper("socks5_server", self.uuid, self.process)
+        ret = kill_server_wrapper(self.NAME, self.uuid, self.process)
         return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
