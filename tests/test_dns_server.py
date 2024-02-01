@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from time import sleep
-
 import pytest
 from dns.resolver import Resolver
 
@@ -10,6 +8,7 @@ from .utils import (
     assert_connect_is_logged,
     IP,
     load_logs_from_file,
+    wait_for_server,
 )
 
 PORT = "50053"
@@ -21,22 +20,19 @@ PORT = "50053"
     indirect=True,
 )
 def test_dns_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    resolver = Resolver(configure=False)
-    resolver.nameservers = [IP]
-    resolver.port = int(PORT)
-    domain = "example.org"
-    responses = [
-        resolver.resolve(domain, "a", tcp=False),
-        resolver.resolve(domain, "a", tcp=True),
-    ]
-
-    sleep(1)  # give the server process some time to write logs
+    with wait_for_server(PORT):
+        resolver = Resolver(configure=False)
+        resolver.nameservers = [IP]
+        resolver.port = int(PORT)
+        domain = "example.org"
+        responses = [
+            resolver.resolve(domain, "a", tcp=False),
+            resolver.resolve(domain, "a", tcp=True),
+        ]
 
     logs = load_logs_from_file(server_logs)
 
-    assert len(logs) == 3  # noqa: PLR2004
+    assert len(logs) == 3
     connect, *queries = logs
     assert_connect_is_logged(connect, PORT)
 

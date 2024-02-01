@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from time import sleep
-
 import pytest
 
 from honeypots import QIRCServer
@@ -11,6 +9,7 @@ from .utils import (
     IP,
     load_logs_from_file,
     PASSWORD,
+    wait_for_server,
 )
 
 PORT = "56667"
@@ -29,13 +28,9 @@ SERVER_CONFIG = {
     indirect=True,
 )
 def test_irc_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    with connect_to(IP, PORT) as connection:
+    with wait_for_server(PORT), connect_to(IP, PORT) as connection:
         connection.setblocking(False)
         connection.send(f"PASS {PASSWORD}\n".encode())
-
-    sleep(1)  # give the server process some time to write logs
 
     logs = load_logs_from_file(server_logs)
 

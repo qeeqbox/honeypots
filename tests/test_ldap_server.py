@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from time import sleep
 
 import pytest
 from ldap3 import ALL, Connection, Server
@@ -15,6 +14,7 @@ from .utils import (
     load_logs_from_file,
     PASSWORD,
     USERNAME,
+    wait_for_server,
 )
 
 PORT = "50389"
@@ -26,9 +26,7 @@ PORT = "50389"
     indirect=True,
 )
 def test_ldap_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    with suppress(LDAPInsufficientAccessRightsResult):
+    with wait_for_server(PORT), suppress(LDAPInsufficientAccessRightsResult):
         connection = Connection(
             Server(IP, port=int(PORT), get_info=ALL),
             authentication="SIMPLE",
@@ -41,8 +39,6 @@ def test_ldap_server(server_logs):
         )
         connection.open()
         connection.bind()
-
-    sleep(1)  # give the server process some time to write logs
 
     logs = load_logs_from_file(server_logs)
 

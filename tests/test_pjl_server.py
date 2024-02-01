@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from time import sleep
-
 import pytest
 
 from honeypots import QPJLServer
@@ -10,6 +8,7 @@ from .utils import (
     connect_to,
     IP,
     load_logs_from_file,
+    wait_for_server,
 )
 
 PORT = "59100"
@@ -28,12 +27,8 @@ SERVER_CONFIG = {
     indirect=True,
 )
 def test_pjl_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    with connect_to(IP, PORT) as connection:
+    with wait_for_server(PORT), connect_to(IP, PORT) as connection:
         connection.send(b"\x1b%-12345X@PJL prodinfo")
-
-    sleep(1)  # give the server process some time to write logs
 
     logs = load_logs_from_file(server_logs)
 

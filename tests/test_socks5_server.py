@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from contextlib import suppress
-from time import sleep
 
 import pytest
 import requests
@@ -14,6 +13,7 @@ from .utils import (
     load_logs_from_file,
     PASSWORD,
     USERNAME,
+    wait_for_server,
 )
 
 PORT = "51080"
@@ -25,13 +25,11 @@ PORT = "51080"
     indirect=True,
 )
 def test_socks5_server(server_logs):
-    with suppress(requests.exceptions.ConnectionError):
+    with wait_for_server(PORT), suppress(requests.exceptions.ConnectionError):
         requests.get(
             "http://127.0.0.1/",
             proxies={"http": f"socks5://{USERNAME}:{PASSWORD}@{IP}:{PORT}"},
         )
-
-    sleep(1)  # give the server process some time to write logs
 
     logs = load_logs_from_file(server_logs)
 

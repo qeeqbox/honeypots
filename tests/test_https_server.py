@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from time import sleep
-
 import pytest
 import requests
 
@@ -13,6 +11,7 @@ from .utils import (
     load_logs_from_file,
     PASSWORD,
     USERNAME,
+    wait_for_server,
 )
 
 PORT = "50443"
@@ -31,13 +30,10 @@ SERVER_CONFIG = {
     indirect=True,
 )
 def test_https_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    url = f"https://{IP}:{PORT}"
-    data = {"username": USERNAME, "password": PASSWORD}
-    requests.post(f"{url}/login.html", verify=False, data=data)
-
-    sleep(1)  # give the server process some time to write logs
+    with wait_for_server(PORT):
+        url = f"https://{IP}:{PORT}"
+        data = {"username": USERNAME, "password": PASSWORD}
+        requests.post(f"{url}/login.html", verify=False, data=data)
 
     logs = load_logs_from_file(server_logs)
 

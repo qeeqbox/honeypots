@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from base64 import b64decode
 from smtplib import SMTP
-from time import sleep
 
 import pytest
 
@@ -14,6 +13,7 @@ from .utils import (
     load_logs_from_file,
     PASSWORD,
     USERNAME,
+    wait_for_server,
 )
 
 PORT = "50025"
@@ -39,15 +39,12 @@ EXPECTED_DATA = [
     indirect=True,
 )
 def test_smtp_server(server_logs):
-    sleep(1)  # give server time to start
-
-    client = SMTP(IP, int(PORT))
-    client.ehlo()
-    client.login(USERNAME, PASSWORD)
-    client.sendmail("fromtest", "totest", "Nothing")
-    client.quit()
-
-    sleep(1)  # give the server process some time to write logs
+    with wait_for_server(PORT):
+        client = SMTP(IP, int(PORT))
+        client.ehlo()
+        client.login(USERNAME, PASSWORD)
+        client.sendmail("fromtest", "totest", "Nothing")
+        client.quit()
 
     logs = load_logs_from_file(server_logs)
 
@@ -61,4 +58,4 @@ def test_smtp_server(server_logs):
     assert b64decode(auth["data"]["data"]).decode() == f"\x00{USERNAME}\x00{PASSWORD}"
 
     for entry, expected in zip(additional, EXPECTED_DATA):
-        assert entry
+        assert entry["data"] == expected

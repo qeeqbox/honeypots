@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from ftplib import FTP
-from time import sleep
 
 import pytest
 
@@ -13,6 +12,7 @@ from .utils import (
     load_logs_from_file,
     PASSWORD,
     USERNAME,
+    wait_for_server,
 )
 
 PORT = "50021"
@@ -31,15 +31,12 @@ SERVER_CONFIG = {
     indirect=True,
 )
 def test_ftp_server(server_logs):
-    sleep(1)  # give the server some time to start
-
-    client = FTP()
-    client.connect(IP, int(PORT))
-    client.login(USERNAME, PASSWORD)
-    client.pwd()
-    client.quit()
-
-    sleep(1)  # give the server process some time to write logs
+    with wait_for_server(PORT):
+        client = FTP()
+        client.connect(IP, int(PORT))
+        client.login(USERNAME, PASSWORD)
+        client.pwd()
+        client.quit()
 
     logs = load_logs_from_file(server_logs)
 
