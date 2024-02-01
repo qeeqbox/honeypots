@@ -158,78 +158,88 @@ class QSSHServer(BaseServer):
                 return True
 
         def ConnectionHandle(client, priv):
-            with suppress(Exception):
-                t = Transport(client)
+            t = Transport(client)
+            try:
                 ip, port = client.getpeername()
+            except OSError as err:
+                _q_s.logger.debug(f"Server error: {err}")
+                return
+            _q_s.logs.info(
+                {
+                    "server": _q_s.NAME,
+                    "action": "connection",
+                    "src_ip": ip,
+                    "src_port": port,
+                    "dest_ip": _q_s.ip,
+                    "dest_port": _q_s.port,
+                }
+            )
+            t.local_version = "SSH-2.0-" + _q_s.mocking_server
+            t.add_server_key(RSAKey(file_obj=StringIO(priv)))
+            ssh_handle = SSHHandle(ip, port)
+            try:
+                t.start_server(server=ssh_handle)
+            except (SSHException, EOFError) as err:
+                _q_s.logger.warning(f"Server error: {err}")
+                return
+            conn = t.accept(30)
+            if "interactive" in _q_s.options and conn is not None:
+                _handle_interactive_session(conn, ip, port)
+            with suppress(TimeoutError):
+                ssh_handle.event.wait(2)
+            with suppress(Exception):
+                conn.close()
+            with suppress(Exception):
+                t.close()
+
+        def _handle_interactive_session(conn, ip, port):
+            conn.send(
+                b"Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.10.60.1-microsoft-standard-WSL2 x86_64)\r\n\r\n"
+            )
+            current_time = time()
+            while True and time() < current_time + 10:
+                conn.send(b"/$ ")
+                line = ""
+                while (
+                    not line.endswith("\x0d")
+                    and not line.endswith("\x0a")
+                    and time() < current_time + 10
+                ):
+                    try:
+                        conn.settimeout(10)
+                        recv = conn.recv(1).decode()
+                        conn.settimeout(None)
+                        if _q_s.ansi.match(recv) is None and recv != "\x7f":
+                            conn.send(recv.encode())
+                            line += recv
+                    except TimeoutError:
+                        break
+                line = line.rstrip()
                 _q_s.logs.info(
                     {
                         "server": _q_s.NAME,
-                        "action": "connection",
+                        "action": "interactive",
                         "src_ip": ip,
                         "src_port": port,
                         "dest_ip": _q_s.ip,
                         "dest_port": _q_s.port,
+                        "data": {"command": line},
                     }
                 )
-                t.local_version = "SSH-2.0-" + _q_s.mocking_server
-                t.add_server_key(RSAKey(file_obj=StringIO(priv)))
-                sshhandle = SSHHandle(ip, port)
-                try:
-                    t.start_server(server=sshhandle)
-                except SSHException:
-                    return
-                conn = t.accept(30)
-                if "interactive" in _q_s.options and conn is not None:
+                if line == "ls":
                     conn.send(
-                        b"Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.10.60.1-microsoft-standard-WSL2 x86_64)\r\n\r\n"
+                        b"\r\nbin cdrom etc lib lib64 lost+found mnt proc run snap "
+                        b"swapfile tmp var boot dev home lib32 libx32 media opt root "
+                        b"sbin srv sys usr\r\n"
                     )
-                    current_time = time()
-                    while True and time() < current_time + 10:
-                        conn.send(b"/$ ")
-                        line = ""
-                        while (
-                            not line.endswith("\x0d")
-                            and not line.endswith("\x0a")
-                            and time() < current_time + 10
-                        ):
-                            conn.settimeout(10)
-                            recv = conn.recv(1).decode()
-                            conn.settimeout(None)
-                            if _q_s.ansi.match(recv) is None and recv != "\x7f":
-                                conn.send(recv.encode())
-                                line += recv
-                        line = line.rstrip()
-                        _q_s.logs.info(
-                            {
-                                "server": _q_s.NAME,
-                                "action": "interactive",
-                                "src_ip": ip,
-                                "src_port": port,
-                                "dest_ip": _q_s.ip,
-                                "dest_port": _q_s.port,
-                                "data": {"command": line},
-                            }
-                        )
-                        if line == "ls":
-                            conn.send(
-                                b"\r\nbin cdrom etc lib lib64 lost+found mnt proc run snap "
-                                b"swapfile tmp var boot dev home lib32 libx32 media opt root "
-                                b"sbin srv sys usr\r\n"
-                            )
-                        elif line == "pwd":
-                            conn.send(b"\r\n/\r\n")
-                        elif line == "whoami":
-                            conn.send(b"\r\nroot\r\n")
-                        elif line == "exit":
-                            break
-                        else:
-                            conn.send(f"\r\n{line}: command not found\r\n".encode())
-                with suppress(Exception):
-                    sshhandle.event.wait(2)
-                with suppress(Exception):
-                    conn.close()
-                with suppress(Exception):
-                    t.close()
+                elif line == "pwd":
+                    conn.send(b"\r\n/\r\n")
+                elif line == "whoami":
+                    conn.send(b"\r\nroot\r\n")
+                elif line == "exit":
+                    break
+                else:
+                    conn.send(f"\r\n{line}: command not found\r\n".encode())
 
         sock = socket(AF_INET, SOCK_STREAM)
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
