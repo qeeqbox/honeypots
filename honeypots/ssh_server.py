@@ -9,7 +9,7 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 """
-
+import logging
 from _thread import start_new_thread
 from binascii import hexlify
 from contextlib import suppress
@@ -36,6 +36,9 @@ from honeypots.helper import (
     server_arguments,
     check_bytes,
 )
+
+# deactivate logging output of paramiko
+logging.getLogger("paramiko").setLevel(logging.CRITICAL)
 
 
 class QSSHServer(BaseServer):
