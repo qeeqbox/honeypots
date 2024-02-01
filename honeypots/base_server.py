@@ -113,7 +113,7 @@ class BaseServer(ABC):
         self.kill_server()
         return False
 
-    def log_login(self, username: str, password: str, ip: str, port: int):
+    def check_login(self, username: str, password: str, ip: str, port: int) -> bool:
         status = "success" if self._login_is_correct(username, password) else "failed"
         self.logs.info(
             {
@@ -128,6 +128,7 @@ class BaseServer(ABC):
                 "dest_port": self.port,
             }
         )
+        return status == "success"
 
     def _login_is_correct(self, username: str, password: str) -> bool:
         return username == self.username and password == self.password

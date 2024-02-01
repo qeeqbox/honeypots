@@ -13,9 +13,10 @@ import logging
 from _thread import start_new_thread
 from binascii import hexlify
 from contextlib import suppress
+from datetime import datetime
 from io import StringIO
 from random import choice
-from re import compile as rcompile
+import re
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from threading import Event
 from time import time
@@ -24,10 +25,12 @@ from paramiko import (
     RSAKey,
     ServerInterface,
     Transport,
+)
+from paramiko.common import (
+    AUTH_FAILED,
     AUTH_SUCCESSFUL,
     OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED,
     OPEN_SUCCEEDED,
-    AUTH_FAILED,
 )
 from paramiko.ssh_exception import SSHException
 
@@ -40,6 +43,30 @@ from honeypots.helper import (
 # deactivate logging output of paramiko
 logging.getLogger("paramiko").setLevel(logging.CRITICAL)
 
+COMMANDS = {
+    "ls": (
+        "bin boot cdrom dev etc home lib lib32 libx32 lib64 lost+found media mnt opt proc root "
+        "run sbin snap srv sys tmp usr var"
+    ),
+    "pwd": "/",
+    "whoami": "root",
+    "": "",
+    "cd": "",
+    "cd /": "",
+    "uname": "Linux",
+    "uname -s": "Linux",
+    "uname -n": "n1-v26",
+    "uname -r": "5.4.0-26-generic",
+    "uname -v": "#26-Ubuntu SMP %TIME",
+    "uname -m": "x86_64",
+    "uname -p": "x86_64",
+    "uname -i": "x86_64",
+    "uname -o": "GNU/Linux",
+    "uname -a": (
+        "Linux n1-v26 5.4.0-26-generic #26-Ubuntu SMP %TIME x86_64 x86_64 x86_64 GNU/Linux"
+    ),
+}
+
 
 class QSSHServer(BaseServer):
     NAME = "ssh_server"
@@ -50,7 +77,7 @@ class QSSHServer(BaseServer):
         self.mocking_server = choice(
             ["OpenSSH 7.5", "OpenSSH 7.3", "Serv-U SSH Server 15.1.1.108", "OpenSSH 6.4"]
         )
-        self.ansi = rcompile(r"(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]")
+        self.ansi = re.compile(r"(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]")
 
     def generate_pub_pri_keys(self):
         with suppress(Exception):
@@ -60,7 +87,7 @@ class QSSHServer(BaseServer):
             return key.get_base64(), string_io.getvalue()
         return None, None
 
-    def server_main(self):
+    def server_main(self):  # noqa: C901,PLR0915
         _q_s = self
 
         class SSHHandle(ServerInterface):
@@ -69,7 +96,7 @@ class QSSHServer(BaseServer):
                 self.port = port
                 self.event = Event()
 
-            def check_channel_request(self, kind, chanid):
+            def check_channel_request(self, kind, *_, **__):
                 if kind == "session":
                     return OPEN_SUCCEEDED
                 return OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
@@ -77,42 +104,11 @@ class QSSHServer(BaseServer):
             def check_auth_password(self, username, password):
                 username = check_bytes(username)
                 password = check_bytes(password)
-                status = "failed"
-                if username == _q_s.username and password == _q_s.password:
-                    username = _q_s.username
-                    password = _q_s.password
-                    status = "success"
-                if status == "success":
-                    _q_s.logs.info(
-                        {
-                            "server": _q_s.NAME,
-                            "action": "login",
-                            "status": status,
-                            "src_ip": self.ip,
-                            "src_port": self.port,
-                            "dest_ip": _q_s.ip,
-                            "dest_port": _q_s.port,
-                            "username": username,
-                            "password": password,
-                        }
-                    )
+                if _q_s.check_login(username, password, self.ip, self.port):
                     return AUTH_SUCCESSFUL
-                _q_s.logs.info(
-                    {
-                        "server": _q_s.NAME,
-                        "action": "login",
-                        "status": status,
-                        "src_ip": self.ip,
-                        "src_port": self.port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
-                        "username": username,
-                        "password": password,
-                    }
-                )
                 return AUTH_FAILED
 
-            def check_channel_exec_request(self, channel, command):
+            def check_channel_exec_request(self, channel, command):  # noqa: ARG002
                 if "capture_commands" in _q_s.options:
                     _q_s.logs.info(
                         {
@@ -128,7 +124,7 @@ class QSSHServer(BaseServer):
                 self.event.set()
                 return True
 
-            def get_allowed_auths(self, username):
+            def get_allowed_auths(self, *_, **__):
                 return "password,publickey"
 
             def check_auth_publickey(self, username, key):
@@ -146,18 +142,16 @@ class QSSHServer(BaseServer):
                 )
                 return AUTH_SUCCESSFUL
 
-            def check_channel_shell_request(self, channel):
+            def check_channel_shell_request(self, *_, **__):
                 return True
 
-            def check_channel_direct_tcpip_request(self, chanid, origin, destination):
+            def check_channel_direct_tcpip_request(self, *_, **__):
                 return OPEN_SUCCEEDED
 
-            def check_channel_pty_request(
-                self, channel, term, width, height, pixelwidth, pixelheight, modes
-            ):
+            def check_channel_pty_request(self, *_, **__):
                 return True
 
-        def ConnectionHandle(client, priv):
+        def handle_connection(client, priv):
             t = Transport(client)
             try:
                 ip, port = client.getpeername()
@@ -179,7 +173,7 @@ class QSSHServer(BaseServer):
             ssh_handle = SSHHandle(ip, port)
             try:
                 t.start_server(server=ssh_handle)
-            except (SSHException, EOFError) as err:
+            except (SSHException, EOFError, ConnectionResetError) as err:
                 _q_s.logger.warning(f"Server error: {err}")
                 return
             conn = t.accept(30)
@@ -193,28 +187,21 @@ class QSSHServer(BaseServer):
                 t.close()
 
         def _handle_interactive_session(conn, ip, port):
-            conn.send(
-                b"Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.10.60.1-microsoft-standard-WSL2 x86_64)\r\n\r\n"
-            )
-            current_time = time()
-            while True and time() < current_time + 10:
-                conn.send(b"/$ ")
-                line = ""
-                while (
-                    not line.endswith("\x0d")
-                    and not line.endswith("\x0a")
-                    and time() < current_time + 10
-                ):
-                    try:
+            conn.send(b"Welcome to Ubuntu 20.04 LTS (GNU/Linux 5.4.0-26-generic x86_64)\r\n\r\n")
+            timeout = time() + 300
+            while time() < timeout:
+                try:
+                    conn.send(b"$ ")
+                    line = ""
+                    while not line.endswith("\x0d") and not line.endswith("\x0a"):
+                        # timeout if the user does not send anything for 10 seconds
                         conn.settimeout(10)
                         recv = conn.recv(1).decode()
-                        conn.settimeout(None)
                         if _q_s.ansi.match(recv) is None and recv != "\x7f":
-                            conn.send(recv.encode())
                             line += recv
-                    except TimeoutError:
-                        break
-                line = line.rstrip()
+                except TimeoutError:
+                    break
+                line = line.strip()
                 _q_s.logs.info(
                     {
                         "server": _q_s.NAME,
@@ -226,36 +213,30 @@ class QSSHServer(BaseServer):
                         "data": {"command": line},
                     }
                 )
-                if line == "ls":
-                    conn.send(
-                        b"\r\nbin cdrom etc lib lib64 lost+found mnt proc run snap "
-                        b"swapfile tmp var boot dev home lib32 libx32 media opt root "
-                        b"sbin srv sys usr\r\n"
-                    )
-                elif line == "pwd":
-                    conn.send(b"\r\n/\r\n")
-                elif line == "whoami":
-                    conn.send(b"\r\nroot\r\n")
+                if line in COMMANDS:
+                    response = COMMANDS.get(line)
+                    if "%TIME" in response:
+                        response = response.replace(
+                            "%TIME", datetime.now().strftime("%a %b %d %H:%M:%S UTC %Y")
+                        )
+                    conn.send(f"{response}\r\n".encode())
+                elif line.startswith("cd "):
+                    _, target, *_ = line.split(" ")
+                    conn.send(f"sh: 1: cd: can't cd to {target}\r\n".encode())
                 elif line == "exit":
                     break
                 else:
-                    conn.send(f"\r\n{line}: command not found\r\n".encode())
+                    conn.send(f"{line}: command not found\r\n".encode())
 
         sock = socket(AF_INET, SOCK_STREAM)
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         sock.bind((self.ip, self.port))
         sock.listen(1)
-        pub, priv = self.generate_pub_pri_keys()
+        _, private_key = self.generate_pub_pri_keys()
         while True:
             with suppress(Exception):
-                client, addr = sock.accept()
-                start_new_thread(
-                    ConnectionHandle,
-                    (
-                        client,
-                        priv,
-                    ),
-                )
+                client, _ = sock.accept()
+                start_new_thread(handle_connection, (client, private_key))
 
     def test_server(self, ip=None, port=None, username=None, password=None):
         from paramiko import SSHClient, AutoAddPolicy

@@ -39,7 +39,7 @@ class BaseHttpServer(BaseServer, ABC):
         )
 
     class MainResource(Resource):
-        isLeaf = True
+        isLeaf = True  # noqa: N815
         home_file = load_template("home.html")
         login_file = load_template("login.html")
 
@@ -115,7 +115,7 @@ class BaseHttpServer(BaseServer, ABC):
                     if "username" in form and "password" in form:
                         username = check_bytes(form["username"].value)
                         password = check_bytes(form["password"].value)
-                        self.hp_server.log_login(
+                        self.hp_server.check_login(
                             username, password, client_ip, request.getClientAddress().port
                         )
 
