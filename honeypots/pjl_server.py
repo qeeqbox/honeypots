@@ -56,14 +56,11 @@ class QPJLServer(BaseServer):
 
             def connectionMade(self):
                 self._state = 1
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
 
@@ -77,15 +74,12 @@ class QPJLServer(BaseServer):
                 elif data.lower().startswith(b"@pjl prodinfo"):
                     prodinfo = "\r\n".join([k + " = " + v for k, v in _q_s.template.items()])
                     self.transport.write(prodinfo.encode("utf-8") + b"\x1b")
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "query",
                         "status": "success",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                         "data": {"command": check_bytes(data)},
                     }
                 )

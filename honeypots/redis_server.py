@@ -58,38 +58,19 @@ class QRedisServer(BaseServer):
                     if _data[0::2][_][0] == "$" and len(_data[1::2][_]) == int(_data[0::2][_][1]):
                         password = _data[1::2][_]
                 if c == 2 or c == 1:
-                    username = check_bytes(username)
-                    password = check_bytes(password)
-                    status = "failed"
-                    if username == _q_s.username and password == _q_s.password:
-                        username = _q_s.username
-                        password = _q_s.password
-                        status = "success"
-                    _q_s.logs.info(
-                        {
-                            "server": _q_s.NAME,
-                            "action": "login",
-                            "status": status,
-                            "src_ip": self.transport.getPeer().host,
-                            "src_port": self.transport.getPeer().port,
-                            "dest_ip": _q_s.ip,
-                            "dest_port": _q_s.port,
-                            "username": username,
-                            "password": password,
-                        }
+                    peer = self.transport.getPeer()
+                    _q_s.check_login(
+                        check_bytes(username), check_bytes(password), ip=peer.host, port=peer.port
                     )
 
             def connectionMade(self):
                 self._state = 1
                 self._variables = {}
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
 

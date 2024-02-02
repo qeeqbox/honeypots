@@ -110,14 +110,11 @@ class QSSHServer(BaseServer):
 
             def check_channel_exec_request(self, channel, command):  # noqa: ARG002
                 if "capture_commands" in _q_s.options:
-                    _q_s.logs.info(
+                    _q_s.log(
                         {
-                            "server": _q_s.NAME,
                             "action": "command",
                             "src_ip": self.ip,
                             "src_port": self.port,
-                            "dest_ip": _q_s.ip,
-                            "dest_port": _q_s.port,
                             "data": {"command": check_bytes(command)},
                         }
                     )
@@ -128,14 +125,11 @@ class QSSHServer(BaseServer):
                 return "password,publickey"
 
             def check_auth_publickey(self, username, key):
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "login",
                         "src_ip": self.ip,
                         "src_port": self.port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                         "username": check_bytes(username),
                         "key_fingerprint": check_bytes(hexlify(key.get_fingerprint())),
                     }
@@ -158,14 +152,11 @@ class QSSHServer(BaseServer):
             except OSError as err:
                 _q_s.logger.debug(f"Server error: {err}")
                 return
-            _q_s.logs.info(
+            _q_s.log(
                 {
-                    "server": _q_s.NAME,
                     "action": "connection",
                     "src_ip": ip,
                     "src_port": port,
-                    "dest_ip": _q_s.ip,
-                    "dest_port": _q_s.port,
                 }
             )
             t.local_version = "SSH-2.0-" + _q_s.mocking_server
@@ -202,14 +193,11 @@ class QSSHServer(BaseServer):
                 except TimeoutError:
                     break
                 line = line.strip()
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "interactive",
                         "src_ip": ip,
                         "src_port": port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                         "data": {"command": line},
                     }
                 )

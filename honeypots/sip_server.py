@@ -33,9 +33,8 @@ class QSIPServer(BaseServer):
             def handle_request(self, message, addr):
                 headers = {}
 
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": addr[0],
                         "src_port": addr[1],
@@ -45,9 +44,8 @@ class QSIPServer(BaseServer):
                 for item, value in message.headers.items():
                     headers.update({check_bytes(item): ",".join(map(check_bytes, value))})
 
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "request",
                         "src_ip": addr[0],
                         "src_port": addr[1],

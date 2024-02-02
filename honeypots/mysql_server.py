@@ -94,7 +94,6 @@ class QMysqlServer(BaseServer):
         return string_
 
     def parse_data(self, data):
-        username, password = "", ""
         with suppress(Exception):
             username_len = data[36:].find(b"\x00")
             username = data[36:].split(b"\x00")[0]
@@ -113,8 +112,7 @@ class QMysqlServer(BaseServer):
                 hash1 = sha1(word).digest()
                 hash2 = sha1(hash1).digest()
                 encrypted = [
-                    ((a) ^ (b))
-                    for a, b in zip(hash1, sha1(b"12345678123456789012" + hash2).digest())
+                    (a ^ b) for a, b in zip(hash1, sha1(b"12345678123456789012" + hash2).digest())
                 ]
                 if encrypted == list([(i) for i in hash]):
                     return temp
@@ -129,14 +127,11 @@ class QMysqlServer(BaseServer):
             def connectionMade(self):
                 self._state = 1
                 self.transport.write(_q_s.greeting())
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
 
@@ -159,17 +154,14 @@ class QMysqlServer(BaseServer):
                             else:
                                 ret_access_denied = True
                                 password = ":".join(hex(c)[2:] for c in data)
-                        _q_s.logs.info(
+                        _q_s.log(
                             {
-                                "server": _q_s.NAME,
                                 "action": "login",
                                 "status": status,
                                 "src_ip": self.transport.getPeer().host,
                                 "src_port": self.transport.getPeer().port,
                                 "username": username,
                                 "password": password,
-                                "dest_ip": _q_s.ip,
-                                "dest_port": _q_s.port,
                             }
                         )
 
@@ -199,7 +191,7 @@ class QMysqlServer(BaseServer):
             _port = port or self.port
             _username = username or self.username
             _password = password or self.password
-            cnx = mysqlconnect(
+            mysqlconnect(
                 user=_username,
                 password=_password,
                 host=_ip,

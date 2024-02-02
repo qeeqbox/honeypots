@@ -44,9 +44,8 @@ class QNTPServer(BaseServer):
             def datagramReceived(self, data, addr):
                 version = "UnKnown"
                 mode = "UnKnown"
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": addr[0],
                         "src_port": addr[1],
@@ -75,15 +74,12 @@ class QNTPServer(BaseServer):
                 except (struct.error, TypeError, IndexError):
                     status = "error"
 
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "query",
                         "status": status,
                         "src_ip": addr[0],
                         "src_port": addr[1],
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                         "data": {"version": version, "mode": mode},
                     }
                 )

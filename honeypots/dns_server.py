@@ -53,14 +53,11 @@ class QDNSServer(BaseServer):
                     src_ip, src_port = address
                 for items in response:
                     for item in items:
-                        _q_s.logs.info(
+                        _q_s.log(
                             {
-                                "server": _q_s.NAME,
                                 "action": "query",
                                 "src_ip": src_ip,
                                 "src_port": src_port,
-                                "dest_ip": _q_s.ip,
-                                "dest_port": _q_s.port,
                                 "data": item.payload,
                             }
                         )
@@ -68,14 +65,11 @@ class QDNSServer(BaseServer):
 
         class CustomDnsUdpProtocol(dns.DNSDatagramProtocol):
             def datagramReceived(self, data: bytes, addr: tuple[str, int]):
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": addr[0],
                         "src_port": addr[1],
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                         "data": data.decode(errors="replace"),
                     }
                 )

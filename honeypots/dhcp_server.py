@@ -123,15 +123,12 @@ class QDHCPServer(BaseServer):
                     mac_address = "None"
                 data = self.parse_options(data[240:])
                 data.update({"mac_address": mac_address})
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "query",
                         "status": "success",
                         "src_ip": addr[0],
                         "src_port": addr[1],
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                         "data": data,
                     }
                 )

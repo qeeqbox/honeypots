@@ -32,22 +32,18 @@ class QIRCServer(BaseServer):
 
         class CustomIRCProtocol(service.IRCUser):
             def connectionMade(self):
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
 
             def handleCommand(self, command, prefix, params):
                 if "capture_commands" in _q_s.options:
-                    _q_s.logs.info(
+                    _q_s.log(
                         {
-                            "server": _q_s.NAME,
                             "action": "command",
                             "data": {
                                 "command": check_bytes(command),
@@ -56,8 +52,6 @@ class QIRCServer(BaseServer):
                             },
                             "src_ip": self.transport.getPeer().host,
                             "src_port": self.transport.getPeer().port,
-                            "dest_ip": _q_s.ip,
-                            "dest_port": _q_s.port,
                         }
                     )
                 service.IRCUser.handleCommand(self, command, prefix, params)
@@ -74,25 +68,10 @@ class QIRCServer(BaseServer):
                 pass
 
             def irc_NICK(self, prefix, params):
-                status = False
                 username = check_bytes("".join(params))
                 password = check_bytes(self.password)
-                if password == check_bytes(_q_s.password):
-                    if username == _q_s.username:
-                        status = True
-                _q_s.logs.info(
-                    {
-                        "server": _q_s.NAME,
-                        "action": "login",
-                        "status": status,
-                        "src_ip": self.transport.getPeer().host,
-                        "src_port": self.transport.getPeer().port,
-                        "username": username,
-                        "password": password,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
-                    }
-                )
+                peer = self.transport.getPeer()
+                _q_s.check_login(username, password, ip=peer.host, port=peer.port)
 
         factory = Factory()
         factory.protocol = CustomIRCProtocol

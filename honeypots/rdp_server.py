@@ -90,14 +90,11 @@ class QRDPServer(BaseServer):
                 rdpsnd = False
                 initiator = b"\x00\x06"
                 with suppress(Exception):
-                    _q_s.logs.info(
+                    _q_s.log(
                         {
-                            "server": _q_s.NAME,
                             "action": "connection",
                             "src_ip": self.sock.getpeername()[0],
                             "src_port": self.sock.getpeername()[1],
-                            "dest_ip": _q_s.ip,
-                            "dest_port": _q_s.port,
                         }
                     )
                     # Client X.224 Connection Request PDU
@@ -105,15 +102,12 @@ class QRDPServer(BaseServer):
                     data = self.sock.recv(1024)
                     if b"Cookie" in data:
                         cookie = self.extract_cookie(data[11:]).decode(errors="replace")
-                        _q_s.logs.info(
+                        _q_s.log(
                             {
-                                "server": _q_s.NAME,
                                 "action": "stshash",
                                 "mstshash": "success",
                                 "src_ip": self.sock.getpeername()[0],
                                 "src_port": self.sock.getpeername()[1],
-                                "dest_ip": _q_s.ip,
-                                "dest_port": _q_s.port,
                                 "data": {"stshash": cookie},
                             }
                         )
@@ -188,24 +182,13 @@ class QRDPServer(BaseServer):
                             data = self.sock.recv(1024)
                             if len(data) > 14:
                                 if data[15] == 64:
-                                    status = "failed"
                                     username, password = self.extract_creds(data)
-                                    username = check_bytes(username)
-                                    password = check_bytes(password)
-                                    if username == _q_s.username and password == _q_s.password:
-                                        status = "success"
-                                    _q_s.logs.info(
-                                        {
-                                            "server": _q_s.NAME,
-                                            "action": "login",
-                                            "status": status,
-                                            "src_ip": self.sock.getpeername()[0],
-                                            "src_port": self.sock.getpeername()[1],
-                                            "username": username,
-                                            "password": password,
-                                            "dest_ip": _q_s.ip,
-                                            "dest_port": _q_s.port,
-                                        }
+                                    peer = self.sock.getpeername()
+                                    _q_s.check_login(
+                                        check_bytes(username),
+                                        check_bytes(password),
+                                        ip=peer.host,
+                                        port=peer.port,
                                     )
                                     break
                             else:

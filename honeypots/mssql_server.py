@@ -39,7 +39,6 @@ class QMSSQLServer(BaseServer):
             _state = None
 
             def create_payload(self, server_name=b"", token_error_msg=b"", error_code=2):
-                ret = "040100c000350100aaa80002000000010e440041006e0020006500720072006f007200200068006100730020006f00630063007500720072006500640020007700680069006c0065002000650073007400610062006c0069007300680069006e00670020006100200063006f006e006e0065006300740069006f006e00200074006f00200074006800650020007300650072007600650072002e00095200260044006200610063006b00750070000001000000fd020000000000000000000000"
                 with suppress(Exception):
                     if server_name == b"":
                         server_name = b"R&Dbackup"
@@ -70,23 +69,19 @@ class QMSSQLServer(BaseServer):
                     data_stream = (
                         b"0401007600350100aa" + token_error_len + token_error_hex + token_done_hex
                     )
-                    ret = (
+                    return (
                         data_stream[0:4]
                         + hexlify(pack(">H", len(unhexlify(data_stream))))
                         + data_stream[8:]
                     )
-                return ret
 
             def connectionMade(self):
                 self._state = 1
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
 
@@ -118,24 +113,8 @@ class QMSSQLServer(BaseServer):
                             )
                         username = check_bytes(username)
                         password = check_bytes(password_decrypted)
-                        status = "failed"
-                        if username == _q_s.username and password == _q_s.password:
-                            username = _q_s.username
-                            password = _q_s.password
-                            status = "success"
-                        _q_s.logs.info(
-                            {
-                                "server": _q_s.NAME,
-                                "action": "login",
-                                "status": status,
-                                "src_ip": self.transport.getPeer().host,
-                                "src_port": self.transport.getPeer().port,
-                                "dest_ip": _q_s.ip,
-                                "dest_port": _q_s.port,
-                                "username": username,
-                                "password": password,
-                            }
-                        )
+                        peer = self.transport.getPeer()
+                        _q_s.check_login(username, password, ip=peer.host, port=peer.port)
 
                         self.transport.write(
                             unhexlify(

@@ -51,30 +51,24 @@ class QSMBServer(BaseServer):
                         or "AUTHENTICATE_MESSAGE" in message.strip()
                         or "authenticated successfully" in message.strip()
                     ):
-                        _q_s.logs.info(
+                        _q_s.log(
                             {
-                                "server": _q_s.NAME,
                                 "action": "connection",
                                 "data": message.strip(),
                                 "src_ip": ip,
                                 "src_port": port,
-                                "dest_ip": _q_s.ip,
-                                "dest_port": _q_s.port,
                             }
                         )
                     elif ":aaaaaaaaaaaaaaaa:" in message.strip():
                         parsed = message.strip().split(":")
                         if len(parsed) == 6:
                             username, _, _, _, nt_res_1, nt_res_2 = parsed
-                            _q_s.logs.info(
+                            _q_s.log(
                                 {
-                                    "server": _q_s.NAME,
                                     "action": "login",
                                     "username": username,
                                     "src_ip": ip,
                                     "src_port": port,
-                                    "dest_ip": _q_s.ip,
-                                    "dest_port": _q_s.port,
                                     "data": {"nt_data_1": nt_res_1, "nt_data_2": nt_res_2},
                                 }
                             )
