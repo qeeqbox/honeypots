@@ -45,6 +45,6 @@ def test_pop3_server(server_logs):
     assert_login_is_logged(login)
 
     assert cmd1["action"] == "command"
-    assert cmd1["data"] == {"args": "testing", "cmd": "USER"}
+    assert cmd1["data"] == {"args": USERNAME, "cmd": "USER"}
     assert cmd2["action"] == "command"
-    assert cmd2["data"] == {"args": "testing", "cmd": "PASS"}
+    assert cmd2["data"] == {"args": PASSWORD, "cmd": "PASS"}
