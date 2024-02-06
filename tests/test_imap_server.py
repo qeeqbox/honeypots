@@ -49,4 +49,4 @@ def test_imap_server(server_logs):
 
     assert cmd2["action"] == "command"
     assert cmd2["data"]["cmd"] == "LOGIN"
-    assert cmd2["data"]["data"] == 'testing "testing"'
+    assert cmd2["data"]["data"] == f'{USERNAME} "{PASSWORD}"'

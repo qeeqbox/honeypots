@@ -45,7 +45,7 @@ def test_ftp_server(server_logs):
     assert_connect_is_logged(connect, PORT)
     assert_login_is_logged(login)
 
-    assert cmd1["data"] == {"args": "('testing',)", "cmd": "USER"}
-    assert cmd2["data"] == {"args": "('testing',)", "cmd": "PASS"}
+    assert cmd1["data"] == {"args": f"('{USERNAME}',)", "cmd": "USER"}
+    assert cmd2["data"] == {"args": f"('{PASSWORD}',)", "cmd": "PASS"}
     assert cmd3["data"] == {"args": "()", "cmd": "PWD"}
     assert cmd4["data"] == {"args": "()", "cmd": "QUIT"}
