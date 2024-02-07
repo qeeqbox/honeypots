@@ -3,10 +3,10 @@ from __future__ import annotations
 import json
 from contextlib import contextmanager
 from socket import AF_INET, IPPROTO_UDP, SOCK_DGRAM, SOCK_STREAM, socket
-from time import sleep, time
+from time import sleep
 from typing import TYPE_CHECKING
 
-import psutil
+from honeypots.helper import wait_for_service
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -63,20 +63,6 @@ def assert_login_is_logged(login: dict[str, str]):
 
 @contextmanager
 def wait_for_server(port: str | int):
-    _wait_for_service(int(port))
+    wait_for_service(int(port))
     yield
     sleep(0.5)  # give the server process some time to write logs
-
-
-def _wait_for_service(port: int, interval: float = 0.1, timeout: int = 5.0):
-    start_time = time()
-    while True:
-        if _service_runs(port):
-            return
-        sleep(interval)
-        if time() - start_time > timeout:
-            raise TimeoutError()
-
-
-def _service_runs(port: int) -> bool:
-    return any(service.laddr.port == port for service in psutil.net_connections())

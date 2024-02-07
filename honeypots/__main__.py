@@ -206,7 +206,7 @@ class HoneypotsManager:
         running_honeypots = {"good": [], "bad": []}
         if len(self.honeypots) > 0:
             for _, server_name, status in self.honeypots:
-                if status is False or status is None:
+                if not status:
                     running_honeypots["bad"].append(server_name)
                 else:
                     running_honeypots["good"].append(server_name)

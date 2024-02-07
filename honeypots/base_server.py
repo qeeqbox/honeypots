@@ -1,21 +1,18 @@
 from __future__ import annotations
 
-import inspect
 from abc import ABC, abstractmethod
+from multiprocessing import Process
 from os import getenv
-from shlex import split
-from subprocess import Popen
 from typing import Any
 from uuid import uuid4
 
 from honeypots.helper import (
-    setup_logger,
+    close_port_wrapper,
+    get_free_port,
+    service_has_started,
     set_local_vars,
     set_up_error_logging,
-    close_port_wrapper,
-    kill_server_wrapper,
-    get_free_port,
-    check_if_server_is_running,
+    setup_logger,
 )
 
 
@@ -26,7 +23,7 @@ class BaseServer(ABC):
     DEFAULT_PASSWORD = "test"
 
     def __init__(self, **kwargs):
-        self.auto_disabled = None
+        self.auto_disabled = False
         self.process = None
         self.uuid = f"honeypotslogger_{__class__.__name__}_{str(uuid4())[:8]}"
         self.config = kwargs.get("config", "")
@@ -58,19 +55,24 @@ class BaseServer(ABC):
             or ""
         )
         self.logger = set_up_error_logging()
+        self._server_process: Process | None = None
 
     def close_port(self):
         return close_port_wrapper(self.NAME, self.ip, self.port, self.logs)
 
     def kill_server(self):
-        return kill_server_wrapper(self.NAME, self.uuid, self.process)
+        if self._server_process:
+            try:
+                self._server_process.terminate()
+                self._server_process.join(timeout=5)
+            except TimeoutError:
+                self._server_process.kill()
 
     @abstractmethod
     def server_main(self):
         pass
 
     def run_server(self, process: bool = False, auto: bool = False) -> bool | None:
-        status = "error"
         run = False
         if not process:
             self.server_main()
@@ -81,21 +83,10 @@ class BaseServer(ABC):
             if port > 0:
                 self.port = port
                 run = True
-        elif self.close_port() and self.kill_server():
+        elif self.close_port():
             run = True
 
-        if run:
-            file = inspect.getfile(self.__class__)
-            command = (
-                f"python3 {file} --custom --ip {self.ip} " f"--port {self.port} --uuid {self.uuid}"
-            )
-            if self.options:
-                command += f" --options '{self.options}'"
-            if self.config:
-                command += f" --config '{self.config}'"
-            self.process = Popen(split(command))
-            if self.process.poll() is None and check_if_server_is_running(self.uuid):
-                status = "success"
+        status = self._start_server() if run else "error"
 
         self.log(
             {
@@ -110,6 +101,14 @@ class BaseServer(ABC):
             return True
         self.kill_server()
         return False
+
+    def _start_server(self) -> str:
+        self._server_process = Process(target=self.server_main)
+        self._server_process.start()
+        if service_has_started(int(self.port)):
+            return "success"
+        self.logger.error(f"Server {self.NAME} did not start")
+        return "error"
 
     def check_login(self, username: str, password: str, ip: str, port: int) -> bool:
         status = "success" if self._login_is_correct(username, password) else "failed"
