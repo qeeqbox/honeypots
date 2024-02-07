@@ -188,9 +188,11 @@ class QSSHServer(BaseServer):
                         # timeout if the user does not send anything for 10 seconds
                         conn.settimeout(10)
                         recv = conn.recv(1).decode()
+                        if not recv:
+                            raise EOFError
                         if _q_s.ansi.match(recv) is None and recv != "\x7f":
                             line += recv
-                except TimeoutError:
+                except (TimeoutError, EOFError):
                     break
                 line = line.strip()
                 _q_s.log(
