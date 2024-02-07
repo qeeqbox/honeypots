@@ -2,11 +2,8 @@ name: Tests CI
 run-name: Tests CI
 on:
   pull_request:
-    branches:
-      - main
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
