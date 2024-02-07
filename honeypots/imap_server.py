@@ -40,17 +40,16 @@ class QIMAPServer(BaseServer):
             [b"OK Microsoft Exchange Server 2003 IMAP4rev1 server version 6.5.6944.0 DC9 ready"]
         )
 
-    def server_main(self):
+    def server_main(self):  # noqa: C901
         _q_s = self
 
         class CustomIMAP4Server(IMAP4Server):
             def parse_command(self, line):
                 args = line.split(None, 2)
                 rest = None
-                tag = None
-                if len(args) == 3:
+                if len(args) == 3:  # noqa: PLR2004
                     tag, cmd, rest = args
-                elif len(args) == 2:
+                elif len(args) == 2:  # noqa: PLR2004
                     tag, cmd = args
                 elif len(args) == 1:
                     tag = args[0]
@@ -62,20 +61,19 @@ class QIMAPServer(BaseServer):
 
                 cmd = cmd.upper()
 
-                with suppress(Exception):
-                    if "capture_commands" in _q_s.options:
-                        _q_s.log(
-                            {
-                                "action": "command",
-                                "data": {
-                                    "cmd": check_bytes(cmd),
-                                    "tag": check_bytes(tag),
-                                    "data": check_bytes(rest),
-                                },
-                                "src_ip": self.transport.getPeer().host,
-                                "src_port": self.transport.getPeer().port,
-                            }
-                        )
+                if "capture_commands" in _q_s.options:
+                    _q_s.log(
+                        {
+                            "action": "command",
+                            "data": {
+                                "cmd": check_bytes(cmd),
+                                "tag": check_bytes(tag),
+                                "data": check_bytes(rest),
+                            },
+                            "src_ip": self.transport.getPeer().host,
+                            "src_port": self.transport.getPeer().port,
+                        }
+                    )
 
                 try:
                     return self.dispatchCommand(tag, cmd, rest)
@@ -86,7 +84,7 @@ class QIMAPServer(BaseServer):
                 except IllegalMailboxEncoding as e:
                     self.sendNegativeResponse(tag, "Illegal mailbox name: " + str(e))
 
-            def connectionMade(self):
+            def connectionMade(self):  # noqa: N802
                 _q_s.log(
                     {
                         "action": "connection",
@@ -96,32 +94,28 @@ class QIMAPServer(BaseServer):
                 )
                 self.sendPositiveResponse(message=_q_s.mocking_server)
 
-            def authenticateLogin(self, user, passwd):
+            def authenticateLogin(self, user, passwd):  # noqa: N802
                 username = check_bytes(user)
                 password = check_bytes(passwd)
                 peer = self.transport.getPeer()
                 _q_s.check_login(username, password, ip=peer.host, port=peer.port)
                 raise cred.error.UnauthorizedLogin()
 
-            def lineReceived(self, line):
-                try:
-                    _line = line.split(b" ")[1]
-                    if _line.lower().startswith(b"login") or _line.lower().startswith(
-                        b"capability"
-                    ):
-                        IMAP4Server.lineReceived(self, line)
-                except BaseException:
-                    pass
+            def lineReceived(self, line: bytes):  # noqa: N802
+                with suppress(IndexError):
+                    _line = line.split(b" ")[1].lower()
+                    if _line.startswith((b"login", b"capability")):
+                        super().lineReceived(line)
 
         class CustomIMAPFactory(Factory):
             protocol = CustomIMAP4Server
             portal = None
 
-            def buildProtocol(self, address):
-                p = self.protocol()
-                p.portal = self.portal
-                p.factory = self
-                return p
+            def buildProtocol(self, _):  # noqa: N802
+                protocol = self.protocol()
+                protocol.portal = self.portal
+                protocol.factory = self
+                return protocol
 
         factory = CustomIMAPFactory()
         reactor.listenTCP(port=self.port, factory=factory, interface=self.ip)
