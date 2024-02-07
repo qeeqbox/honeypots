@@ -31,7 +31,7 @@ class QElasticServer(BaseServer):
     DEFAULT_PORT = 9200
     DEFAULT_USERNAME = "elastic"
 
-    def server_main(self):
+    def server_main(self):  # noqa: C901
         _q_s = self
 
         class CustomElasticServerHandler(SimpleHTTPRequestHandler):
@@ -74,7 +74,7 @@ class QElasticServer(BaseServer):
                 self.end_headers()
                 return gzip_compressed_data
 
-            def do_HEAD(self):
+            def do_HEAD(self):  # noqa: N802
                 self.send_response(200)
                 self.send_header("content-encoding", "gzip")
                 self.send_header("content-type", "application/json; charset=UTF-8")
@@ -92,7 +92,7 @@ class QElasticServer(BaseServer):
                 self.end_headers()
                 return gzip_compressed_data
 
-            def do_GET(self):
+            def do_GET(self):  # noqa: N802
                 username = ""
                 password = ""
                 e_name = "045dffec8b60"
@@ -116,31 +116,12 @@ class QElasticServer(BaseServer):
                             "password": password,
                         }
                     )
-                    auth_paylaod = bytes(
-                        dumps(
-                            {
-                                "error": {
-                                    "root_cause": [
-                                        {
-                                            "type": "security_exception",
-                                            "reason": f"unable to authenticate user [{username}] for REST request [/]",
-                                            "header": {
-                                                "WWW-Authenticate": 'Basic realm="security" charset="UTF-8"'
-                                            },
-                                        }
-                                    ],
-                                    "type": "security_exception",
-                                    "reason": f"unable to authenticate user [{username}] for REST request [/]",
-                                    "header": {
-                                        "WWW-Authenticate": 'Basic realm="security" charset="UTF-8"'
-                                    },
-                                },
-                                "status": 401,
-                            }
-                        ),
-                        "utf-8",
-                    )
-                    self.wfile.write(self._set_response_gzip_auth(auth_paylaod, 401))
+                    error = {
+                        "type": "security_exception",
+                        "reason": f"unable to authenticate user [{username}] for REST request [/]",
+                        "header": {"WWW-Authenticate": 'Basic realm="security" charset="UTF-8"'},
+                    }
+                    self._send_auth_error(error, 401)
                 elif self.headers.get("Authorization") == "Basic " + str(key):
                     _q_s.log(
                         {
@@ -155,169 +136,124 @@ class QElasticServer(BaseServer):
                     with suppress(Exception):
                         extracted = urlparse(self.path).path
                     if extracted == "/":
-                        normal_payload = bytes(
-                            dumps(
-                                {
-                                    "name": e_name,
-                                    "cluster_name": e_cluster_name,
-                                    "cluster_uuid": "09cf5BKcTCG2U8z2ndwGEw",
-                                    "version": {
-                                        "number": "7.12.1",
-                                        "build_flavor": "default",
-                                        "build_type": e_build_type,
-                                        "build_hash": "3186837139b9c6b6d23c3200870651f10d3343b7",
-                                        "build_date": "2021-04-20T20:56:39.040728659Z",
-                                        "build_snapshot": False,
-                                        "lucene_version": "8.8.0",
-                                        "minimum_wire_compatibility_version": "6.8.0",
-                                        "minimum_index_compatibility_version": "6.0.0-beta1",
-                                    },
-                                    "tagline": "You Know, for Search",
-                                }
-                            ),
-                            "utf-8",
+                        normal_payload = {
+                            "name": e_name,
+                            "cluster_name": e_cluster_name,
+                            "cluster_uuid": "09cf5BKcTCG2U8z2ndwGEw",
+                            "version": {
+                                "number": "7.12.1",
+                                "build_flavor": "default",
+                                "build_type": e_build_type,
+                                "build_hash": "3186837139b9c6b6d23c3200870651f10d3343b7",
+                                "build_date": "2021-04-20T20:56:39.040728659Z",
+                                "build_snapshot": False,
+                                "lucene_version": "8.8.0",
+                                "minimum_wire_compatibility_version": "6.8.0",
+                                "minimum_index_compatibility_version": "6.0.0-beta1",
+                            },
+                            "tagline": "You Know, for Search",
+                        }
+                        self.wfile.write(
+                            self._set_response_gzip(dumps(normal_payload).encode("utf-8"), 200)
                         )
-                        self.wfile.write(self._set_response_gzip(normal_payload, 200))
                     elif extracted.startswith("/_nodes"):
-                        _nodes_payload = bytes(
-                            dumps(
-                                {
-                                    "_nodes": {"total": 1, "successful": 1, "failed": 0},
-                                    "cluster_name": e_cluster_name,
-                                    "nodes": {
-                                        "rvyTV3xvTgyt74ti4u12bw": {
-                                            "name": e_name,
-                                            "transport_address": e_transport_address,
-                                            "host": e_host,
-                                            "src_ip": e_host,
-                                            "version": "7.12.1",
-                                            "build_flavor": "default",
-                                            "build_type": e_build_type,
-                                            "build_hash": "3186837139b9c6b6d23c3200870651f10d3343b7",
-                                            "roles": [
-                                                "data",
-                                                "data_cold",
-                                                "data_content",
-                                                "data_frozen",
-                                                "data_hot",
-                                                "data_warm",
-                                                "ingest",
-                                                "master",
-                                                "ml",
-                                                "remote_cluster_client",
-                                                "transform",
-                                            ],
-                                            "attributes": {
-                                                "ml.machine_memory": "16685318144",
-                                                "xpack.installed": "true",
-                                                "transform.node": "true",
-                                                "ml.max_open_jobs": "20",
-                                                "ml.max_jvm_size": "8342470656",
-                                            },
-                                            "process": {
-                                                "refresh_interval_in_millis": 1000,
-                                                "id": 7,
-                                                "mlockall": False,
-                                            },
-                                        },
-                                        "os": {
-                                            "refresh_interval_in_millis": 1000,
-                                            "name": e_os_name,
-                                            "pretty_name": e_os_pretty_name,
-                                            "arch": "amd64",
-                                            "version": e_os_version,
-                                            "available_processors": 32,
-                                            "allocated_processors": 8,
-                                        },
-                                        "process": {
-                                            "refresh_interval_in_millis": 1000,
-                                            "id": 7,
-                                            "mlockall": False,
-                                        },
+                        _nodes_payload = {
+                            "_nodes": {"total": 1, "successful": 1, "failed": 0},
+                            "cluster_name": e_cluster_name,
+                            "nodes": {
+                                "rvyTV3xvTgyt74ti4u12bw": {
+                                    "name": e_name,
+                                    "transport_address": e_transport_address,
+                                    "host": e_host,
+                                    "src_ip": e_host,
+                                    "version": "7.12.1",
+                                    "build_flavor": "default",
+                                    "build_type": e_build_type,
+                                    "build_hash": "3186837139b9c6b6d23c3200870651f10d3343b7",
+                                    "roles": [
+                                        "data",
+                                        "data_cold",
+                                        "data_content",
+                                        "data_frozen",
+                                        "data_hot",
+                                        "data_warm",
+                                        "ingest",
+                                        "master",
+                                        "ml",
+                                        "remote_cluster_client",
+                                        "transform",
+                                    ],
+                                    "attributes": {
+                                        "ml.machine_memory": "16685318144",
+                                        "xpack.installed": "true",
+                                        "transform.node": "true",
+                                        "ml.max_open_jobs": "20",
+                                        "ml.max_jvm_size": "8342470656",
                                     },
-                                }
-                            ),
-                            "utf-8",
+                                    "process": {
+                                        "refresh_interval_in_millis": 1000,
+                                        "id": 7,
+                                        "mlockall": False,
+                                    },
+                                },
+                                "os": {
+                                    "refresh_interval_in_millis": 1000,
+                                    "name": e_os_name,
+                                    "pretty_name": e_os_pretty_name,
+                                    "arch": "amd64",
+                                    "version": e_os_version,
+                                    "available_processors": 32,
+                                    "allocated_processors": 8,
+                                },
+                                "process": {
+                                    "refresh_interval_in_millis": 1000,
+                                    "id": 7,
+                                    "mlockall": False,
+                                },
+                            },
+                        }
+                        self.wfile.write(
+                            self._set_response_gzip(dumps(_nodes_payload).encode("utf-8"), 200)
                         )
-                        self.wfile.write(self._set_response_gzip(_nodes_payload, 200))
                     elif extracted.startswith("/_cluster/health"):
-                        _cluster_health_payload = bytes(
-                            dumps(
-                                {
-                                    "cluster_name": e_cluster_name,
-                                    "status": "green",
-                                    "timed_out": False,
-                                    "number_of_nodes": 1,
-                                    "number_of_data_nodes": 1,
-                                    "active_primary_shards": 0,
-                                    "active_shards": 0,
-                                    "relocating_shards": 0,
-                                    "initializing_shards": 0,
-                                    "unassigned_shards": 0,
-                                    "delayed_unassigned_shards": 0,
-                                    "number_of_pending_tasks": 0,
-                                    "number_of_in_flight_fetch": 0,
-                                    "task_max_waiting_in_queue_millis": 0,
-                                    "active_shards_percent_as_number": 100.0,
-                                }
-                            ),
-                            "utf-8",
-                        )
-                        self.wfile.write(self._set_response_gzip(_cluster_health_payload, 200))
+                        _cluster_health_payload = {
+                            "cluster_name": e_cluster_name,
+                            "status": "green",
+                            "timed_out": False,
+                            "number_of_nodes": 1,
+                            "number_of_data_nodes": 1,
+                            "active_primary_shards": 0,
+                            "active_shards": 0,
+                            "relocating_shards": 0,
+                            "initializing_shards": 0,
+                            "unassigned_shards": 0,
+                            "delayed_unassigned_shards": 0,
+                            "number_of_pending_tasks": 0,
+                            "number_of_in_flight_fetch": 0,
+                            "task_max_waiting_in_queue_millis": 0,
+                            "active_shards_percent_as_number": 100.0,
+                        }
+                        self._send_auth_payload(_cluster_health_payload, 200)
                     elif extracted.startswith("/_"):
                         _index = extracted.split("/")[1].lower()
-                        _payload = bytes(
-                            dumps(
-                                {
-                                    "error": {
-                                        "root_cause": [
-                                            {
-                                                "type": "invalid_index_name_exception",
-                                                "reason": f'Invalid index name [{_index}], must not start with "_".',
-                                                "index_uuid": "_na_",
-                                                "index": _index,
-                                            }
-                                        ],
-                                        "type": "invalid_index_name_exception",
-                                        "reason": f'Invalid index name [{_index}], must not start with "_".',
-                                        "index_uuid": "_na_",
-                                        "index": _index,
-                                    },
-                                    "status": 400,
-                                }
-                            ),
-                            "utf-8",
-                        )
-                        self.wfile.write(self._set_response_gzip(_payload, 400))
+                        error = {
+                            "type": "invalid_index_name_exception",
+                            "reason": f'Invalid index name [{_index}], must not start with "_".',
+                            "index_uuid": "_na_",
+                            "index": _index,
+                        }
+                        self._send_auth_error(error, 400)
                     else:
                         _search = extracted.split("/")[1].lower()
-                        _search_payload = bytes(
-                            dumps(
-                                {
-                                    "error": {
-                                        "root_cause": [
-                                            {
-                                                "type": "index_not_found_exception",
-                                                "reason": f"no such index [{_search}]",
-                                                "resource.type": "index_or_alias",
-                                                "resource.id": _search,
-                                                "index_uuid": "_na_",
-                                                "index": _search,
-                                            }
-                                        ],
-                                        "type": "index_not_found_exception",
-                                        "reason": f"no such index [{_search}]",
-                                        "resource.type": "index_or_alias",
-                                        "resource.id": _search,
-                                        "index_uuid": "_na_",
-                                        "index": _search,
-                                    },
-                                    "status": 404,
-                                }
-                            ),
-                            "utf-8",
-                        )
-                        self.wfile.write(self._set_response_gzip(_search_payload, 404))
+                        error = {
+                            "type": "index_not_found_exception",
+                            "reason": f"no such index [{_search}]",
+                            "resource.type": "index_or_alias",
+                            "resource.id": _search,
+                            "index_uuid": "_na_",
+                            "index": _search,
+                        }
+                        self._send_auth_error(error, 404)
                 else:
                     authorization_string = self.headers.get("Authorization").split(" ")
                     basic = b64decode(authorization_string[1]).decode("utf-8")
@@ -332,42 +268,36 @@ class QElasticServer(BaseServer):
                             "password": password,
                         }
                     )
-                    auth_paylaod = bytes(
-                        dumps(
-                            {
-                                "error": {
-                                    "root_cause": [
-                                        {
-                                            "type": "security_exception",
-                                            "reason": "missing authentication credentials for REST request [/]",
-                                            "header": {
-                                                "WWW-Authenticate": 'Basic realm="security" charset="UTF-8"'
-                                            },
-                                        }
-                                    ],
-                                    "type": "security_exception",
-                                    "reason": "missing authentication credentials for REST request [/]",
-                                    "header": {
-                                        "WWW-Authenticate": 'Basic realm="security" charset="UTF-8"'
-                                    },
-                                },
-                                "status": 401,
-                            }
-                        ),
-                        "utf-8",
-                    )
-                    self.wfile.write(self._set_response_gzip_auth(auth_paylaod, 401))
+                    error = {
+                        "type": "security_exception",
+                        "reason": "missing authentication credentials for REST request [/]",
+                        "header": {"WWW-Authenticate": 'Basic realm="security" charset="UTF-8"'},
+                    }
+                    self._send_auth_error(error, 401)
 
-            do_POST = do_GET
-            do_PUT = do_GET
-            do_DELETE = do_GET
+            def _send_auth_error(self, error: dict, status_code: int):
+                auth_payload = {
+                    "error": {"root_cause": [error], **error},
+                    "status": status_code,
+                }
+                self._send_auth_payload(auth_payload, status_code)
 
-            def send_error(self, code, message=None):
+            def _send_auth_payload(self, payload: dict, status_code: int):
+                compressed = self._set_response_gzip_auth(
+                    dumps(payload).encode("utf-8"), status_code
+                )
+                self.wfile.write(compressed)
+
+            do_POST = do_GET  # noqa: N815
+            do_PUT = do_GET  # noqa: N815
+            do_DELETE = do_GET  # noqa: N815
+
+            def send_error(self, code, message=None, explain=None):
                 self.error_message_format = "Error!"
-                SimpleHTTPRequestHandler.send_error(self, code, message)
+                super().send_error(code, message, explain)
 
-            def log_message(self, format, *args):
-                return
+            def log_message(self, *_, **__):
+                pass
 
             def handle_one_request(self):
                 _q_s.log(
@@ -377,13 +307,13 @@ class QElasticServer(BaseServer):
                         "src_port": self.client_address[1],
                     }
                 )
-                return SimpleHTTPRequestHandler.handle_one_request(self)
+                return super().handle_one_request()
 
         class CustomElasticServer(ThreadingHTTPServer):
-            key = b64encode(bytes("%s:%s" % ("elastic", "changeme"), "utf-8")).decode("ascii")
+            key = b64encode(b"elastic:changeme").decode("ascii")
 
-            def __init__(self, address, handlerClass=CustomElasticServerHandler):
-                super().__init__(address, handlerClass)
+            def __init__(self, address, handler_class=CustomElasticServerHandler):
+                super().__init__(address, handler_class)
 
             def set_auth_key(self, username, password):
                 self.key = b64encode(f"{username}:{password}".encode()).decode("ascii")
