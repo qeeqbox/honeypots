@@ -241,15 +241,6 @@ def kill_servers(name):
                 process.kill()
 
 
-def check_if_server_is_running(uuid):
-    with suppress(Exception):
-        for process in process_iter():
-            cmdline = " ".join(process.cmdline())
-            if "--custom" in cmdline and uuid in cmdline:
-                return True
-    return False
-
-
 def kill_server_wrapper(server_name, name, process):
     with suppress(Exception):
         if process is not None:
@@ -298,11 +289,6 @@ def close_port_wrapper(server_name, ip, port, logs):
 class ComplexEncoder(JSONEncoder):
     def default(self, obj):
         return repr(obj).replace("\x00", " ")
-
-
-class ComplexEncoder_db(JSONEncoder):
-    def default(self, obj):
-        return "Something wrong, deleted.."
 
 
 def serialize_object(_dict):
