@@ -56,26 +56,38 @@ class QFTPServer(BaseServer):
         )
         self.temp_folder = TemporaryDirectory()
 
-    def server_main(self):
+    def server_main(self):  # noqa: C901
         _q_s = self
 
         @implementer(portal.IRealm)
         class CustomFTPRealm:
-            def __init__(self, anonymousRoot):
+            def __init__(self, anonymousRoot):  # noqa: N803
                 self.anonymousRoot = filepath.FilePath(anonymousRoot)
 
-            def requestAvatar(self, avatarId, mind, *interfaces):
+            def requestAvatar(  # noqa: N802
+                self,
+                avatarId,  # noqa: ARG002,N803
+                mind,  # noqa: ARG002
+                *interfaces,
+            ):
                 for iface in interfaces:
                     if iface is IFTPShell:
                         avatar = FTPAnonymousShell(self.anonymousRoot)
-                        return IFTPShell, avatar, getattr(avatar, "logout", lambda: None)
+                        return (
+                            IFTPShell,
+                            avatar,
+                            getattr(avatar, "logout", lambda: None),
+                        )
                 raise NotImplementedError("Only IFTPShell interface is supported by this realm")
 
         @implementer(ICredentialsChecker)
         class CustomAccess:
-            credentialInterfaces = (credentials.IAnonymous, credentials.IUsernamePassword)
+            credentialInterfaces = (  # noqa: N815
+                credentials.IAnonymous,
+                credentials.IUsernamePassword,
+            )
 
-            def requestAvatarId(self, credentials):
+            def requestAvatarId(self, credentials):  # noqa: N802
                 with suppress(Exception):
                     username = check_bytes(credentials.username)
                     password = check_bytes(credentials.password)
@@ -84,7 +96,7 @@ class QFTPServer(BaseServer):
                 return defer.fail(UnauthorizedLogin())
 
         class CustomFTPProtocol(FTP):
-            def connectionMade(self):
+            def connectionMade(self):  # noqa: N802
                 _q_s.log(
                     {
                         "action": "connection",
@@ -96,7 +108,7 @@ class QFTPServer(BaseServer):
                 self.setTimeout(self.timeOut)
                 self.reply("220.2", self.factory.welcomeMessage)
 
-            def processCommand(self, cmd, *params):
+            def processCommand(self, cmd, *params):  # noqa: N802
                 with suppress(Exception):
                     if "capture_commands" in _q_s.options:
                         _q_s.log(
@@ -112,7 +124,7 @@ class QFTPServer(BaseServer):
                         )
                 return super().processCommand(cmd, *params)
 
-            def ftp_PASS(self, password):
+            def ftp_PASS(self, password):  # noqa: N802
                 username = check_bytes(self._user)
                 password = check_bytes(password)
                 peer = self.transport.getPeer()
@@ -127,14 +139,14 @@ class QFTPServer(BaseServer):
 
                 del self._user
 
-                def _cbLogin(parsed):
+                def _cbLogin(parsed):  # noqa: N802
                     self.shell = parsed[1]
                     self.logout = parsed[2]
                     self.workingDirectory = []
                     self.state = self.AUTHED
                     return reply
 
-                def _ebLogin(failure):
+                def _ebLogin(failure):  # noqa: N802
                     failure.trap(UnauthorizedLogin, UnhandledCredentials)
                     self.state = self.UNAUTH
                     raise AuthorizationError
