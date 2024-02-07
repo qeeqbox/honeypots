@@ -10,11 +10,6 @@
 //  -------------------------------------------------------------
 """
 
-from warnings import filterwarnings
-from cryptography.utils import CryptographyDeprecationWarning
-
-filterwarnings(action="ignore", category=CryptographyDeprecationWarning)
-
 from binascii import hexlify
 from multiprocessing import Process
 from re import compile as rcompile, search as rsearch
@@ -22,9 +17,10 @@ from sys import stdout
 from uuid import uuid4
 
 from netifaces import AF_INET, AF_LINK, ifaddresses
-from scapy.all import *
+from scapy.layers.inet import IP, TCP
+from scapy.sendrecv import send, sniff
 
-from honeypots.helper import setup_logger
+from honeypots.helper import server_arguments, setup_logger
 
 
 class QBSniffer:
@@ -38,7 +34,7 @@ class QBSniffer:
             (0, 0, "Echo/Ping reply"),
             (3, 0, "Destination network unreachable"),
             (3, 1, "Destination host unreachable"),
-            (3, 2, "Desination protocol unreachable"),
+            (3, 2, "Destination protocol unreachable"),
             (3, 3, "Destination port unreachable"),
             (3, 4, "Fragmentation required"),
             (3, 5, "Source route failed"),
@@ -51,7 +47,7 @@ class QBSniffer:
             (3, 12, "Host unreachable for TOS"),
             (3, 13, "Communication administratively prohibited"),
             (3, 14, "Host Precedence Violation"),
-            (3, 15, "Precendence cutoff in effect"),
+            (3, 15, "Precedence cutoff in effect"),
             (4, 0, "Source quench"),
             (5, 0, "Redirect Datagram for the Network"),
             (5, 1, "Redirect Datagram for the Host"),
@@ -290,9 +286,9 @@ class QBSniffer:
 
 
 if __name__ == "__main__":
-    from server_options import server_arguments
-
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
-        qsniffer = QSniffer(filter=parsed.filter, interface=parsed.interface, config=parsed.config)
+        qsniffer = QBSniffer(
+            filter=parsed.filter, interface=parsed.interface, config=parsed.config
+        )
         qsniffer.run_sniffer()
