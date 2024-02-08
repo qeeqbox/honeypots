@@ -20,6 +20,10 @@ from honeypots.helper import (
     check_bytes,
 )
 
+USER_PW_AUTH_V1 = 1
+SOCKS_V5 = 5
+AUTH_TYPE_USER_PW = 2
+
 
 class QSOCKS5Server(BaseServer):
     NAME = "socks5_server"
@@ -39,16 +43,15 @@ class QSOCKS5Server(BaseServer):
                     }
                 )
                 try:
-                    v, m = unpack("!BB", self.connection.recv(2))
-                    if v == 5:
-                        if 2 in unpack("!" + "B" * m, self.connection.recv(m)):
+                    # see RFC 1928
+                    version, auth_types_len = unpack("!BB", self.connection.recv(2))
+                    if version == SOCKS_V5:
+                        supported_auth_methods = unpack(
+                            "!" + "B" * auth_types_len, self.connection.recv(auth_types_len)
+                        )
+                        if AUTH_TYPE_USER_PW in supported_auth_methods:
                             self.connection.sendall(b"\x05\x02")
-                            if 1 in unpack("B", self.connection.recv(1)):
-                                _len = ord(self.connection.recv(1))
-                                username = check_bytes(self.connection.recv(_len))
-                                _len = ord(self.connection.recv(1))
-                                password = check_bytes(self.connection.recv(_len))
-                                _q_s.check_login(username, password, src_ip, src_port)
+                            self._check_user_pw_auth(src_ip, src_port)
                 except ConnectionResetError:
                     _q_s.logger.debug(
                         f"[{_q_s.NAME}]: Connection reset error when trying to handle connection"
@@ -57,6 +60,16 @@ class QSOCKS5Server(BaseServer):
                     _q_s.logger.debug(f"[{_q_s.NAME}]: Could not parse data to handle connection")
 
                 self.server.close_request(self.request)
+
+            def _check_user_pw_auth(self, ip: str, port: int):
+                # see RFC 1929
+                auth_version = unpack("B", self.connection.recv(1))[0]
+                if auth_version == USER_PW_AUTH_V1:
+                    _len = ord(self.connection.recv(1))
+                    username = check_bytes(self.connection.recv(_len))
+                    _len = ord(self.connection.recv(1))
+                    password = check_bytes(self.connection.recv(_len))
+                    _q_s.check_login(username, password, ip, port)
 
         class ThreadingTCPServer(ThreadingMixIn, TCPServer):
             pass
@@ -75,10 +88,10 @@ class QSOCKS5Server(BaseServer):
             _password = password or self.password
             get(
                 "https://yahoo.com",
-                proxies=dict(
-                    http=f"socks5://{_username}:{_password}@{_ip}:{_port}",
-                    https=f"socks5://{_username}:{_password}@{_ip}:{_port}",
-                ),
+                proxies={
+                    "http": f"socks5://{_username}:{_password}@{_ip}:{_port}",
+                    "https": f"socks5://{_username}:{_password}@{_ip}:{_port}",
+                },
             )
 
 
