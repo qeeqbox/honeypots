@@ -26,7 +26,7 @@ class QSMTPServer(BaseServer):
     NAME = "smtp_server"
     DEFAULT_PORT = 25
 
-    def server_main(self):
+    def server_main(self):  # noqa: C901
         _q_s = self
 
         class CustomSMTPChannel(SMTPChannel):
@@ -44,17 +44,11 @@ class QSMTPServer(BaseServer):
             def found_terminator(self):
                 with suppress(Exception):
                     if "capture_commands" in _q_s.options:
-                        line = self._emptystring.join(self.received_lines).decode()
-                        arg = None
-                        data = None
-                        if line.find(" ") < 0:
-                            command = line.upper()
-                        else:
-                            command = line.split(" ")[0].upper()
-                            arg = line.split(" ")[1].strip()
-                            if len(line.split(" ")) > 2:
-                                data = line.split(" ", 2)[2]
-                        if command != "HELO" and command != "EHLO":
+                        line = self._emptystring.join(self.received_lines).decode(errors="ignore")
+                        command, *rest = line.split(" ")
+                        arg = rest[0] if rest else None
+                        data = rest[1] if len(rest) > 1 else None
+                        if command.upper() not in {"HELO", "EHLO"}:
                             _q_s.log(
                                 {
                                     "action": "connection",
@@ -65,7 +59,7 @@ class QSMTPServer(BaseServer):
                             )
                 super().found_terminator()
 
-            def smtp_EHLO(self, arg):
+            def smtp_EHLO(self, arg):  # noqa: N802
                 _q_s.log(
                     {
                         "action": "connection",
@@ -75,16 +69,16 @@ class QSMTPServer(BaseServer):
                 )
                 if not arg:
                     self.push("501 Syntax: HELO hostname")
-                if self._SMTPChannel__greeting:
+                if self.seen_greeting:
                     self.push("503 Duplicate HELO/EHLO")
                 else:
-                    self._SMTPChannel__greeting = arg
-                    self.push(f"250-{self._SMTPChannel__fqdn} Hello {arg}")
+                    self.seen_greeting = arg
+                    self.push(f"250-{self.fqdn} Hello {arg}")
                     self.push("250-8BITMIME")
                     self.push("250-AUTH LOGIN PLAIN")
                     self.push("250 STARTTLS")
 
-            def smtp_AUTH(self, arg):
+            def smtp_AUTH(self, arg):  # noqa: N802
                 with suppress(Exception):
                     if arg.startswith("PLAIN "):
                         _, username, password = (
@@ -100,9 +94,7 @@ class QSMTPServer(BaseServer):
                 self.smtp_QUIT(0)
 
         class CustomSMTPServer(SMTPServer):
-            def process_message(
-                self, peer, mailfrom, rcpttos, data, mail_options=None, rcpt_options=None
-            ):
+            def process_message(self, *_, **__):
                 return
 
             def handle_accept(self):
