@@ -12,6 +12,7 @@
 from __future__ import annotations
 
 import logging
+import os
 import sys
 from argparse import ArgumentParser
 from collections.abc import Mapping
@@ -751,3 +752,14 @@ def wait_for_service(port: int, interval: float = 0.1, timeout: int = 5.0):
 
 def _service_runs(port: int) -> bool:
     return any(service.laddr.port == port for service in psutil.net_connections())
+
+
+@contextmanager
+def hide_stderr():
+    stderr = sys.stderr
+    try:
+        with Path(os.devnull).open("w") as devnull:
+            sys.stderr = devnull
+            yield
+    finally:
+        sys.stderr = stderr
