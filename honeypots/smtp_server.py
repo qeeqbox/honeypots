@@ -10,6 +10,7 @@
 //  -------------------------------------------------------------
 """
 
+import socket
 from asyncore import loop
 from base64 import b64decode
 from contextlib import suppress
@@ -29,6 +30,17 @@ class QSMTPServer(BaseServer):
         _q_s = self
 
         class CustomSMTPChannel(SMTPChannel):
+            def __init__(self, *args, **kwargs):
+                fun = None
+                try:
+                    # don't leak the *actual* hostname
+                    fun = socket.getfqdn
+                    socket.getfqdn = lambda: "ip-127-0-0-1.ec2.internal"
+                    super().__init__(*args, **kwargs)
+                finally:
+                    if fun:
+                        socket.getfqdn = fun
+
             def found_terminator(self):
                 with suppress(Exception):
                     if "capture_commands" in _q_s.options:
