@@ -168,7 +168,7 @@ class HoneypotsManager:
 
         if self.options.list:
             for service in all_servers:
-                print(service)  # noqa: T201
+                print(service)
         elif self.options.kill:
             clean_all()
         elif self.options.chameleon and self.config_data is not None:

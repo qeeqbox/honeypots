@@ -100,6 +100,7 @@ ignore = [
     "RUF002",
     "RUF003",
     "RUF015",
+    "T201",
     # pydantic only supports these from python>=3.9
     "UP006",
     "UP007",
