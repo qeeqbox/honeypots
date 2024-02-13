@@ -10,10 +10,8 @@
 //  -------------------------------------------------------------
 """
 
-from os import getenv
 from socket import inet_aton
-from struct import unpack, error as StructError
-from uuid import uuid4
+from struct import error as StructError, unpack
 
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
@@ -21,8 +19,6 @@ from twisted.internet.protocol import DatagramProtocol
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
-    setup_logger,
-    set_local_vars,
     check_bytes,
 )
 
@@ -30,29 +26,6 @@ from honeypots.helper import (
 class QDHCPServer(BaseServer):
     NAME = "dhcp_server"
     DEFAULT_PORT = 67
-
-    def __init__(self, **kwargs):
-        self.auto_disabled = None
-        self.process = None
-        self.uuid = "honeypotslogger" + "_" + __class__.__name__ + "_" + str(uuid4())[:8]
-        self.config = kwargs.get("config", "")
-        if self.config:
-            self.logs = setup_logger(__class__.__name__, self.uuid, self.config)
-            set_local_vars(self, self.config)
-        else:
-            self.logs = setup_logger(__class__.__name__, self.uuid, None)
-        self.ip = kwargs.get("ip", None) or (hasattr(self, "ip") and self.ip) or "0.0.0.0"
-        self.port = (
-            (kwargs.get("port", None) and int(kwargs.get("port", None)))
-            or (hasattr(self, "port") and self.port)
-            or 67
-        )
-        self.options = (
-            kwargs.get("options", "")
-            or (hasattr(self, "options") and self.options)
-            or getenv("HONEYPOTS_OPTIONS", "")
-            or ""
-        )
 
     def server_main(self):
         _q_s = self
