@@ -1,13 +1,16 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+from contextlib import suppress
 from multiprocessing import Process
 from os import getenv
+from socket import AF_INET, SOCK_STREAM, socket
 from typing import Any
 from uuid import uuid4
 
+from psutil import process_iter, TimeoutExpired
+
 from honeypots.helper import (
-    close_port_wrapper,
     get_free_port,
     service_has_started,
     set_local_vars,
@@ -58,7 +61,24 @@ class BaseServer(ABC):
         self._server_process: Process | None = None
 
     def close_port(self):
-        return close_port_wrapper(self.NAME, self.ip, self.port, self.logs)
+        sock = socket(AF_INET, SOCK_STREAM)
+        sock.settimeout(2)
+        if sock.connect_ex((self.ip, self.port)) == 0:
+            for process in process_iter():
+                with suppress(Exception):
+                    for conn in process.connections(kind="inet"):
+                        if self.port == conn.laddr.port:
+                            process.terminate()
+                            try:
+                                process.wait(timeout=5)
+                            except TimeoutExpired:
+                                process.kill()
+        with suppress(OSError):
+            sock.bind((self.ip, self.port))
+            if sock.connect_ex((self.ip, self.port)) != 0:
+                return True
+        self.logger.error(f"[{self.NAME}]: Could not close port {self.port}")
+        return False
 
     def kill_server(self):
         if self._server_process:
