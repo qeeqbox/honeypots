@@ -43,7 +43,7 @@ class QTelnetServer(BaseServer):
             _user = None
             _pass = None
 
-            def connectionMade(self):
+            def connectionMade(self):  # noqa: N802
                 self._state = None
                 self._user = None
                 self._pass = None
@@ -57,7 +57,7 @@ class QTelnetServer(BaseServer):
                     }
                 )
 
-            def dataReceived(self, data):
+            def dataReceived(self, data):  # noqa: N802
                 data = data.strip()
                 if self._state == b"Username":
                     self._user = data
@@ -72,7 +72,7 @@ class QTelnetServer(BaseServer):
                 else:
                     self.transport.loseConnection()
 
-            def connectionLost(self, reason):
+            def connectionLost(self, reason=None):  # noqa: N802,ARG002
                 self._state = None
                 self._user = None
                 self._pass = None

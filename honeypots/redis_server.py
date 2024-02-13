@@ -9,6 +9,7 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 """
+from __future__ import annotations
 
 from contextlib import suppress
 
@@ -26,7 +27,7 @@ class QRedisServer(BaseServer):
     NAME = "redis_server"
     DEFAULT_PORT = 6379
 
-    def server_main(self):
+    def server_main(self):  # noqa: C901
         _q_s = self
 
         class CustomRedisProtocol(Protocol):
@@ -36,34 +37,35 @@ class QRedisServer(BaseServer):
                     if _data[0][0] == "*":
                         _count = int(_data[0][1]) - 1
                         _data.pop(0)
-                        if _data[0::2][0][0] == "$" and len(_data[1::2][0]) == int(
-                            _data[0::2][0][1]
-                        ):
+                        command = self._parse_field(_data, 0)
+                        if command:
                             return _count, _data[1::2][0]
 
                 return 0, ""
 
-            def parse_data(self, c, data):
+            def parse_data(self, count: int, data: bytes):
                 _data = data.decode("utf-8").split("\r\n")[3::]
                 username, password = "", ""
-                if c == 2:
-                    _ = 0
-                    if _data[0::2][_][0] == "$" and len(_data[1::2][_]) == int(_data[0::2][_][1]):
-                        username = _data[1::2][_]
-                    _ = 1
-                    if _data[0::2][_][0] == "$" and len(_data[1::2][_]) == int(_data[0::2][_][1]):
-                        password = _data[1::2][_]
-                if c == 1:
-                    _ = 0
-                    if _data[0::2][_][0] == "$" and len(_data[1::2][_]) == int(_data[0::2][_][1]):
-                        password = _data[1::2][_]
-                if c == 2 or c == 1:
+                if count == 2:  # noqa: PLR2004
+                    username = self._parse_field(_data, 0)
+                    password = self._parse_field(_data, 1)
+                elif count == 1:
+                    password = self._parse_field(_data, 0)
+                if count in {1, 2}:
                     peer = self.transport.getPeer()
                     _q_s.check_login(
                         check_bytes(username), check_bytes(password), ip=peer.host, port=peer.port
                     )
 
-            def connectionMade(self):
+            @staticmethod
+            def _parse_field(str_list: list[str], index: int) -> str:
+                if str_list[0::2][index][0] == "$" and len(str_list[1::2][index]) == int(
+                    str_list[0::2][index][1]
+                ):
+                    return str_list[1::2][index]
+                return ""
+
+            def connectionMade(self):  # noqa: N802
                 self._state = 1
                 self._variables = {}
                 _q_s.log(
@@ -74,10 +76,10 @@ class QRedisServer(BaseServer):
                     }
                 )
 
-            def dataReceived(self, data):
-                c, command = self.get_command(data)
+            def dataReceived(self, data: bytes):  # noqa: N802
+                count, command = self.get_command(data)
                 if command == "AUTH":
-                    self.parse_data(c, data)
+                    self.parse_data(count, data)
                     self.transport.write(b"-ERR invalid password\r\n")
                 else:
                     self.transport.write(f'-ERR unknown command "{command}"\r\n'.encode())
@@ -97,7 +99,7 @@ class QRedisServer(BaseServer):
             _username = username or self.username
             _password = password or self.password
             r = StrictRedis.from_url(f"redis://{_username}:{_password}@{_ip}:{_port}/1")
-            for key in r.scan_iter("user:*"):
+            for _ in r.scan_iter("user:*"):
                 pass
 
 

@@ -69,7 +69,14 @@ class QSIPServer(BaseServer):
             _password = password or self.password
             sock = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP)
             sock.sendto(
-                b"INVITE sip:user_1@test.test SIP/2.0\r\nTo: <sip:user_2@test.test>\r\nFrom: sip:user_3@test.test.test;tag=none\r\nCall-ID: 1@0.0.0.0\r\nCSeq: 1 INVITE\r\nContact: sip:user_3@test.test.test\r\nVia: SIP/2.0/TCP 0.0.0.0;branch=34uiddhjczqw3mq23\r\nContent-Length: 1\r\n\r\nT",
+                b"INVITE sip:user_1@test.test SIP/2.0\r\n"
+                b"To: <sip:user_2@test.test>\r\n"
+                b"From: sip:user_3@test.test.test;tag=none\r\n"
+                b"Call-ID: 1@0.0.0.0\r\n"
+                b"CSeq: 1 INVITE\r\n"
+                b"Contact: sip:user_3@test.test.test\r\n"
+                b"Via: SIP/2.0/TCP 0.0.0.0;branch=34uiddhjczqw3mq23\r\n"
+                b"Content-Length: 1\r\n\r\nT",
                 (_ip, _port),
             )
             sock.close()

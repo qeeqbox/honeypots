@@ -9,15 +9,12 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 """
-
 from contextlib import suppress
-from logging import DEBUG, getLogger, StreamHandler
-from os import path
+from pathlib import Path
 from random import randint
-from shutil import rmtree
-from tempfile import mkdtemp
+from tempfile import TemporaryDirectory
 from threading import current_thread
-from time import sleep
+from unittest.mock import patch
 
 from impacket import smbserver
 from impacket.ntlm import compute_lmhash, compute_nthash
@@ -26,6 +23,7 @@ from six.moves import socketserver
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    hide_stderr,
 )
 
 
@@ -37,41 +35,8 @@ class QSMBServer(BaseServer):
         super().__init__(**kwargs)
         self.folders = ""
 
-    def server_main(self):
+    def server_main(self):  # noqa: C901
         _q_s = self
-
-        class Logger:
-            def write(self, message):
-                temp = current_thread().name
-                if temp.startswith("thread_"):
-                    ip = temp.split("_")[1]
-                    port = temp.split("_")[2]
-                    if (
-                        "Incoming connection" in message.strip()
-                        or "AUTHENTICATE_MESSAGE" in message.strip()
-                        or "authenticated successfully" in message.strip()
-                    ):
-                        _q_s.log(
-                            {
-                                "action": "connection",
-                                "data": message.strip(),
-                                "src_ip": ip,
-                                "src_port": port,
-                            }
-                        )
-                    elif ":aaaaaaaaaaaaaaaa:" in message.strip():
-                        parsed = message.strip().split(":")
-                        if len(parsed) == 6:
-                            username, _, _, _, nt_res_1, nt_res_2 = parsed
-                            _q_s.log(
-                                {
-                                    "action": "login",
-                                    "username": username,
-                                    "src_ip": ip,
-                                    "src_port": port,
-                                    "data": {"nt_data_1": nt_res_1, "nt_data_2": nt_res_2},
-                                }
-                            )
 
         class SMBSERVERHandler(smbserver.SMBSERVERHandler):
             def __init__(self, request, client_address, server, select_poll=False):
@@ -84,51 +49,73 @@ class QSMBServer(BaseServer):
                 current_thread().name = self.__connId
                 socketserver.BaseRequestHandler.__init__(self, request, client_address, server)
 
-        class SMBSERVER(smbserver.SMBSERVER):
+        class SMBServer(smbserver.SMBSERVER):
             def __init__(self, server_address, handler_class=SMBSERVERHandler, config_parser=None):
                 super().__init__(server_address, handler_class, config_parser)
 
-            def processRequest(self, connId, data):
-                x = super().processRequest(connId, data)
-                return x
+            def processRequest(self, connId, data):  # noqa: N802,N803
+                # hide trace logging from smbserver module
+                with hide_stderr():
+                    return super().processRequest(connId, data)
+
+            def log(self, msg, level=None):  # noqa: ARG002
+                temp = current_thread().name
+                if not temp.startswith("thread_") or temp.count("_") < 2:  # noqa: PLR2004
+                    return
+                _, ip, port, *_ = temp.split("_")
+                message = msg.strip()
+                if (
+                    "Incoming connection" in message
+                    or "AUTHENTICATE_MESSAGE" in message
+                    or "authenticated successfully" in message
+                ):
+                    _q_s.log(
+                        {
+                            "action": "connection",
+                            "data": message,
+                            "src_ip": ip,
+                            "src_port": port,
+                        }
+                    )
+                elif ":aaaaaaaaaaaaaaaa:" in message:
+                    with suppress(ValueError):
+                        username, _, _, _, nt_res_1, nt_res_2 = message.split(":")
+                        _q_s.log(
+                            {
+                                "action": "login",
+                                "username": username,
+                                "src_ip": ip,
+                                "src_port": port,
+                                "data": {"nt_data_1": nt_res_1, "nt_data_2": nt_res_2},
+                            }
+                        )
 
         class SimpleSMBServer(smbserver.SimpleSMBServer):
-            def __init__(self, listenAddress="0.0.0.0", listenPort=445, configFile=""):
-                super().__init__(listenAddress, listenPort, configFile)
-                self.__server.server_close()
-                sleep(randint(1, 2))
-                self.__server = SMBSERVER(
-                    (listenAddress, listenPort), config_parser=self.__smbConfig
-                )
-                self.__server.processConfigFile()
+            def __init__(self, listenAddress="0.0.0.0", listenPort=445, configFile=""):  # noqa: N803
+                with patch("impacket.smbserver.SMBSERVER", SMBServer):
+                    super().__init__(listenAddress, listenPort, configFile)
 
             def start(self):
                 self.__srvsServer.start()
                 self.__wkstServer.start()
                 self.__server.serve_forever()
 
-        handler = StreamHandler(Logger())
-        getLogger("impacket").addHandler(handler)
-        getLogger("impacket").setLevel(DEBUG)
+        with TemporaryDirectory() as tmpdir:
+            server = SimpleSMBServer(listenAddress=self.ip, listenPort=self.port)
+            if self.folders == "" or self.folders is None:
+                server.addShare("C$", tmpdir, "", readOnly="yes")
+            else:
+                for folder in self.folders.split(","):
+                    name, path = folder.split(":")
+                    if Path(path).is_dir() and len(name) > 0:
+                        server.addShare(name, path, "", readOnly="yes")
 
-        dirpath = mkdtemp()
-        server = SimpleSMBServer(listenAddress=self.ip, listenPort=self.port)
-        # server.removeShare('IPC$')
-        if self.folders == "" or self.folders is None:
-            server.addShare("C$", dirpath, "", readOnly="yes")
-        else:
-            for folder in self.folders.split(","):
-                name, d = folder.split(":")
-                if path.isdir(d) and len(name) > 0:
-                    server.addShare(name, d, "", readOnly="yes")
-
-        server.setSMB2Support(True)
-        server.addCredential(
-            self.username, 0, compute_lmhash(self.password), compute_nthash(self.password)
-        )
-        server.setSMBChallenge("")
-        server.start()
-        rmtree(dirpath)
+            server.setSMB2Support(True)
+            server.addCredential(
+                self.username, 0, compute_lmhash(self.password), compute_nthash(self.password)
+            )
+            server.setSMBChallenge("")
+            server.start()
 
     def test_server(self, ip=None, port=None, username=None, password=None):
         with suppress(Exception):

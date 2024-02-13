@@ -28,15 +28,12 @@ class QRDPServer(BaseServer):
     NAME = "rdp_server"
     DEFAULT_PORT = 3389
 
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def server_main(self):
+    def server_main(self):  # noqa: C901
         _q_s = self
 
         class ConnectionHandle(Thread):
             def __init__(self, sock, key, cert):
-                super(ConnectionHandle, self).__init__()
+                super().__init__()
                 self.sock = sock
                 self.key = key
                 self.cert = cert
@@ -44,12 +41,12 @@ class QRDPServer(BaseServer):
             def get_value(self, length, data):
                 with suppress(Exception):
                     var = b""
-                    for idx, _ in enumerate(data):
-                        if _ == 0 and data[idx + 1] == 0:
+                    for idx, byte in enumerate(data):
+                        if byte == 0 and data[idx + 1] == 0:
                             break
-                        if _ == 0:
+                        if byte == 0:
                             continue
-                        var += bytes([_])
+                        var += bytes([byte])
                     if length / 2 == len(var):
                         return var
                 return b""
@@ -60,34 +57,27 @@ class QRDPServer(BaseServer):
             def extract_creds(self, data: bytes):
                 with suppress(Exception):
                     (
-                        flag,
-                        flags,
-                        code_page,
-                        option_flags,
                         domain_length,
                         user_length,
                         password_length,
                         shell_length,
                         working_dir_length,
-                    ) = unpack("HHIIHHHHH", data[15:37])
+                    ) = unpack("HHHHH", data[27:37])
                     location = 37
-                    domain = self.get_value(domain_length, data[location:])
-                    location = location + domain_length + 2
+                    _ = self.get_value(domain_length, data[location:])
+                    location += domain_length + 2
                     user = self.get_value(user_length, data[location:])
-                    location = location + user_length + 2
+                    location += user_length + 2
                     password = self.get_value(password_length, data[location:])
-                    location = location + password_length + 2
-                    shell = self.get_value(shell_length, data[location:])
-                    location = location + shell_length + 2
-                    working_dir = self.get_value(working_dir_length, data[location:])
+                    location += password_length + 2
+                    _ = self.get_value(shell_length, data[location:])
+                    location += shell_length + 2
+                    _ = self.get_value(working_dir_length, data[location:])
                 return user, password
 
             def run(self):
-                # There is no good documentation on how RDP protocol works (It took a bit of time to figure it out - Use b1105eb1-d1f7-414b-ad68-fd0c5a7823e4 test case)
-                cookie = ""
-                rdpdr = False
-                cliprdr = False
-                rdpsnd = False
+                # There is no good documentation on how RDP protocol works (It took a bit of time
+                # to figure it out - Use b1105eb1-d1f7-414b-ad68-fd0c5a7823e4 test case)
                 initiator = b"\x00\x06"
                 with suppress(Exception):
                     _q_s.log(
@@ -132,19 +122,15 @@ class QRDPServer(BaseServer):
 
                     data = self.sock.recv(1024)
 
-                    if b"rdpdr" in data:
-                        rdpdr = True
-                    if b"cliprdr" in data:
-                        cliprdr = True
-                    if b"rdpsnd" in data:
-                        rdpsnd = True
-
                     # MCS Connect Response PDU with GCC Conference Create Response
                     # \x03\x00\x00
                     # \x7c
-                    # \x02\xf0\x80\x7f\x66\x74\x0a\x01\x00\x02\x01\x00\x30\x1a\x02\x01\x22\x02\x01\x03\x02\x01\x00\x02\x01\x01\x02\x01\x00\x02\x01\x01\x02\x03\x00\xff\xf8\x02\x01\x02\x04
+                    # \x02\xf0\x80\x7f\x66\x74\x0a\x01\x00\x02\x01\x00\x30\x1a\x02\x01\x22\x02
+                    # \x01\x03\x02\x01\x00\x02\x01\x01\x02\x01\x00\x02\x01\x01\x02\x03\x00\xff
+                    # \xf8\x02\x01\x02\x04
                     # \x4e
-                    # \x00\x05\x00\x14\x7c\x00\x01\x2a\x14\x76\x0a\x01\x01\x00\x01\xc0\x00\x4d\x63\x44\x6e
+                    # \x00\x05\x00\x14\x7c\x00\x01\x2a\x14\x76\x0a\x01\x01\x00\x01\xc0\x00\x4d
+                    # \x63\x44\x6e
                     # \x38
                     # \x01\x0c SC_CORE
                     # \x0e\x00\x04\x00\x08\x00\x03\x00\x00\x00\x03\x00
@@ -162,7 +148,14 @@ class QRDPServer(BaseServer):
                     # \x08\x00\x00\x00\x00\x00
 
                     self.sock.send(
-                        b"\x03\x00\x00\x7c\x02\xf0\x80\x7f\x66\x74\x0a\x01\x00\x02\x01\x00\x30\x1a\x02\x01\x22\x02\x01\x03\x02\x01\x00\x02\x01\x01\x02\x01\x00\x02\x01\x01\x02\x03\x00\xff\xf8\x02\x01\x02\x04\x4e\x00\x05\x00\x14\x7c\x00\x01\x2a\x14\x76\x0a\x01\x01\x00\x01\xc0\x00\x4d\x63\x44\x6e\x38\x01\x0c\x0e\x00\x04\x00\x08\x00\x03\x00\x00\x00\x03\x00\x02\x0c\x0c\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x0c\x10\x00\xeb\x03\x04\x00\xec\x03\xed\x03\xee\x03\xef\x03\x04\x0c\x06\x00\xf0\x03\x08\x0c\x08\x00\x00\x00\x00\x00"
+                        b"\x03\x00\x00\x7c\x02\xf0\x80\x7f\x66\x74\x0a\x01\x00\x02\x01\x00\x30"
+                        b"\x1a\x02\x01\x22\x02\x01\x03\x02\x01\x00\x02\x01\x01\x02\x01\x00\x02"
+                        b"\x01\x01\x02\x03\x00\xff\xf8\x02\x01\x02\x04\x4e\x00\x05\x00\x14\x7c"
+                        b"\x00\x01\x2a\x14\x76\x0a\x01\x01\x00\x01\xc0\x00\x4d\x63\x44\x6e\x38"
+                        b"\x01\x0c\x0e\x00\x04\x00\x08\x00\x03\x00\x00\x00\x03\x00\x02\x0c\x0c"
+                        b"\x00\x00\x00\x00\x00\x00\x00\x00\x00\x03\x0c\x10\x00\xeb\x03\x04\x00"
+                        b"\xec\x03\xed\x03\xee\x03\xef\x03\x04\x0c\x06\x00\xf0\x03\x08\x0c\x08"
+                        b"\x00\x00\x00\x00\x00"
                     )
 
                     data = self.sock.recv(1024)
@@ -178,10 +171,10 @@ class QRDPServer(BaseServer):
 
                     with suppress(Exception):
                         # 7 times + 1
-                        for i in range(8):
+                        for _ in range(8):
                             data = self.sock.recv(1024)
-                            if len(data) > 14:
-                                if data[15] == 64:
+                            if len(data) > 14:  # noqa: PLR2004
+                                if data[15] == 64:  # noqa: PLR2004
                                     username, password = self.extract_creds(data)
                                     peer = self.sock.getpeername()
                                     _q_s.check_login(

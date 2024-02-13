@@ -9,13 +9,9 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 """
-from contextlib import suppress
-from warnings import filterwarnings
 
-from cryptography.utils import CryptographyDeprecationWarning
-
-filterwarnings(action="ignore", category=CryptographyDeprecationWarning)
-from scapy.all import SNMP
+from scapy.error import Scapy_Exception
+from scapy.layers.snmp import SNMP
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 
@@ -34,17 +30,18 @@ class QSNMPServer(BaseServer):
 
         class CustomDatagramProtocolProtocol(DatagramProtocol):
             def parse_snmp(self, data):
-                version = "UnKnown"
-                community = "UnKnown"
-                oids = "UnKnown"
-                with suppress(Exception):
+                try:
                     parsed_snmp = SNMP(data)
                     community = parsed_snmp.community.val
                     version = parsed_snmp.version.val
                     oids = " ".join([item.oid.val for item in parsed_snmp.PDU.varbindlist])
+                except Scapy_Exception:
+                    version = "UnKnown"
+                    community = "UnKnown"
+                    oids = "UnKnown"
                 return version, community, oids
 
-            def datagramReceived(self, data, addr):
+            def datagramReceived(self, data, addr):  # noqa: N802
                 _q_s.log(
                     {
                         "action": "connection",
@@ -71,8 +68,8 @@ class QSNMPServer(BaseServer):
         )
         reactor.run()
 
-    def test_server(self, ip=None, port=None, username=None, password=None):
-        with suppress(Exception):
+    def test_server(self, ip=None, port=None, username=None, password=None):  # noqa: ARG002
+        try:
             from pysnmp.hlapi import (
                 getCmd,
                 SnmpEngine,
@@ -92,7 +89,9 @@ class QSNMPServer(BaseServer):
                 ContextData(),
                 ObjectType(ObjectIdentity("1.3.6.1.4.1.9.9.618.1.4.1.0")),
             )
-            errorIndication, errorStatus, errorIndex, varBinds = next(g)
+            next(g)
+        except Exception as error:
+            self.logger.exception(f"Error during test of {self.NAME} server: {error}")
 
 
 if __name__ == "__main__":
