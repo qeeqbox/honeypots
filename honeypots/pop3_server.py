@@ -41,7 +41,7 @@ class QPOP3Server(BaseServer):
             def connectionMade(self):
                 _q_s.logs.info(
                     {
-                        "server": "pop3_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
@@ -57,7 +57,7 @@ class QPOP3Server(BaseServer):
                     if "capture_commands" in _q_s.options:
                         _q_s.logs.info(
                             {
-                                "server": "pop3_server",
+                                "server": _q_s.NAME,
                                 "action": "command",
                                 "data": {
                                     "cmd": check_bytes(command),
@@ -104,7 +104,7 @@ class QPOP3Server(BaseServer):
                         status = "success"
                     _q_s.logs.info(
                         {
-                            "server": "pop3_server",
+                            "server": _q_s.NAME,
                             "action": "login",
                             "status": status,
                             "src_ip": self.transport.getPeer().host,
