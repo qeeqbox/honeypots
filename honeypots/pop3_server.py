@@ -20,6 +20,7 @@ from twisted.mail.pop3 import POP3, POP3Error
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -37,16 +38,10 @@ class QPOP3Server(BaseServer):
         class CustomPOP3Protocol(POP3):
             self._user = None
 
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
-
             def connectionMade(self):
                 _q_s.logs.info(
                     {
-                        "server": "pop3_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
@@ -62,11 +57,11 @@ class QPOP3Server(BaseServer):
                     if "capture_commands" in _q_s.options:
                         _q_s.logs.info(
                             {
-                                "server": "pop3_server",
+                                "server": _q_s.NAME,
                                 "action": "command",
                                 "data": {
-                                    "cmd": self.check_bytes(command),
-                                    "args": self.check_bytes(b" ".join(args)),
+                                    "cmd": check_bytes(command),
+                                    "args": check_bytes(b" ".join(args)),
                                 },
                                 "src_ip": self.transport.getPeer().host,
                                 "src_port": self.transport.getPeer().port,
@@ -89,7 +84,7 @@ class QPOP3Server(BaseServer):
                 authCmd = command in self.AUTH_CMDS
                 if not self.mbox and not authCmd:
                     raise POP3Error(b"not authenticated yet: cannot do " + command)
-                f = getattr(self, f"do_{self.check_bytes(command)}", None)
+                f = getattr(self, f"do_{check_bytes(command)}", None)
                 if f:
                     return f(*args)
                 raise POP3Error(b"Unknown protocol command: " + command)
@@ -100,8 +95,8 @@ class QPOP3Server(BaseServer):
 
             def do_PASS(self, password: bytes, *words: Tuple[bytes]):
                 if self._user:
-                    username = self.check_bytes(self._user)
-                    password = self.check_bytes(b" ".join((password,) + words))
+                    username = check_bytes(self._user)
+                    password = check_bytes(b" ".join((password,) + words))
                     status = "failed"
                     if username == _q_s.username and password == _q_s.password:
                         username = _q_s.username
@@ -109,7 +104,7 @@ class QPOP3Server(BaseServer):
                         status = "success"
                     _q_s.logs.info(
                         {
-                            "server": "pop3_server",
+                            "server": _q_s.NAME,
                             "action": "login",
                             "status": status,
                             "src_ip": self.transport.getPeer().host,

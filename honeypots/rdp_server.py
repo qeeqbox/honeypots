@@ -11,18 +11,16 @@
 """
 
 from contextlib import suppress
-from os import path
 from socket import socket, SHUT_RDWR, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from ssl import SSLContext, PROTOCOL_TLSv1_2, CERT_NONE
 from struct import unpack
-from tempfile import gettempdir, _get_candidate_names
 from threading import Thread
-
-from OpenSSL import crypto
 
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    create_certificate,
+    check_bytes,
 )
 
 
@@ -32,31 +30,9 @@ class QRDPServer(BaseServer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.key = path.join(gettempdir(), next(_get_candidate_names()))
-        self.cert = path.join(gettempdir(), next(_get_candidate_names()))
 
     def server_main(self):
         _q_s = self
-
-        def CreateCert(host_name, key, cert):
-            pk = crypto.PKey()
-            pk.generate_key(crypto.TYPE_RSA, 2048)
-            c = crypto.X509()
-            c.get_subject().C = "US"
-            c.get_subject().ST = "OR"
-            c.get_subject().L = "None"
-            c.get_subject().O = "None"
-            c.get_subject().OU = "None"
-            c.get_subject().CN = next(_get_candidate_names())
-            c.set_serial_number(0)
-            before, after = (0, 60 * 60 * 24 * 365 * 2)
-            c.gmtime_adj_notBefore(before)
-            c.gmtime_adj_notAfter(after)
-            c.set_issuer(c.get_subject())
-            c.set_pubkey(pk)
-            c.sign(pk, "sha256")
-            open(cert, "wb").write(crypto.dump_certificate(crypto.FILETYPE_PEM, c))
-            open(key, "wb").write(crypto.dump_privatekey(crypto.FILETYPE_PEM, pk))
 
         class ConnectionHandle(Thread):
             def __init__(self, sock, key, cert):
@@ -64,12 +40,6 @@ class QRDPServer(BaseServer):
                 self.sock = sock
                 self.key = key
                 self.cert = cert
-
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
 
             def get_value(self, length, data):
                 with suppress(Exception):
@@ -79,25 +49,15 @@ class QRDPServer(BaseServer):
                             break
                         if _ == 0:
                             continue
-                        else:
-                            var += bytes([_])
+                        var += bytes([_])
                     if length / 2 == len(var):
                         return var
                 return b""
 
-            def extract_cookie(self, data):
-                cookie = b""
-                with suppress(Exception):
-                    for idx, _ in enumerate(data):
-                        if _ == 13 and data[idx + 1] == 10:
-                            break
-                        else:
-                            cookie += bytes([_])
-                return cookie
+            def extract_cookie(self, data: bytes) -> bytes:
+                return data[: data.find(b"\r\n")]
 
-            def extract_creds(self, data):
-                user = ""
-                password = ""
+            def extract_creds(self, data: bytes):
                 with suppress(Exception):
                     (
                         flag,
@@ -132,7 +92,7 @@ class QRDPServer(BaseServer):
                 with suppress(Exception):
                     _q_s.logs.info(
                         {
-                            "server": "rdp_server",
+                            "server": _q_s.NAME,
                             "action": "connection",
                             "src_ip": self.sock.getpeername()[0],
                             "src_port": self.sock.getpeername()[1],
@@ -144,11 +104,10 @@ class QRDPServer(BaseServer):
 
                     data = self.sock.recv(1024)
                     if b"Cookie" in data:
-                        cookie = self.extract_cookie(data[11:])
-                        cookie = self.check_bytes(cookie)
+                        cookie = self.extract_cookie(data[11:]).decode(errors="replace")
                         _q_s.logs.info(
                             {
-                                "server": "rdp_server",
+                                "server": _q_s.NAME,
                                 "action": "stshash",
                                 "mstshash": "success",
                                 "src_ip": self.sock.getpeername()[0],
@@ -229,19 +188,15 @@ class QRDPServer(BaseServer):
                             data = self.sock.recv(1024)
                             if len(data) > 14:
                                 if data[15] == 64:
-                                    username = ""
-                                    password = ""
                                     status = "failed"
                                     username, password = self.extract_creds(data)
-                                    username = self.check_bytes(username)
-                                    password = self.check_bytes(password)
+                                    username = check_bytes(username)
+                                    password = check_bytes(password)
                                     if username == _q_s.username and password == _q_s.password:
-                                        username = _q_s.username
-                                        password = _q_s.password
                                         status = "success"
                                     _q_s.logs.info(
                                         {
-                                            "server": "rdp_server",
+                                            "server": _q_s.NAME,
                                             "action": "login",
                                             "status": status,
                                             "src_ip": self.sock.getpeername()[0],
@@ -271,17 +226,17 @@ class QRDPServer(BaseServer):
                 with suppress(Exception):
                     self.sock.close()
 
-        CreateCert("localhost", self.key, self.cert)
         rpdserver = socket(AF_INET, SOCK_STREAM)
         rpdserver.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         rpdserver.bind((self.ip, self.port))
         rpdserver.listen()
 
-        while True:
-            with suppress(Exception):
-                client, addr = rpdserver.accept()
-                client.settimeout(10.0)
-                ConnectionHandle(client, self.key, self.cert).start()
+        with create_certificate() as (cert, key):
+            while True:
+                with suppress(Exception):
+                    client, addr = rpdserver.accept()
+                    client.settimeout(10.0)
+                    ConnectionHandle(client, key, cert).start()
 
     def test_server(self, ip=None, port=None):
         with suppress(Exception):

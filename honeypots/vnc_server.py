@@ -20,6 +20,7 @@ from twisted.internet.protocol import Factory, Protocol
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -57,18 +58,12 @@ class QVNCServer(BaseServer):
         class CustomVNCProtocol(Protocol):
             _state = None
 
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
-
             def connectionMade(self):
                 self.transport.write(b"RFB 003.008\n")
                 self._state = 1
                 _q_s.logs.info(
                     {
-                        "server": "vnc_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
@@ -88,21 +83,19 @@ class QVNCServer(BaseServer):
                         self.transport.write(_q_s.challenge)
                 elif self._state == 3:
                     with suppress(Exception):
-                        username = self.check_bytes(_q_s.decode(_q_s.challenge, data.hex()))
-                        password = self.check_bytes(data)
+                        username = check_bytes(_q_s.decode(_q_s.challenge, data.hex()))
+                        password = check_bytes(data)
                         status = "failed"
                         # may need decode
                         if username == _q_s.username and password == _q_s.password:
-                            username = _q_s.username
-                            password = _q_s.password
                             status = "success"
                         else:
                             password = data.hex()
                         _q_s.logs.info(
                             {
-                                "server": "vnc_server",
+                                "server": _q_s.NAME,
                                 "action": "login",
-                                status: "failed",
+                                "status": status,
                                 "src_ip": self.transport.getPeer().host,
                                 "src_port": self.transport.getPeer().port,
                                 "dest_ip": _q_s.ip,

@@ -34,6 +34,7 @@ from paramiko.ssh_exception import SSHException
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -64,13 +65,6 @@ class QSSHServer(BaseServer):
                 self.ip = ip
                 self.port = port
                 self.event = Event()
-                # ServerInterface.__init__(self)
-
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
 
             def check_channel_request(self, kind, chanid):
                 if kind == "session":
@@ -78,8 +72,8 @@ class QSSHServer(BaseServer):
                 return OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
 
             def check_auth_password(self, username, password):
-                username = self.check_bytes(username)
-                password = self.check_bytes(password)
+                username = check_bytes(username)
+                password = check_bytes(password)
                 status = "failed"
                 if username == _q_s.username and password == _q_s.password:
                     username = _q_s.username
@@ -88,7 +82,7 @@ class QSSHServer(BaseServer):
                 if status == "success":
                     _q_s.logs.info(
                         {
-                            "server": "ssh_server",
+                            "server": _q_s.NAME,
                             "action": "login",
                             "status": status,
                             "src_ip": self.ip,
@@ -102,7 +96,7 @@ class QSSHServer(BaseServer):
                     return AUTH_SUCCESSFUL
                 _q_s.logs.info(
                     {
-                        "server": "ssh_server",
+                        "server": _q_s.NAME,
                         "action": "login",
                         "status": status,
                         "src_ip": self.ip,
@@ -119,13 +113,13 @@ class QSSHServer(BaseServer):
                 if "capture_commands" in _q_s.options:
                     _q_s.logs.info(
                         {
-                            "server": "ssh_server",
+                            "server": _q_s.NAME,
                             "action": "command",
                             "src_ip": self.ip,
                             "src_port": self.port,
                             "dest_ip": _q_s.ip,
                             "dest_port": _q_s.port,
-                            "data": {"command": self.check_bytes(command)},
+                            "data": {"command": check_bytes(command)},
                         }
                     )
                 self.event.set()
@@ -137,14 +131,14 @@ class QSSHServer(BaseServer):
             def check_auth_publickey(self, username, key):
                 _q_s.logs.info(
                     {
-                        "server": "ssh_server",
+                        "server": _q_s.NAME,
                         "action": "login",
                         "src_ip": self.ip,
                         "src_port": self.port,
                         "dest_ip": _q_s.ip,
                         "dest_port": _q_s.port,
-                        "username": self.check_bytes(username),
-                        "key_fingerprint": self.check_bytes(hexlify(key.get_fingerprint())),
+                        "username": check_bytes(username),
+                        "key_fingerprint": check_bytes(hexlify(key.get_fingerprint())),
                     }
                 )
                 return AUTH_SUCCESSFUL
@@ -166,7 +160,7 @@ class QSSHServer(BaseServer):
                 ip, port = client.getpeername()
                 _q_s.logs.info(
                     {
-                        "server": "ssh_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": ip,
                         "src_port": port,
@@ -184,11 +178,11 @@ class QSSHServer(BaseServer):
                 conn = t.accept(30)
                 if "interactive" in _q_s.options and conn is not None:
                     conn.send(
-                        "Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.10.60.1-microsoft-standard-WSL2 x86_64)\r\n\r\n"
+                        b"Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.10.60.1-microsoft-standard-WSL2 x86_64)\r\n\r\n"
                     )
                     current_time = time()
                     while True and time() < current_time + 10:
-                        conn.send("/$ ")
+                        conn.send(b"/$ ")
                         line = ""
                         while (
                             not line.endswith("\x0d")
@@ -199,12 +193,12 @@ class QSSHServer(BaseServer):
                             recv = conn.recv(1).decode()
                             conn.settimeout(None)
                             if _q_s.ansi.match(recv) is None and recv != "\x7f":
-                                conn.send(recv)
+                                conn.send(recv.encode())
                                 line += recv
                         line = line.rstrip()
                         _q_s.logs.info(
                             {
-                                "server": "ssh_server",
+                                "server": _q_s.NAME,
                                 "action": "interactive",
                                 "src_ip": ip,
                                 "src_port": port,
@@ -215,16 +209,18 @@ class QSSHServer(BaseServer):
                         )
                         if line == "ls":
                             conn.send(
-                                "\r\nbin cdrom etc lib lib64 lost+found mnt proc run snap swapfile tmp var boot dev home lib32 libx32 media opt root sbin srv sys usr\r\n"
+                                b"\r\nbin cdrom etc lib lib64 lost+found mnt proc run snap "
+                                b"swapfile tmp var boot dev home lib32 libx32 media opt root "
+                                b"sbin srv sys usr\r\n"
                             )
                         elif line == "pwd":
-                            conn.send("\r\n/\r\n")
+                            conn.send(b"\r\n/\r\n")
                         elif line == "whoami":
-                            conn.send("\r\nroot\r\n")
+                            conn.send(b"\r\nroot\r\n")
                         elif line == "exit":
                             break
                         else:
-                            conn.send(f"\r\n{line}: command not found\r\n")
+                            conn.send(f"\r\n{line}: command not found\r\n".encode())
                 with suppress(Exception):
                     sshhandle.event.wait(2)
                 with suppress(Exception):

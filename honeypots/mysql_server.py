@@ -20,6 +20,7 @@ from twisted.internet.protocol import Factory, Protocol
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -125,20 +126,12 @@ class QMysqlServer(BaseServer):
         class CustomMysqlProtocol(Protocol):
             _state = None
 
-            def check_bytes(self, string):
-                with suppress(Exception):
-                    if isinstance(string, bytes):
-                        return string.decode("utf-8", "ignore")
-                    else:
-                        return str(string)
-                return string
-
             def connectionMade(self):
                 self._state = 1
                 self.transport.write(_q_s.greeting())
                 _q_s.logs.info(
                     {
-                        "server": "mysql_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
@@ -152,13 +145,13 @@ class QMysqlServer(BaseServer):
                     if self._state == 1:
                         ret_access_denied = False
                         username, password, good = _q_s.parse_data(data)
-                        username = self.check_bytes(username)
+                        username = check_bytes(username)
                         status = "failed"
                         if good:
                             if password:
                                 password_decoded = _q_s.decode(password)
                                 if password_decoded is not None and username == _q_s.username:
-                                    password = self.check_bytes(password_decoded)
+                                    password = check_bytes(password_decoded)
                                     status = "success"
                                 else:
                                     password = password.hex()
@@ -168,7 +161,7 @@ class QMysqlServer(BaseServer):
                                 password = ":".join(hex(c)[2:] for c in data)
                         _q_s.logs.info(
                             {
-                                "server": "mysql_server",
+                                "server": _q_s.NAME,
                                 "action": "login",
                                 "status": status,
                                 "src_ip": self.transport.getPeer().host,

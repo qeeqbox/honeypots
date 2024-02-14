@@ -33,13 +33,16 @@ def test_ssh_server(server_logs):
         ssh = SSHClient()
         ssh.set_missing_host_key_policy(AutoAddPolicy())
         ssh.connect(IP, port=PORT, username=USERNAME, password=PASSWORD)
+        ssh.exec_command("ls")
         ssh.close()
 
     logs = load_logs_from_file(server_logs)
 
-    assert len(logs) == 2
-    connect, login = logs
+    assert len(logs) == 3
+    connect, login, command = logs
     assert_connect_is_logged(connect, str(PORT))
 
+    assert command["action"] == "command"
+    assert command["data"] == {"command": "ls"}
     assert login["action"] == "login"
     assert login["username"] == USERNAME

@@ -17,6 +17,7 @@ from struct import unpack
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -28,12 +29,6 @@ class QSOCKS5Server(BaseServer):
         _q_s = self
 
         class CustomStreamRequestHandler(StreamRequestHandler):
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
-
             def handle(self):
                 src_ip, src_port = self.client_address
                 _q_s.logs.info(
@@ -53,11 +48,9 @@ class QSOCKS5Server(BaseServer):
                             self.connection.sendall(b"\x05\x02")
                             if 1 in unpack("B", self.connection.recv(1)):
                                 _len = ord(self.connection.recv(1))
-                                username = self.connection.recv(_len)
+                                username = check_bytes(self.connection.recv(_len))
                                 _len = ord(self.connection.recv(1))
-                                password = self.connection.recv(_len)
-                                username = self.check_bytes(username)
-                                password = self.check_bytes(password)
+                                password = check_bytes(self.connection.recv(_len))
                                 status = "failed"
                                 if username == _q_s.username and password == _q_s.password:
                                     status = "success"

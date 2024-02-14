@@ -9,6 +9,7 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 """
+from __future__ import annotations
 
 from binascii import unhexlify
 from contextlib import suppress
@@ -20,6 +21,7 @@ from twisted.internet.protocol import Protocol, Factory
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -33,17 +35,11 @@ class QLDAPServer(BaseServer):
         class CustomLDAProtocol(Protocol):
             _state = None
 
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
-
             def connectionMade(self):
                 self._state = 1
                 _q_s.logs.info(
                     {
-                        "server": "ldap_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
@@ -52,16 +48,13 @@ class QLDAPServer(BaseServer):
                     }
                 )
 
-            def parse_ldap_packet(self, data):
+            @staticmethod
+            def parse_ldap_packet(data: bytes) -> tuple[str, str]:
                 #                 V
                 # 30[20] 0201[02] 60[1b] 0201[03] 04[0a] 7379736261636b757031 [80][0a] 7379736261636b757032
 
                 username = ""
                 password = ""
-                username_start = 0
-                username_end = 0
-                password_start = 0
-                password_end = 0
                 with suppress(Exception):
                     version = data.find(b"\x02\x01\x03")
                     if version > 0:
@@ -88,81 +81,40 @@ class QLDAPServer(BaseServer):
                                 )
                             password = data[password_start:password_end]
 
-                return username, password
+                return check_bytes(username), check_bytes(password)
 
             def dataReceived(self, data):
                 if self._state == 1:
                     self._state = 2
-                    username, password = self.parse_ldap_packet(data)
-                    username = self.check_bytes(username)
-                    password = self.check_bytes(password)
-                    if username != "" or password != "":
-                        if username == _q_s.username and password == _q_s.password:
-                            _q_s.logs.info(
-                                {
-                                    "server": "ldap_server",
-                                    "action": "login",
-                                    "status": "success",
-                                    "src_ip": self.transport.getPeer().host,
-                                    "src_port": self.transport.getPeer().port,
-                                    "dest_ip": _q_s.ip,
-                                    "dest_port": _q_s.port,
-                                    "username": _q_s.username,
-                                    "password": _q_s.password,
-                                }
-                            )
-                        else:
-                            _q_s.logs.info(
-                                {
-                                    "server": "ldap_server",
-                                    "action": "login",
-                                    "status": "failed",
-                                    "src_ip": self.transport.getPeer().host,
-                                    "src_port": self.transport.getPeer().port,
-                                    "dest_ip": _q_s.ip,
-                                    "dest_port": _q_s.port,
-                                    "username": username,
-                                    "password": password,
-                                }
-                            )
+                    self._check_login(data)
                     self.transport.write(unhexlify(b"300c02010165070a013204000400"))
                 elif self._state == 2:
                     self._state = 3
-                    username, password = self.parse_ldap_packet(data)
-                    username = self.check_bytes(username)
-                    password = self.check_bytes(password)
-                    if username != "" or password != "":
-                        if username == _q_s.username and password == _q_s.password:
-                            _q_s.logs.info(
-                                {
-                                    "server": "ldap_server",
-                                    "action": "login",
-                                    "status": "success",
-                                    "src_ip": self.transport.getPeer().host,
-                                    "src_port": self.transport.getPeer().port,
-                                    "dest_ip": _q_s.ip,
-                                    "dest_port": _q_s.port,
-                                    "username": _q_s.username,
-                                    "password": _q_s.password,
-                                }
-                            )
-                        else:
-                            _q_s.logs.info(
-                                {
-                                    "server": "ldap_server",
-                                    "action": "login",
-                                    "status": "failed",
-                                    "src_ip": self.transport.getPeer().host,
-                                    "src_port": self.transport.getPeer().port,
-                                    "dest_ip": _q_s.ip,
-                                    "dest_port": _q_s.port,
-                                    "username": username,
-                                    "password": password,
-                                }
-                            )
+                    self._check_login(data)
                     self.transport.write(unhexlify(b"300c02010265070a013204000400"))
                 else:
                     self.transport.loseConnection()
+
+            def _check_login(self, data):
+                username, password = self.parse_ldap_packet(data)
+                if username != "" or password != "":
+                    if username == _q_s.username and password == _q_s.password:
+                        status = "success"
+                    else:
+                        status = "failed"
+                    _q_s.logs.info(
+                        {
+                            "server": _q_s.NAME,
+                            "action": "login",
+                            "status": status,
+                            "src_ip": self.transport.getPeer().host,
+                            "src_port": self.transport.getPeer().port,
+                            "dest_ip": _q_s.ip,
+                            "dest_port": _q_s.port,
+                            "username": username,
+                            "password": password,
+                        }
+                    )
 
             def connectionLost(self, reason):
                 self._state = None

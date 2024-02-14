@@ -138,7 +138,7 @@ class QMemcacheServer(BaseServer):
             def connectionMade(self):
                 _q_s.logs.info(
                     {
-                        "server": "memcache_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
@@ -164,7 +164,7 @@ class QMemcacheServer(BaseServer):
                     if _data[0] != b"":
                         _q_s.logs.info(
                             {
-                                "server": "memcache_server",
+                                "server": _q_s.NAME,
                                 "action": _data[0].decode(),
                                 "src_ip": self.transport.getPeer().host,
                                 "src_port": self.transport.getPeer().port,

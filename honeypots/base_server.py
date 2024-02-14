@@ -112,3 +112,22 @@ class BaseServer(ABC):
             return True
         self.kill_server()
         return False
+
+    def log_login(self, username: str, password: str, ip: str, port: int):
+        status = "success" if self._login_is_correct(username, password) else "failed"
+        self.logs.info(
+            {
+                "server": self.NAME,
+                "action": "login",
+                "status": status,
+                "src_ip": ip,
+                "src_port": port,
+                "username": username,
+                "password": password,
+                "dest_ip": self.ip,
+                "dest_port": self.port,
+            }
+        )
+
+    def _login_is_correct(self, username: str, password: str) -> bool:
+        return username == self.username and password == self.password

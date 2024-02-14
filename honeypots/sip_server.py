@@ -18,6 +18,7 @@ from twisted.protocols.sip import Base
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -34,25 +35,19 @@ class QSIPServer(BaseServer):
 
                 _q_s.logs.info(
                     {
-                        "server": "sip_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": addr[0],
                         "src_port": addr[1],
                     }
                 )
 
-                def check_bytes(string):
-                    if isinstance(string, bytes):
-                        return string.decode()
-                    else:
-                        return str(string)
-
                 for item, value in message.headers.items():
                     headers.update({check_bytes(item): ",".join(map(check_bytes, value))})
 
                 _q_s.logs.info(
                     {
-                        "server": "sip_server",
+                        "server": _q_s.NAME,
                         "action": "request",
                         "src_ip": addr[0],
                         "src_port": addr[1],

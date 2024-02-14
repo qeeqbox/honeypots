@@ -14,17 +14,15 @@ from base64 import b64encode, b64decode
 from contextlib import suppress
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from json import dumps
-from os import path
 from ssl import wrap_socket
-from tempfile import gettempdir, _get_candidate_names
 from urllib.parse import urlparse
 from zlib import compressobj, DEFLATED
-
-from OpenSSL import crypto
 
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    create_certificate,
+    check_bytes,
 )
 
 
@@ -32,31 +30,6 @@ class QElasticServer(BaseServer):
     NAME = "elastic_server"
     DEFAULT_PORT = 9200
     DEFAULT_USERNAME = "elastic"
-
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-        self.key = path.join(gettempdir(), next(_get_candidate_names()))
-        self.cert = path.join(gettempdir(), next(_get_candidate_names()))
-
-    def CreateCert(self, host_name, key, cert):
-        pk = crypto.PKey()
-        pk.generate_key(crypto.TYPE_RSA, 2048)
-        c = crypto.X509()
-        c.get_subject().C = "US"
-        c.get_subject().ST = "OR"
-        c.get_subject().L = "None"
-        c.get_subject().O = "None"
-        c.get_subject().OU = "None"
-        c.get_subject().CN = next(_get_candidate_names())
-        c.set_serial_number(0)
-        before, after = (0, 60 * 60 * 24 * 365 * 2)
-        c.gmtime_adj_notBefore(before)
-        c.gmtime_adj_notAfter(after)
-        c.set_issuer(c.get_subject())
-        c.set_pubkey(pk)
-        c.sign(pk, "sha256")
-        open(cert, "wb").write(crypto.dump_certificate(crypto.FILETYPE_PEM, c))
-        open(key, "wb").write(crypto.dump_privatekey(crypto.FILETYPE_PEM, pk))
 
     def server_main(self):
         _q_s = self
@@ -68,19 +41,12 @@ class QElasticServer(BaseServer):
             def _dump_headers(self):
                 headers = {}
                 with suppress(Exception):
-
-                    def check_bytes(string):
-                        if isinstance(string, bytes):
-                            return string.decode()
-                        else:
-                            return str(string)
-
                     for item, value in dict(self.headers).items():
                         headers.update({check_bytes(item): check_bytes(value)})
 
                 _q_s.logs.info(
                     {
-                        "server": "elastic_server",
+                        "server": _q_s.NAME,
                         "action": "dump",
                         "data": check_bytes(self.raw_requestline),
                         "src_ip": self.client_address[0],
@@ -145,7 +111,7 @@ class QElasticServer(BaseServer):
                 if self.headers.get("Authorization") is None:
                     _q_s.logs.info(
                         {
-                            "server": "elastic_server",
+                            "server": _q_s.NAME,
                             "action": "login",
                             "status": "failed",
                             "src_ip": self.client_address[0],
@@ -189,7 +155,7 @@ class QElasticServer(BaseServer):
                     extracted = ""
                     _q_s.logs.info(
                         {
-                            "server": "elastic_server",
+                            "server": _q_s.NAME,
                             "action": "login",
                             "status": "success",
                             "src_ip": self.client_address[0],
@@ -372,7 +338,7 @@ class QElasticServer(BaseServer):
                     username, password = basic.split(":")
                     _q_s.logs.info(
                         {
-                            "server": "elastic_server",
+                            "server": _q_s.NAME,
                             "action": "login",
                             "status": "failed",
                             "src_ip": self.client_address[0],
@@ -423,7 +389,7 @@ class QElasticServer(BaseServer):
             def handle_one_request(self):
                 _q_s.logs.info(
                     {
-                        "server": "elastic_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.client_address[0],
                         "src_port": self.client_address[1],
@@ -445,16 +411,16 @@ class QElasticServer(BaseServer):
             def get_auth_key(self):
                 return self.key
 
-        server = CustomElasticServer((self.ip, self.port))
-        server.set_auth_key(self.username, self.password)
-        self.CreateCert("localhost", self.key, self.cert)
-        server.socket = wrap_socket(
-            server.socket,
-            keyfile=self.key,
-            certfile=self.cert,
-            server_side=True,
-        )
-        server.serve_forever()
+        with create_certificate() as (cert, key):
+            server = CustomElasticServer((self.ip, self.port))
+            server.set_auth_key(self.username, self.password)
+            server.socket = wrap_socket(
+                server.socket,
+                keyfile=key,
+                certfile=cert,
+                server_side=True,
+            )
+            server.serve_forever()
 
     def test_server(self, ip=None, port=None, username=None, password=None):
         with suppress(Exception):
