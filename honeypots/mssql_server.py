@@ -24,6 +24,11 @@ from honeypots.helper import (
 )
 
 
+class PacketType:
+    login = 0x10
+    pre_login = 0x12
+
+
 class QMSSQLServer(BaseServer):
     NAME = "mssql_server"
     DEFAULT_PORT = 1433
@@ -32,36 +37,32 @@ class QMSSQLServer(BaseServer):
         super().__init__(**kwargs)
         self.file_name = None
 
-    def server_main(self):
+    def server_main(self):  # noqa: C901
         _q_s = self
 
         class CustomMSSQLProtocol(Protocol):
             _state = None
 
-            def create_payload(self, server_name=b"", token_error_msg=b"", error_code=2):
+            def create_payload(
+                self, server_name: str = "", token_error_msg: str = "", error_code=2
+            ) -> bytes:
                 with suppress(Exception):
-                    if server_name == b"":
-                        server_name = b"R&Dbackup"
-                    if token_error_msg == b"":
+                    if server_name == "":
+                        server_name = "R&Dbackup"
+                    if token_error_msg == "":
                         token_error_msg = (
-                            b"An error has occurred while establishing a connection to the server."
+                            "An error has occurred while establishing a connection to the server."
                         )
-                    server_name_hex = ("00".join(hex(c)[2:] for c in server_name)).encode(
-                        "utf-8"
-                    ) + b"00"
                     server_name_hex_len = hexlify(pack("b", len(server_name)))
-                    token_error_msg_hex = ("00".join(hex(c)[2:] for c in token_error_msg)).encode(
-                        "utf-8"
-                    ) + b"00"
                     token_error_msg_hex_len = hexlify(pack("<H", len(token_error_msg)))
                     error_code_hex = hexlify(pack("<I", error_code))
                     token_error_hex = (
                         error_code_hex
                         + b"010e"
                         + token_error_msg_hex_len
-                        + token_error_msg_hex
+                        + hexlify(token_error_msg.encode("utf-16-le"))
                         + server_name_hex_len
-                        + server_name_hex
+                        + hexlify(server_name.encode("utf-16-le"))
                         + b"0001000000"
                     )
                     token_done_hex = b"fd020000000000000000000000"
@@ -69,13 +70,10 @@ class QMSSQLServer(BaseServer):
                     data_stream = (
                         b"0401007600350100aa" + token_error_len + token_error_hex + token_done_hex
                     )
-                    return (
-                        data_stream[0:4]
-                        + hexlify(pack(">H", len(unhexlify(data_stream))))
-                        + data_stream[8:]
-                    )
+                    data_len = hexlify(pack(">H", len(unhexlify(data_stream))))
+                    return unhexlify(data_stream[0:4] + data_len + data_stream[8:])
 
-            def connectionMade(self):
+            def connectionMade(self):  # noqa: N802
                 self._state = 1
                 _q_s.log(
                     {
@@ -85,48 +83,43 @@ class QMSSQLServer(BaseServer):
                     }
                 )
 
-            def dataReceived(self, data):
+            def dataReceived(self, data: bytes):  # noqa: N802
                 if self._state == 1:
-                    version = b"11000000"
-                    if data[0] == 0x12:
+                    version = "11000000"
+                    packet_type = data[0]
+                    if packet_type == PacketType.pre_login:
                         self.transport.write(
-                            unhexlify(
-                                b"0401002500000100000015000601001b000102001c000103001d0000ff"
-                                + version
-                                + b"00000200"
+                            bytes.fromhex(
+                                "0401002500000100000015000601001b000102"
+                                f"001c000103001d0000ff{version}00000200"
                             )
                         )
-                    elif data[0] == 0x10:
-                        value_start, value_length = unpack("=HH", data[48:52])
-                        username = (
-                            data[8 + value_start : 8 + value_start + (value_length * 2)]
-                            .replace(b"\x00", b"")
-                            .decode("utf-8")
-                        )
-                        value_start, value_length = unpack("=HH", data[52:56])
-                        password = data[8 + value_start : 8 + value_start + (value_length * 2)]
-                        password = password.replace(b"\x00", b"").replace(b"\xa5", b"")
-                        password_decrypted = ""
-                        for x in password:
-                            password_decrypted += chr(
-                                ((x ^ 0xA5) & 0x0F) << 4 | ((x ^ 0xA5) & 0xF0) >> 4
-                            )
-                        username = check_bytes(username)
-                        password = check_bytes(password_decrypted)
-                        peer = self.transport.getPeer()
-                        _q_s.check_login(username, password, ip=peer.host, port=peer.port)
-
-                        self.transport.write(
-                            unhexlify(
-                                self.create_payload(
-                                    token_error_msg=b"Login Failed", error_code=18456
-                                )
-                            )
-                        )
+                    elif packet_type == PacketType.login:
+                        self._handle_login(data)
                 else:
                     self.transport.loseConnection()
 
-            def connectionLost(self, reason):
+            def _handle_login(self, data: bytes):
+                value_start, value_length = unpack("=HH", data[48:52])
+                username = (
+                    data[8 + value_start : 8 + value_start + (value_length * 2)]
+                    .replace(b"\x00", b"")
+                    .decode("utf-8")
+                )
+                value_start, value_length = unpack("=HH", data[52:56])
+                password = data[8 + value_start : 8 + value_start + (value_length * 2)]
+                password = password.replace(b"\x00", b"").replace(b"\xa5", b"")
+                password_decrypted = ""
+                for x in password:
+                    password_decrypted += chr(((x ^ 0xA5) & 0x0F) << 4 | ((x ^ 0xA5) & 0xF0) >> 4)
+                peer = self.transport.getPeer()
+                _q_s.check_login(
+                    check_bytes(username), password_decrypted, ip=peer.host, port=peer.port
+                )
+                payload = self.create_payload(token_error_msg="Login Failed", error_code=18456)
+                self.transport.write(payload)
+
+            def connectionLost(self, reason):  # noqa: N802,ARG002
                 self._state = None
 
         factory = Factory()
@@ -145,7 +138,7 @@ class QMSSQLServer(BaseServer):
             conn = pconnect(
                 host=_ip, port=str(_port), user=_username, password=_password, database="dbname"
             )
-            cursor = conn.cursor()
+            conn.cursor()
 
 
 if __name__ == "__main__":
