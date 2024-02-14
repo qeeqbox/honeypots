@@ -19,6 +19,7 @@ from twisted.internet.protocol import DatagramProtocol
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -30,12 +31,6 @@ class QDHCPServer(BaseServer):
         _q_s = self
 
         class CustomDatagramProtocolProtocol(DatagramProtocol):
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
-
             def payload(self, value, message):
                 (
                     op,
@@ -88,7 +83,7 @@ class QDHCPServer(BaseServer):
                             tag_size -= 1
                             tag += chr(b)
                             if tag_size == 0:
-                                options.update({self.check_bytes(tag_name): self.check_bytes(tag)})
+                                options.update({check_bytes(tag_name): check_bytes(tag)})
                                 tag_name = None
                                 tag_size = None
                                 tag = ""
@@ -103,7 +98,7 @@ class QDHCPServer(BaseServer):
                 data.update({"mac_address": mac_address})
                 _q_s.logs.info(
                     {
-                        "server": "dhcp_server",
+                        "server": _q_s.NAME,
                         "action": "query",
                         "status": "success",
                         "src_ip": addr[0],

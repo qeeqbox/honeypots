@@ -22,9 +22,10 @@ from twisted.internet.protocol import Protocol, Factory
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    load_template,
 )
 
-DUMMY_TEMPLATE = (Path(__file__).parent / "data" / "dummy_page.html").read_text()
+DUMMY_TEMPLATE = load_template("dummy_page.html")
 
 
 class QHTTPProxyServer(BaseServer):

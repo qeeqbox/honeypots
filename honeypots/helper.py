@@ -9,11 +9,13 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 """
+from __future__ import annotations
+
 import logging
 import sys
 from argparse import ArgumentParser
 from collections.abc import Mapping
-from contextlib import suppress
+from contextlib import suppress, contextmanager
 from datetime import datetime
 from json import dumps, JSONEncoder, load
 from logging import DEBUG, Formatter, getLogger, Handler
@@ -24,10 +26,12 @@ from signal import SIGTERM
 from socket import AF_INET, SOCK_STREAM, socket
 from sqlite3 import connect as sqlite3_connect
 from sys import stdout
-from tempfile import _get_candidate_names, gettempdir
+from tempfile import _get_candidate_names, gettempdir, NamedTemporaryFile
 from time import sleep
+from typing import Any, Iterator
 from urllib.parse import urlparse
 
+from OpenSSL import crypto
 from psutil import process_iter
 from psycopg2 import connect as psycopg2_connect, sql
 
@@ -153,12 +157,6 @@ def get_running_servers():
                 if "--custom" in cmdline and honeypot in cmdline:
                     temp_list.append(cmdline.split(" --custom ")[1])
     return temp_list
-
-
-def disable_logger(logger_type, object):
-    if logger_type == 1:
-        temp_name = path.join(gettempdir(), next(_get_candidate_names()))
-        object.startLogging(open(temp_name, "w"), setStdout=False)
 
 
 def setup_logger(name, temp_name, config, drop=False):
@@ -687,3 +685,60 @@ def server_arguments():
     )
     _server_parsergroupdef.add_argument("--uuid", type=str, help="unique id", required=False)
     return _server_parser.parse_args()
+
+
+@contextmanager
+def create_certificate() -> Iterator[tuple[str, str]]:
+    pk = crypto.PKey()
+    pk.generate_key(crypto.TYPE_RSA, 2048)
+    certificate = crypto.X509()
+    certificate.get_subject().C = "US"
+    certificate.get_subject().ST = "OR"
+    certificate.get_subject().L = "None"
+    certificate.get_subject().O = "None"
+    certificate.get_subject().OU = "None"
+    certificate.get_subject().CN = next(_get_candidate_names())
+    certificate.set_serial_number(0)
+    before, after = (0, 60 * 60 * 24 * 365 * 2)
+    certificate.gmtime_adj_notBefore(before)
+    certificate.gmtime_adj_notAfter(after)
+    certificate.set_issuer(certificate.get_subject())
+    certificate.set_pubkey(pk)
+    certificate.sign(pk, "sha256")
+    with NamedTemporaryFile() as cert, NamedTemporaryFile() as key:
+        cert_path = Path(cert.name)
+        key_path = Path(key.name)
+        cert_path.write_bytes(crypto.dump_certificate(crypto.FILETYPE_PEM, certificate))
+        key_path.write_bytes(crypto.dump_privatekey(crypto.FILETYPE_PEM, pk))
+        yield cert.name, key.name
+
+
+def check_bytes(string: Any) -> str:
+    if isinstance(string, bytes):
+        return string.decode("utf-8", errors="replace")
+    return str(string)
+
+
+def load_template(filename: str) -> str:
+    file_path = Path(__file__).parent / "data" / filename
+    return file_path.read_text()
+
+
+def get_headers_and_ip_from_request(request, options):
+    headers = {}
+    client_ip = ""
+    with suppress(Exception):
+        for item, value in dict(request.requestHeaders.getAllRawHeaders()).items():
+            headers.update({check_bytes(item): ",".join(map(check_bytes, value))})
+        headers.update({"method": check_bytes(request.method)})
+        headers.update({"uri": check_bytes(request.uri)})
+    if "fix_get_client_ip" in options:
+        with suppress(Exception):
+            raw_headers = dict(request.requestHeaders.getAllRawHeaders())
+            if b"X-Forwarded-For" in raw_headers:
+                client_ip = check_bytes(raw_headers[b"X-Forwarded-For"][0])
+            elif b"X-Real-IP" in raw_headers:
+                client_ip = check_bytes(raw_headers[b"X-Real-IP"][0])
+    if client_ip == "":
+        client_ip = request.getClientAddress().host
+    return client_ip, headers

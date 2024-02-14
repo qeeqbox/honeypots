@@ -18,6 +18,7 @@ from twisted.internet.protocol import Factory, Protocol
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -29,12 +30,6 @@ class QRedisServer(BaseServer):
         _q_s = self
 
         class CustomRedisProtocol(Protocol):
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
-
             def get_command(self, data):
                 with suppress(Exception):
                     _data = data.decode("utf-8").split("\x0d\x0a")
@@ -63,8 +58,8 @@ class QRedisServer(BaseServer):
                     if _data[0::2][_][0] == "$" and len(_data[1::2][_]) == int(_data[0::2][_][1]):
                         password = _data[1::2][_]
                 if c == 2 or c == 1:
-                    username = self.check_bytes(username)
-                    password = self.check_bytes(password)
+                    username = check_bytes(username)
+                    password = check_bytes(password)
                     status = "failed"
                     if username == _q_s.username and password == _q_s.password:
                         username = _q_s.username
@@ -72,7 +67,7 @@ class QRedisServer(BaseServer):
                         status = "success"
                     _q_s.logs.info(
                         {
-                            "server": "redis_server",
+                            "server": _q_s.NAME,
                             "action": "login",
                             "status": status,
                             "src_ip": self.transport.getPeer().host,
@@ -89,7 +84,7 @@ class QRedisServer(BaseServer):
                 self._variables = {}
                 _q_s.logs.info(
                     {
-                        "server": "redis_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,

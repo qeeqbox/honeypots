@@ -45,7 +45,7 @@ class QSMTPServer(BaseServer):
                         if command != "HELO" and command != "EHLO":
                             _q_s.logs.info(
                                 {
-                                    "server": "smtp_server",
+                                    "server": _q_s.NAME,
                                     "action": "connection",
                                     "src_ip": self.addr[0],
                                     "src_port": self.addr[1],
@@ -59,7 +59,7 @@ class QSMTPServer(BaseServer):
             def smtp_EHLO(self, arg):
                 _q_s.logs.info(
                     {
-                        "server": "smtp_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.addr[0],
                         "src_port": self.addr[1],
@@ -91,7 +91,7 @@ class QSMTPServer(BaseServer):
                             status = "success"
                         _q_s.logs.info(
                             {
-                                "server": "smtp_server",
+                                "server": _q_s.NAME,
                                 "action": "login",
                                 "status": status,
                                 "src_ip": self.addr[0],
@@ -118,7 +118,7 @@ class QSMTPServer(BaseServer):
                 conn, addr = self.accept()
                 _q_s.logs.info(
                     {
-                        "server": "smtp_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": addr[0],
                         "src_port": addr[1],

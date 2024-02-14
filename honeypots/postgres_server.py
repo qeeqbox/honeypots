@@ -19,6 +19,7 @@ from twisted.internet.protocol import Factory, Protocol
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
     server_arguments,
+    check_bytes,
 )
 
 
@@ -32,12 +33,6 @@ class QPostgresServer(BaseServer):
         class CustomPostgresProtocol(Protocol):
             _state = None
             _variables = {}
-
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
 
             def read_data_custom(self, data):
                 _data = data.decode("utf-8")
@@ -54,7 +49,7 @@ class QPostgresServer(BaseServer):
                 self._variables = {}
                 _q_s.logs.info(
                     {
-                        "server": "postgres_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
@@ -74,8 +69,8 @@ class QPostgresServer(BaseServer):
                 elif self._state == 3:
                     if data[0] == 112 and "user" in self._variables:
                         self.read_password_custom(data)
-                        username = self.check_bytes(self._variables["user"])
-                        password = self.check_bytes(self._variables["password"])
+                        username = check_bytes(self._variables["user"])
+                        password = check_bytes(self._variables["password"])
                         status = "failed"
                         if username == _q_s.username and password == _q_s.password:
                             username = _q_s.username
@@ -83,7 +78,7 @@ class QPostgresServer(BaseServer):
                             status = "success"
                         _q_s.logs.info(
                             {
-                                "server": "postgres_server",
+                                "server": _q_s.NAME,
                                 "action": "login",
                                 "status": status,
                                 "src_ip": self.transport.getPeer().host,

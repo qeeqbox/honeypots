@@ -46,7 +46,7 @@ class QNTPServer(BaseServer):
                 mode = "UnKnown"
                 _q_s.logs.info(
                     {
-                        "server": "ntp_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": addr[0],
                         "src_port": addr[1],
@@ -77,7 +77,7 @@ class QNTPServer(BaseServer):
 
                 _q_s.logs.info(
                     {
-                        "server": "ntp_server",
+                        "server": _q_s.NAME,
                         "action": "query",
                         "status": status,
                         "src_ip": addr[0],

@@ -55,7 +55,7 @@ class QDNSServer(BaseServer):
                     for item in items:
                         _q_s.logs.info(
                             {
-                                "server": "dns_server",
+                                "server": _q_s.NAME,
                                 "action": "query",
                                 "src_ip": src_ip,
                                 "src_port": src_port,
@@ -70,7 +70,7 @@ class QDNSServer(BaseServer):
             def datagramReceived(self, data: bytes, addr: tuple[str, int]):
                 _q_s.logs.info(
                     {
-                        "server": "dns_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": addr[0],
                         "src_port": addr[1],
