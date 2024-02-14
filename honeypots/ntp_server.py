@@ -11,7 +11,7 @@
 """
 import struct
 from contextlib import suppress
-from struct import pack, unpack
+from struct import pack
 from time import time
 
 from twisted.internet import reactor
@@ -41,7 +41,7 @@ class QNTPServer(BaseServer):
                 f = float(int(i) & 0xFFFFFFFF) / 4294967296
                 return i, f
 
-            def datagramReceived(self, data, addr):
+            def datagramReceived(self, data, addr):  # noqa: N802
                 version = "UnKnown"
                 mode = "UnKnown"
                 _q_s.log(
@@ -89,7 +89,7 @@ class QNTPServer(BaseServer):
         )
         reactor.run()
 
-    def test_server(self, ip=None, port=None, username=None, password=None):
+    def test_server(self, ip=None, port=None, username=None, password=None):  # noqa: ARG002
         with suppress(Exception):
             from warnings import filterwarnings
 
@@ -100,8 +100,7 @@ class QNTPServer(BaseServer):
             _port = port or self.port
             c = socket(AF_INET, SOCK_DGRAM)
             c.sendto(b"\x1b" + 47 * b"\0", (_ip, _port))
-            data, address = c.recvfrom(256)
-            ret_time = unpack("!12I", data)[10] - 2208988800
+            c.recvfrom(256)
             c.close()
 
 
