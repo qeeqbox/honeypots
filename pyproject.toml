@@ -42,6 +42,7 @@ dev = [
     "pymssql",
     "pysnmplib",
     "pytest",
+    "pytest-xdist==3.5.0",
     "redis",
     "redis",
     "vncdotool",
