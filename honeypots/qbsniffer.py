@@ -23,7 +23,7 @@ from netifaces import AF_INET, AF_LINK, ifaddresses
 from scapy.layers.inet import IP, TCP
 from scapy.sendrecv import send, sniff
 
-from honeypots.helper import server_arguments, setup_logger
+from honeypots.helper import server_arguments, set_up_error_logging, setup_logger
 
 TCP_SYN_FLAG = 0b10
 
@@ -86,11 +86,12 @@ class QBSniffer:
             self.logs = setup_logger(__class__.__name__, self.uuid, config)
         else:
             self.logs = setup_logger(__class__.__name__, self.uuid, None)
+        self.logger = set_up_error_logging()
 
-    def find_icmp(self, x1, x2):
-        for _ in self.ICMP_codes:
-            if x1 == _[0] and x2 == _[1]:
-                return _[2]
+    def find_icmp(self, type_, code):
+        for icmp_type, icmp_code, msg_type in self.ICMP_codes:
+            if type_ == icmp_type and code == icmp_code:
+                return msg_type
         return "None"
 
     @staticmethod
@@ -104,7 +105,10 @@ class QBSniffer:
             pass
 
     def scapy_sniffer_main(self):
-        sniff(filter=self.filter, iface=self.interface, prn=self.capture_logic)
+        try:
+            sniff(filter=self.filter, iface=self.interface, prn=self.capture_logic)
+        except PermissionError as error:
+            self.logger.error(f"Could not start sniffer: {error}")
 
     def _get_payloads(self, layers: list[str], packet: Packet):
         hex_payloads, raw_payloads, _fields = {}, {}, {}
@@ -237,7 +241,7 @@ class QBSniffer:
         else:
             self.scapy_sniffer_main()
 
-    def kill_sniffer(self):
+    def kill_server(self):
         self.process.terminate()
         self.process.join()
 
