@@ -20,7 +20,7 @@ from netifaces import ifaddresses, AF_INET, AF_LINK, interfaces
 from psutil import net_io_counters, Process
 
 from honeypots import (
-    QBSniffer,
+    QSniffer,
     QDHCPServer,
     QDNSServer,
     QElasticServer,
@@ -351,14 +351,14 @@ class HoneypotsManager:
 
     def _start_sniffer(self, sniffer_filter, sniffer_interface):
         logger.info("[x] Starting sniffer")
-        sniffer = QBSniffer(
+        sniffer = QSniffer(
             filter_=sniffer_filter,
             interface=sniffer_interface,
             config=self.options.config,
         )
         sniffer.run_sniffer(process=True)
         sleep(0.1)
-        self.honeypots.append((sniffer, "sniffer", sniffer.process.is_alive()))
+        self.honeypots.append((sniffer, "sniffer", sniffer.server_is_alive()))
 
     def _stats_loop(self, logs):
         while True:
