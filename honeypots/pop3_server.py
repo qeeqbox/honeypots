@@ -9,18 +9,17 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 """
+
+from __future__ import annotations
+
 from contextlib import suppress
-from typing import Tuple
 
 from twisted.internet import reactor
 from twisted.internet.protocol import Factory
 from twisted.mail.pop3 import POP3, POP3Error
 
 from honeypots.base_server import BaseServer
-from honeypots.helper import (
-    server_arguments,
-    check_bytes,
-)
+from honeypots.helper import check_bytes, server_arguments
 
 
 class QPOP3Server(BaseServer):
@@ -31,13 +30,13 @@ class QPOP3Server(BaseServer):
         super().__init__(**kwargs)
         self.mocking_server = "Microsoft Exchange POP3 service is ready"
 
-    def server_main(self):
+    def server_main(self):  # noqa: C901
         _q_s = self
 
         class CustomPOP3Protocol(POP3):
             self._user = None
 
-            def connectionMade(self):
+            def connectionMade(self):  # noqa: N802
                 _q_s.log(
                     {
                         "action": "connection",
@@ -48,7 +47,7 @@ class QPOP3Server(BaseServer):
                 self._user = None
                 self.successResponse(_q_s.mocking_server)
 
-            def processCommand(self, command: bytes, *args):
+            def processCommand(self, command: bytes, *args):  # noqa: N802
                 with suppress(Exception):
                     if "capture_commands" in _q_s.options:
                         _q_s.log(
@@ -74,19 +73,18 @@ class QPOP3Server(BaseServer):
                     return None
 
                 command = command.upper()
-                authCmd = command in self.AUTH_CMDS
-                if not self.mbox and not authCmd:
+                if not self.mbox and command not in self.AUTH_CMDS:
                     raise POP3Error(b"not authenticated yet: cannot do " + command)
                 f = getattr(self, f"do_{check_bytes(command)}", None)
                 if f:
                     return f(*args)
                 raise POP3Error(b"Unknown protocol command: " + command)
 
-            def do_USER(self, user):
+            def do_USER(self, user):  # noqa: N802
                 self._user = user
                 self.successResponse("USER Ok")
 
-            def do_PASS(self, password: bytes, *words: Tuple[bytes]):
+            def do_PASS(self, password: bytes, *words: tuple[bytes]):  # noqa: N802
                 if self._user:
                     username = check_bytes(self._user)
                     password = check_bytes(b" ".join((password, *words)))
@@ -102,7 +100,7 @@ class QPOP3Server(BaseServer):
             protocol = CustomPOP3Protocol
             portal = None
 
-            def buildProtocol(self, address):
+            def buildProtocol(self, address):  # noqa: N802,ARG002
                 p = self.protocol()
                 p.portal = self.portal
                 p.factory = self
@@ -114,14 +112,13 @@ class QPOP3Server(BaseServer):
 
     def test_server(self, ip=None, port=None, username=None, password=None):
         with suppress(Exception):
-            from poplib import POP3 as poplibPOP3
+            from poplib import POP3 as POP3Client  # noqa: N811
 
             _ip = ip or self.ip
             _port = port or self.port
             _username = username or self.username
             _password = password or self.password
-            pp = poplibPOP3(_ip, _port)
-            # pp.getwelcome()
+            pp = POP3Client(_ip, _port)
             pp.user(_username)
             pp.pass_(_password)
 
