@@ -1,3 +1,5 @@
+import sys
+
 import honeypots
 from time import sleep
 from pkg_resources import get_distribution
@@ -13,4 +15,4 @@ for server, cls in honeypots.__dict__.items():
         sleep(2)
         temp_server.kill_server()
 honeypots.clean_all()
-exit()
+sys.exit()
