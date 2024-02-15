@@ -10,10 +10,13 @@
 //  -------------------------------------------------------------
 """
 
+from __future__ import annotations
+
 from binascii import hexlify
 from multiprocessing import Process
-from re import compile as rcompile, search as rsearch
+import re
 from sys import stdout
+from typing import Iterable, TYPE_CHECKING
 from uuid import uuid4
 
 from netifaces import AF_INET, AF_LINK, ifaddresses
@@ -22,12 +25,17 @@ from scapy.sendrecv import send, sniff
 
 from honeypots.helper import server_arguments, setup_logger
 
+TCP_SYN_FLAG = 0b10
+
+if TYPE_CHECKING:
+    from scapy.packet import Packet
+
 
 class QBSniffer:
-    def __init__(self, filter=None, interface=None, config=""):
+    def __init__(self, filter_=None, interface=None, config=""):
         self.current_ip = ifaddresses(interface)[AF_INET][0]["addr"].encode("utf-8")
         self.current_mac = ifaddresses(interface)[AF_LINK][0]["addr"].encode("utf-8")
-        self.filter = filter
+        self.filter = filter_
         self.interface = interface
         self.method = "TCPUDP"
         self.ICMP_codes = [
@@ -71,207 +79,156 @@ class QBSniffer:
         ]
         self.allowed_ports = []
         self.allowed_ips = []
-        self.common = rcompile(rb"pass|user|login")
-        self.uuid = "honeypotslogger" + "_" + __class__.__name__ + "_" + str(uuid4())[:8]
+        self.common = re.compile(rb"pass|user|login")
+        self.uuid = f"honeypotslogger_{__class__.__name__}_{str(uuid4())[:8]}"
         self.config = config
         if config:
             self.logs = setup_logger(__class__.__name__, self.uuid, config)
         else:
             self.logs = setup_logger(__class__.__name__, self.uuid, None)
 
-    def find_ICMP(self, x1, x2):
+    def find_icmp(self, x1, x2):
         for _ in self.ICMP_codes:
             if x1 == _[0] and x2 == _[1]:
                 return _[2]
         return "None"
 
-    def get_layers(self, packet):
+    @staticmethod
+    def get_layers(packet: Packet) -> Iterable[str]:
         try:
             yield packet.name
             while packet.payload:
                 packet = packet.payload
                 yield packet.name
-        except BaseException:
+        except AttributeError:
             pass
 
     def scapy_sniffer_main(self):
-        _q_s = self
+        sniff(filter=self.filter, iface=self.interface, prn=self.capture_logic)
 
-        def capture_logic(packet):
-            _layers, hex_payloads, raw_payloads, _fields, _raw, _hex = (
-                [],
-                {},
-                {},
-                {},
-                "None",
-                "None",
-            )
-            _layers = list(self.get_layers(packet))
-            for layer in _layers:
-                try:
-                    _fields[layer] = packet[layer].fields
-                    if "load" in _fields[layer]:
-                        raw_payloads[layer] = _fields[layer]["load"]
-                        hex_payloads[layer] = hexlify(_fields[layer]["load"])
-                        if rsearch(self.common, raw_payloads[layer]):
-                            _q_s.logs.info(
-                                [
-                                    "sniffer",
-                                    {"action": "creds_check", "payload": raw_payloads[layer]},
-                                ]
-                            )
-                except Exception as e:
-                    _q_s.logs.error(
-                        ["errors", {"error": "capture_logic_1", "type": "error -> " + repr(e)}]
-                    )
-
+    def _get_payloads(self, layers: list[str], packet: Packet):
+        hex_payloads, raw_payloads, _fields = {}, {}, {}
+        for layer in layers:
             try:
-                if _q_s.method == "ALL":
-                    try:
-                        _q_s.logs.info(
-                            [
-                                "sniffer",
-                                {
-                                    "action": "all",
-                                    "ip": _q_s.current_ip,
-                                    "mac": _q_s.current_mac,
-                                    "layers": _layers,
-                                    "fields": _fields,
-                                    "payload": hex_payloads,
-                                },
-                            ]
-                        )
-                    except Exception as e:
-                        _q_s.logs.error(
-                            ["errors", {"error": "capture_logic_2", "type": "error -> " + repr(e)}]
-                        )
-                elif _q_s.method == "TCPUDP":
-                    if (
-                        packet.haslayer("IP")
-                        and len(hex_payloads) > 0
-                        and packet["IP"].src != _q_s.current_ip
-                    ):
-                        if packet.haslayer("TCP"):
-                            try:
-                                _q_s.logs.info(
-                                    [
-                                        "sniffer",
-                                        {
-                                            "action": "tcppayload",
-                                            "ip": _q_s.current_ip,
-                                            "mac": _q_s.current_mac,
-                                            "dest_ip": packet["IP"].src,
-                                            "dest_port": packet["TCP"].sport,
-                                            "dst_ip": packet["IP"].dst,
-                                            "dst_port": packet["TCP"].dport,
-                                            "raw_payload": raw_payloads,
-                                            "payload": hex_payloads,
-                                        },
-                                    ]
-                                )
-                            except Exception as e:
-                                _q_s.logs.error(
-                                    [
-                                        "errors",
-                                        {
-                                            "error": "capture_logic_3",
-                                            "type": "error -> " + repr(e),
-                                        },
-                                    ]
-                                )
-                        elif packet.haslayer("UDP"):
-                            try:
-                                _q_s.logs.info(
-                                    [
-                                        "sniffer",
-                                        {
-                                            "action": "udppayload",
-                                            "ip": _q_s.current_ip,
-                                            "mac": _q_s.current_mac,
-                                            "dest_ip": packet["IP"].src,
-                                            "dest_port": packet["UDP"].sport,
-                                            "dst_ip": packet["IP"].dst,
-                                            "dst_port": packet["UDP"].dport,
-                                            "raw_payload": raw_payloads,
-                                            "payload": hex_payloads,
-                                        },
-                                    ]
-                                )
-                            except Exception as e:
-                                _q_s.logs.error(
-                                    [
-                                        "errors",
-                                        {
-                                            "error": "capture_logic_4",
-                                            "type": "error -> " + repr(e),
-                                        },
-                                    ]
-                                )
-
-                if (
-                    packet.haslayer("IP")
-                    and packet.haslayer("ICMP")
-                    and packet["IP"].src != _q_s.current_ip
-                ):
-                    _q_s.logs.info(
-                        [
-                            "sniffer",
+                _fields[layer] = packet[layer].fields
+                if "load" in _fields[layer]:
+                    raw_payloads[layer] = _fields[layer]["load"]
+                    hex_payloads[layer] = hexlify(_fields[layer]["load"])
+                    if re.search(self.common, raw_payloads[layer]):
+                        self._log(
                             {
-                                "action": "icmp",
-                                "ip": _q_s.current_ip,
-                                "mac": _q_s.current_mac,
-                                "dest_ip": packet["IP"].src,
-                                "dst_ip": packet["IP"].dst,
-                                "ICMP_Code": packet["ICMP"].code,
-                                "ICMP_Type": packet["ICMP"].type,
-                                "ICMP_MSG": self.find_ICMP(
-                                    packet["ICMP"].type, packet["ICMP"].code
-                                ),
+                                "action": "creds_check",
+                                "payload": raw_payloads[layer],
                             },
-                        ]
+                        )
+            except Exception as error:
+                self._log_error(error, 1)
+        return _fields, hex_payloads, raw_payloads
+
+    def capture_logic(self, packet: Packet):
+        _layers: list[str] = list(self.get_layers(packet))
+        _fields, hex_payloads, raw_payloads = self._get_payloads(_layers, packet)
+
+        try:
+            if self.method == "ALL":
+                try:
+                    self._log(
+                        {
+                            "action": "all",
+                            "layers": _layers,
+                            "fields": _fields,
+                            "payload": hex_payloads,
+                        },
                     )
+                except Exception as error:
+                    self._log_error(error, 2)
+            elif (
+                self.method == "TCPUDP"
+                and packet.haslayer("IP")
+                and len(hex_payloads) > 0
+                and packet["IP"].src != self.current_ip
+            ):
+                self._log_tcp_udp(packet, hex_payloads, raw_payloads)
 
-                if (
-                    packet.haslayer("IP")
-                    and packet.haslayer("TCP")
-                    and packet["IP"].src != _q_s.current_ip
-                ):
-                    if packet["TCP"].flags == 2:
-                        _q_s.logs.info(
-                            [
-                                "sniffer",
-                                {
-                                    "action": "tcpscan",
-                                    "ip": _q_s.current_ip,
-                                    "mac": _q_s.current_mac,
-                                    "dest_ip": packet["IP"].src,
-                                    "dest_port": packet["TCP"].sport,
-                                    "dst_ip": packet["IP"].dst,
-                                    "dst_port": packet["TCP"].dport,
-                                    "raw_payload": raw_payloads,
-                                    "payload": hex_payloads,
-                                },
-                            ]
-                        )
-                        send(
-                            IP(dst=packet["IP"].src, src=packet["IP"].dst)
-                            / TCP(
-                                dport=packet["TCP"].sport,
-                                sport=packet["TCP"].dport,
-                                ack=(packet["TCP"].seq + 1),
-                                flags="SA",
-                            ),
-                            verbose=False,
-                        )
-
-            except Exception as e:
-                _q_s.logs.error(
-                    ["errors", {"error": "capture_logic_5", "type": "error -> " + repr(e)}]
+            if (
+                packet.haslayer("IP")
+                and packet.haslayer("ICMP")
+                and packet["IP"].src != self.current_ip
+            ):
+                self._log(
+                    {
+                        "action": "icmp",
+                        "dest_ip": packet["IP"].src,
+                        "dst_ip": packet["IP"].dst,
+                        "ICMP_Code": packet["ICMP"].code,
+                        "ICMP_Type": packet["ICMP"].type,
+                        "ICMP_MSG": self.find_icmp(packet["ICMP"].type, packet["ICMP"].code),
+                    },
                 )
 
-            stdout.flush()
+            if (
+                packet.haslayer("IP")
+                and packet.haslayer("TCP")
+                and packet["IP"].src != self.current_ip
+                and packet["TCP"].flags == TCP_SYN_FLAG
+            ):
+                self._handle_tcp_scan(packet, hex_payloads, raw_payloads)
 
-        sniff(filter=self.filter, iface=self.interface, prn=capture_logic)
+        except Exception as error:
+            self._log_error(error, 5)
+
+        stdout.flush()
+
+    def _handle_tcp_scan(self, packet: Packet, hex_payloads: dict, raw_payloads: dict):
+        self._log(
+            {
+                "action": "tcpscan",
+                "dest_ip": packet["IP"].src,
+                "dest_port": packet["TCP"].sport,
+                "dst_ip": packet["IP"].dst,
+                "dst_port": packet["TCP"].dport,
+                "raw_payload": raw_payloads,
+                "payload": hex_payloads,
+            },
+        )
+        ip_pkg = IP(dst=packet["IP"].src, src=packet["IP"].dst)
+        tcp_pkg = TCP(
+            dport=packet["TCP"].sport,
+            sport=packet["TCP"].dport,
+            ack=(packet["TCP"].seq + 1),
+            flags="SA",
+        )
+        send(ip_pkg / tcp_pkg, verbose=False)
+
+    def _log_tcp_udp(self, packet: Packet, hex_payloads: dict, raw_payloads: dict):
+        for layer in ["TCP", "UDP"]:
+            if packet.haslayer(layer):
+                try:
+                    self._log(
+                        {
+                            "action": f"{layer.lower()}payload",
+                            "dest_ip": packet["IP"].src,
+                            "dest_port": packet[layer].sport,
+                            "dst_ip": packet["IP"].dst,
+                            "dst_port": packet[layer].dport,
+                            "raw_payload": raw_payloads,
+                            "payload": hex_payloads,
+                        },
+                    )
+                except Exception as error:
+                    self._log_error(error, 3)
+
+    def _log(self, log_data: dict):
+        log_data.update({"ip": self.current_ip, "mac": self.current_mac})
+        self.logs.info(["sniffer", log_data])
+
+    def _log_error(self, error: Exception, _id: int):
+        self.logs.error(
+            [
+                "errors",
+                {"error": f"capture_logic_{_id}", "type": f"error -> {error!r}"},
+            ]
+        )
 
     def run_sniffer(self, process=None):
         if process:
@@ -289,6 +246,6 @@ if __name__ == "__main__":
     parsed = server_arguments()
     if parsed.docker or parsed.aws or parsed.custom:
         qsniffer = QBSniffer(
-            filter=parsed.filter, interface=parsed.interface, config=parsed.config
+            filter_=parsed.filter, interface=parsed.interface, config=parsed.config
         )
         qsniffer.run_sniffer()

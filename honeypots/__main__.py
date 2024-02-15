@@ -350,7 +350,7 @@ class HoneypotsManager:
     def _start_sniffer(self, sniffer_filter, sniffer_interface):
         logger.info("[x] Starting sniffer")
         sniffer = QBSniffer(
-            filter=sniffer_filter,
+            filter_=sniffer_filter,
             interface=sniffer_interface,
             config=self.options.config,
         )
