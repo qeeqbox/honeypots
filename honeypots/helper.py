@@ -48,10 +48,28 @@ def set_up_error_logging():
         _logger.setLevel(logging.INFO)
         handler = logging.StreamHandler(sys.stdout)
         handler.setLevel(logging.INFO)
-        formatter = logging.Formatter("[%(levelname)s] %(message)s")
+        formatter = ColoringFormatter("[%(levelname)s] %(message)s")
         handler.setFormatter(formatter)
         _logger.addHandler(handler)
     return _logger
+
+
+class ColoringFormatter(Formatter):
+    LOG_LEVEL_COLORS = (
+        ("[DEBUG]", "\033[95m"),
+        ("[INFO]", "\033[94m"),
+        ("[WARNING]", "\033[93m"),
+        ("[ERROR]", "\033[91m"),
+        ("[CRITICAL]", "\033[91m\033[1m"),
+    )
+    END_COLOR = "\033[0m"
+
+    def format(self, record: LogRecord) -> str:
+        formatted_text = super().format(record)
+        for log_level, color in self.LOG_LEVEL_COLORS:
+            if log_level in formatted_text:
+                return formatted_text.replace(log_level, f"{color}{log_level}{self.END_COLOR}")
+        return formatted_text
 
 
 logger = set_up_error_logging()
