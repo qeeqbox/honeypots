@@ -8,14 +8,10 @@
 //  -------------------------------------------------------------
 """
 from __future__ import annotations
+
 from collections import defaultdict
 
 from hl7apy.core import Message
-
-from honeypots import server_arguments
-from honeypots.base_server import BaseServer
-
-from hl7apy.parser import parse_message
 from hl7apy.mllp import (
     AbstractErrorHandler,
     AbstractHandler,
@@ -23,8 +19,10 @@ from hl7apy.mllp import (
     MLLPServer,
     UnsupportedMessageType,
 )
+from hl7apy.parser import parse_message
 
-from honeypots.helper import check_bytes
+from honeypots.base_server import BaseServer
+from honeypots.helper import check_bytes, run_single_server
 
 
 class HL7Server(BaseServer):
@@ -82,9 +80,4 @@ class HL7Server(BaseServer):
 
 
 if __name__ == "__main__":
-    parsed = server_arguments()
-    if parsed.docker or parsed.aws or parsed.custom:
-        hl7_server = HL7Server(
-            ip=parsed.ip, port=parsed.port, options=parsed.options, config=parsed.config
-        )
-        hl7_server.run_server()
+    run_single_server(HL7Server)

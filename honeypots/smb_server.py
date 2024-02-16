@@ -22,8 +22,8 @@ from six.moves import socketserver
 
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
-    server_arguments,
     hide_stderr,
+    run_single_server,
 )
 
 
@@ -130,15 +130,4 @@ class QSMBServer(BaseServer):
 
 
 if __name__ == "__main__":
-    parsed = server_arguments()
-    if parsed.docker or parsed.aws or parsed.custom:
-        qsmbserver = QSMBServer(
-            ip=parsed.ip,
-            port=parsed.port,
-            username=parsed.username,
-            password=parsed.password,
-            folders=parsed.folders,
-            options=parsed.options,
-            config=parsed.config,
-        )
-        qsmbserver.run_server()
+    run_single_server(QSMBServer)

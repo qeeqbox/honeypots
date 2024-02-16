@@ -18,7 +18,7 @@ from smtpd import SMTPChannel, SMTPServer
 
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
-    server_arguments,
+    run_single_server,
 )
 
 
@@ -127,14 +127,4 @@ class QSMTPServer(BaseServer):
 
 
 if __name__ == "__main__":
-    parsed = server_arguments()
-    if parsed.docker or parsed.aws or parsed.custom:
-        qsmtpserver = QSMTPServer(
-            ip=parsed.ip,
-            port=parsed.port,
-            username=parsed.username,
-            password=parsed.password,
-            options=parsed.options,
-            config=parsed.config,
-        )
-        qsmtpserver.run_server()
+    run_single_server(QSMTPServer)

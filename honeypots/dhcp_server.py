@@ -17,7 +17,7 @@ from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
 
 from honeypots.base_server import BaseServer
-from honeypots.helper import check_bytes, server_arguments
+from honeypots.helper import check_bytes, run_single_server
 
 
 class QDHCPServer(BaseServer):
@@ -107,14 +107,6 @@ class QDHCPServer(BaseServer):
         )
         reactor.run()
 
-    def test_server(self, ip=None, port=None):
-        pass
-
 
 if __name__ == "__main__":
-    parsed = server_arguments()
-    if parsed.docker or parsed.aws or parsed.custom:
-        qdhcpserver = QDHCPServer(
-            ip=parsed.ip, port=parsed.port, options=parsed.options, config=parsed.config
-        )
-        qdhcpserver.run_server()
+    run_single_server(QDHCPServer)

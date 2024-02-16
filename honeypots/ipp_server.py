@@ -20,9 +20,9 @@ from twisted.web.server import Site
 
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
-    server_arguments,
     check_bytes,
     get_headers_and_ip_from_request,
+    run_single_server,
 )
 
 SUPPORTED_OPERATIONS = {
@@ -356,9 +356,4 @@ def attributes_dict_to_bytes(attributes: dict[str, str]) -> bytes:
 
 
 if __name__ == "__main__":
-    parsed = server_arguments()
-    if parsed.docker or parsed.aws or parsed.custom:
-        qippserver = QIPPServer(
-            ip=parsed.ip, port=parsed.port, options=parsed.options, config=parsed.config
-        )
-        qippserver.run_server()
+    run_single_server(QIPPServer)

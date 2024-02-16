@@ -16,7 +16,7 @@ from twisted.internet import reactor
 from twisted.internet.protocol import Factory, Protocol
 
 from honeypots.base_server import BaseServer
-from honeypots.helper import check_bytes, server_arguments
+from honeypots.helper import check_bytes, run_single_server
 
 GSSResponse = 112  # password response message
 
@@ -95,14 +95,4 @@ class QPostgresServer(BaseServer):
 
 
 if __name__ == "__main__":
-    parsed = server_arguments()
-    if parsed.docker or parsed.aws or parsed.custom:
-        qpostgresserver = QPostgresServer(
-            ip=parsed.ip,
-            port=parsed.port,
-            username=parsed.username,
-            password=parsed.password,
-            options=parsed.options,
-            config=parsed.config,
-        )
-        qpostgresserver.run_server()
+    run_single_server(QPostgresServer)
