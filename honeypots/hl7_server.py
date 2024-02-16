@@ -10,6 +10,7 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from contextlib import suppress
 from random import randint
 
 from hl7apy.core import Message, Field
@@ -44,6 +45,11 @@ class HL7Server(BaseServer):
                     }
                 )
                 return super()._route_message(msg)
+
+            def handle(self):
+                with suppress(ConnectionResetError):
+                    # we don't care about connection reset errors here
+                    super().handle()
 
         class CustomPDQHandler(AbstractHandler):
             def __init__(self, *args, **kwargs):
@@ -105,11 +111,12 @@ class HL7Server(BaseServer):
                 return [
                     {
                         "name": segment.name,
+                        "raw": segment.to_er7(),
                         "fields": [
                             {
                                 "name": field.name,
                                 "type": field.datatype,
-                                "raw": field.to_er7(),
+                                "value": field.value,
                             }
                             for field in segment.children
                         ],
