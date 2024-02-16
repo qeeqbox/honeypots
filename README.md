@@ -5,7 +5,7 @@
 ## Why honeypots package is very powerful?
 The honeypots respond back, non-blocking, can be used as objects, or called directly with the in-built auto-configure scripts! Also, they are easy to set up and customize; it takes 1-2 seconds to spin a honeypot up. You can spin up multiple instances with the same type. For easy integration, the output can be logged to a Postgres database, file[s], terminal, or Syslog.
 
-This honeypots package is the only package that contains all the following: dhcp, dns, elastic, ftp, http proxy, https proxy, http, https, imap, ipp, irc, ldap, memcache, mssql, mysql, ntp, oracle, pjl, pop3, postgres, rdp, redis, sip, smb, smtp, snmp, socks5, ssh, telnet, vnc.
+This honeypots package is the only package that contains all the following: dhcp, dns, elastic, ftp, hl7, http proxy, https proxy, http, https, imap, ipp, irc, ldap, memcache, mssql, mysql, ntp, oracle, pjl, pop3, postgres, rdp, redis, sip, smb, smtp, snmp, socks5, ssh, telnet, vnc.
 
 Honeypots is in the awesome [telekom security T-Pot project!](https://github.com/telekom-security/tpotce)
 
@@ -254,6 +254,11 @@ qsshserver.kill_server()
     - Lib: Twisted.ftp
     - Logs: ip, port, username and password (default)
     - Options: Capture all threat actor commands and data (available)
+- HL7Server
+    - Server: HL7 
+    - Port: 2575/tcp
+    - Lib: socketserver
+    - Logs: ip, port and data
 - QHTTPProxyServer
     - Server: HTTP Proxy
     - Port: 8080/tcp
