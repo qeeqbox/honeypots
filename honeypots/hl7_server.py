@@ -10,8 +10,9 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from random import randint
 
-from hl7apy.core import Message
+from hl7apy.core import Message, Field
 from hl7apy.mllp import (
     AbstractErrorHandler,
     AbstractHandler,
@@ -19,17 +20,17 @@ from hl7apy.mllp import (
     MLLPServer,
     UnsupportedMessageType,
 )
-from hl7apy.parser import parse_message
+from hl7apy.parser import parse_message, parse_segment
 
 from honeypots.base_server import BaseServer
-from honeypots.helper import check_bytes, run_single_server
+from honeypots.helper import run_single_server
 
 
 class HL7Server(BaseServer):
     NAME = "hl7_server"
     DEFAULT_PORT = 2575
 
-    def server_main(self):
+    def server_main(self):  # noqa: C901
         _q_s = self
 
         class CustomMLLPRequestHandler(MLLPRequestHandler):
@@ -40,21 +41,81 @@ class HL7Server(BaseServer):
                         "action": "connection",
                         "src_ip": src_ip,
                         "src_port": src_port,
-                        "data": {
-                            "message": check_bytes(msg),
-                        },
                     }
                 )
-                super()._route_message(msg)
+                return super()._route_message(msg)
 
         class CustomPDQHandler(AbstractHandler):
-            def reply(self):
-                _ = parse_message(self.incoming_message)
-                # do something with the message
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                try:
+                    self.message = parse_message(self.incoming_message)
+                    self.version = self._get_optional_field("msh_12") or "2.5"
+                except Exception:
+                    self.message = None
+                    self.version = None
+                self.response = Message("ACK", version=self.version) if self.version else None
 
-                res = Message("RSP_K21")
-                # populate the message
-                return res.to_mllp()
+            def reply(self):
+                if not self.message:
+                    return ""
+                try:
+                    _q_s.log(
+                        {
+                            "action": "query",
+                            "data": {"message": self._parse_message()},
+                        }
+                    )
+                    self._populate_header()
+                    control_id = self._get_optional_field("msh_10")
+                    ack_segment = parse_segment(f"MSA|AA|{control_id}", version=self.version)
+                    self.response.add(ack_segment)
+                except Exception as error:
+                    _q_s.logger.debug(f"[{_q_s.NAME}] Error during response generation: {error}")
+                return self.response.to_mllp()
+
+            def _populate_header(self):
+                sending_app = self._get_optional_field("msh_3")
+                sending_facility = self._get_optional_field("msh_4")
+                receiving_app = self._get_optional_field("msh_5")
+                receiving_facility = self._get_optional_field("msh_6")
+                processing_id = self._get_optional_field("msh_11")
+                self._add_field_to_header("MSH_3", receiving_app)
+                self._add_field_to_header("MSH_4", receiving_facility)
+                self._add_field_to_header("MSH_5", sending_app)
+                self._add_field_to_header("MSH_6", sending_facility)
+                self._add_field_to_header("MSH_9", "ACK")
+                self._add_field_to_header("MSH_10", str(randint(1000, 9000)))
+                self._add_field_to_header("MSH_11", processing_id)
+
+            def _add_field_to_header(self, field: str, value: str):
+                if value is None:
+                    return
+                message_type = Field(field, version=self.version)
+                message_type.value = value
+                self.response.msh.add(message_type)
+
+            def _get_optional_field(self, field: str) -> str | None:
+                try:
+                    return getattr(self.message.msh, field).value
+                except AttributeError:
+                    return None
+
+            def _parse_message(self):
+                return [
+                    {
+                        "name": segment.name,
+                        "fields": [
+                            {
+                                "name": field.name,
+                                "type": field.datatype,
+                                "raw": field.to_er7(),
+                            }
+                            for field in segment.children
+                        ],
+                    }
+                    for segment in self.message.children
+                ]
 
         class ErrorHandler(AbstractErrorHandler):
             def reply(self):
@@ -74,9 +135,6 @@ class HL7Server(BaseServer):
             self.ip, self.port, handlers, request_handler_class=CustomMLLPRequestHandler
         )
         server.serve_forever()
-
-    def test_server(self, ip=None, port=None):
-        pass
 
 
 if __name__ == "__main__":
