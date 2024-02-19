@@ -12,54 +12,24 @@
 
 from contextlib import suppress
 from hashlib import sha1
-from os import getenv, path
 from struct import pack
-from subprocess import Popen
-from uuid import uuid4
 
 from twisted.internet import reactor
 from twisted.internet.protocol import Factory, Protocol
 
+from honeypots.base_server import BaseServer
 from honeypots.helper import (
-    check_if_server_is_running,
-    close_port_wrapper,
-    get_free_port,
-    kill_server_wrapper,
     server_arguments,
-    set_local_vars,
-    setup_logger,
+    check_bytes,
 )
 
 
-class QMysqlServer:
+class QMysqlServer(BaseServer):
+    NAME = "mysql_server"
+    DEFAULT_PORT = 3306
+
     def __init__(self, **kwargs):
-        self.auto_disabled = None
-        self.process = None
-        self.uuid = "honeypotslogger" + "_" + __class__.__name__ + "_" + str(uuid4())[:8]
-        self.config = kwargs.get("config", "")
-        if self.config:
-            self.logs = setup_logger(__class__.__name__, self.uuid, self.config)
-            set_local_vars(self, self.config)
-        else:
-            self.logs = setup_logger(__class__.__name__, self.uuid, None)
-        self.ip = kwargs.get("ip", None) or (hasattr(self, "ip") and self.ip) or "0.0.0.0"
-        self.port = (
-            (kwargs.get("port", None) and int(kwargs.get("port", None)))
-            or (hasattr(self, "port") and self.port)
-            or 3306
-        )
-        self.username = (
-            kwargs.get("username", None) or (hasattr(self, "username") and self.username) or "test"
-        )
-        self.password = (
-            kwargs.get("password", None) or (hasattr(self, "password") and self.password) or "test"
-        )
-        self.options = (
-            kwargs.get("options", "")
-            or (hasattr(self, "options") and self.options)
-            or getenv("HONEYPOTS_OPTIONS", "")
-            or ""
-        )
+        super().__init__(**kwargs)
         self.words = [self.password.encode()]
 
     def load_words(
@@ -150,26 +120,18 @@ class QMysqlServer:
                     return temp
         return None
 
-    def mysql_server_main(self):
+    def server_main(self):
         _q_s = self
 
         class CustomMysqlProtocol(Protocol):
             _state = None
-
-            def check_bytes(self, string):
-                with suppress(Exception):
-                    if isinstance(string, bytes):
-                        return string.decode("utf-8", "ignore")
-                    else:
-                        return str(string)
-                return string
 
             def connectionMade(self):
                 self._state = 1
                 self.transport.write(_q_s.greeting())
                 _q_s.logs.info(
                     {
-                        "server": "mysql_server",
+                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
@@ -183,13 +145,13 @@ class QMysqlServer:
                     if self._state == 1:
                         ret_access_denied = False
                         username, password, good = _q_s.parse_data(data)
-                        username = self.check_bytes(username)
+                        username = check_bytes(username)
                         status = "failed"
                         if good:
                             if password:
                                 password_decoded = _q_s.decode(password)
                                 if password_decoded is not None and username == _q_s.username:
-                                    password = self.check_bytes(password_decoded)
+                                    password = check_bytes(password_decoded)
                                     status = "success"
                                 else:
                                     password = password.hex()
@@ -199,7 +161,7 @@ class QMysqlServer:
                                 password = ":".join(hex(c)[2:] for c in data)
                         _q_s.logs.info(
                             {
-                                "server": "mysql_server",
+                                "server": _q_s.NAME,
                                 "action": "login",
                                 "status": status,
                                 "src_ip": self.transport.getPeer().host,
@@ -228,73 +190,6 @@ class QMysqlServer:
         factory.protocol = CustomMysqlProtocol
         reactor.listenTCP(port=self.port, factory=factory, interface=self.ip)
         reactor.run()
-
-    def run_server(self, process=False, auto=False):
-        status = "error"
-        run = False
-        if process:
-            if auto and not self.auto_disabled:
-                port = get_free_port()
-                if port > 0:
-                    self.port = port
-                    run = True
-            elif self.close_port() and self.kill_server():
-                run = True
-
-            if run:
-                self.process = Popen(
-                    [
-                        "python3",
-                        path.realpath(__file__),
-                        "--custom",
-                        "--ip",
-                        str(self.ip),
-                        "--port",
-                        str(self.port),
-                        "--username",
-                        str(self.username),
-                        "--password",
-                        str(self.password),
-                        "--options",
-                        str(self.options),
-                        "--config",
-                        str(self.config),
-                        "--uuid",
-                        str(self.uuid),
-                    ]
-                )
-                if self.process.poll() is None and check_if_server_is_running(self.uuid):
-                    status = "success"
-
-            self.logs.info(
-                {
-                    "server": "mysql_server",
-                    "action": "process",
-                    "status": status,
-                    "src_ip": self.ip,
-                    "src_port": self.port,
-                    "username": self.username,
-                    "password": self.password,
-                    "dest_ip": self.ip,
-                    "dest_port": self.port,
-                }
-            )
-
-            if status == "success":
-                return True
-            else:
-                self.kill_server()
-                return False
-        else:
-            self.mysql_server_main()
-
-    def close_port(self):
-        ret = close_port_wrapper("mysql_server", self.ip, self.port, self.logs)
-        return ret
-
-    def kill_server(self):
-        ret = kill_server_wrapper("mysql_server", self.uuid, self.process)
-        return ret
 
     def test_server(self, ip=None, port=None, username=None, password=None):
         with suppress(Exception):

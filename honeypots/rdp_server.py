@@ -10,81 +10,29 @@
 //  -------------------------------------------------------------
 """
 
+from contextlib import suppress
 from socket import socket, SHUT_RDWR, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from ssl import SSLContext, PROTOCOL_TLSv1_2, CERT_NONE
-from subprocess import Popen
-from os import path, getenv
-from honeypots.helper import (
-    check_if_server_is_running,
-    close_port_wrapper,
-    get_free_port,
-    kill_server_wrapper,
-    server_arguments,
-    set_local_vars,
-    setup_logger,
-)
-from uuid import uuid4
-from contextlib import suppress
-from threading import Thread
 from struct import unpack
-from OpenSSL import crypto
-from tempfile import gettempdir, _get_candidate_names
+from threading import Thread
+
+from honeypots.base_server import BaseServer
+from honeypots.helper import (
+    server_arguments,
+    create_certificate,
+    check_bytes,
+)
 
 
-class QRDPServer:
+class QRDPServer(BaseServer):
+    NAME = "rdp_server"
+    DEFAULT_PORT = 3389
+
     def __init__(self, **kwargs):
-        self.auto_disabled = None
-        self.process = None
-        self.key = path.join(gettempdir(), next(_get_candidate_names()))
-        self.cert = path.join(gettempdir(), next(_get_candidate_names()))
-        self.uuid = "honeypotslogger" + "_" + __class__.__name__ + "_" + str(uuid4())[:8]
-        self.config = kwargs.get("config", "")
-        if self.config:
-            self.logs = setup_logger(__class__.__name__, self.uuid, self.config)
-            set_local_vars(self, self.config)
-        else:
-            self.logs = setup_logger(__class__.__name__, self.uuid, None)
-        self.ip = kwargs.get("ip", None) or (hasattr(self, "ip") and self.ip) or "0.0.0.0"
-        self.port = (
-            (kwargs.get("port", None) and int(kwargs.get("port", None)))
-            or (hasattr(self, "port") and self.port)
-            or 3389
-        )
-        self.username = (
-            kwargs.get("username", None) or (hasattr(self, "username") and self.username) or "test"
-        )
-        self.password = (
-            kwargs.get("password", None) or (hasattr(self, "password") and self.password) or "test"
-        )
-        self.options = (
-            kwargs.get("options", "")
-            or (hasattr(self, "options") and self.options)
-            or getenv("HONEYPOTS_OPTIONS", "")
-            or ""
-        )
+        super().__init__(**kwargs)
 
-    def rdp_server_main(self):
+    def server_main(self):
         _q_s = self
-
-        def CreateCert(host_name, key, cert):
-            pk = crypto.PKey()
-            pk.generate_key(crypto.TYPE_RSA, 2048)
-            c = crypto.X509()
-            c.get_subject().C = "US"
-            c.get_subject().ST = "OR"
-            c.get_subject().L = "None"
-            c.get_subject().O = "None"
-            c.get_subject().OU = "None"
-            c.get_subject().CN = next(_get_candidate_names())
-            c.set_serial_number(0)
-            before, after = (0, 60 * 60 * 24 * 365 * 2)
-            c.gmtime_adj_notBefore(before)
-            c.gmtime_adj_notAfter(after)
-            c.set_issuer(c.get_subject())
-            c.set_pubkey(pk)
-            c.sign(pk, "sha256")
-            open(cert, "wb").write(crypto.dump_certificate(crypto.FILETYPE_PEM, c))
-            open(key, "wb").write(crypto.dump_privatekey(crypto.FILETYPE_PEM, pk))
 
         class ConnectionHandle(Thread):
             def __init__(self, sock, key, cert):
@@ -92,12 +40,6 @@ class QRDPServer:
                 self.sock = sock
                 self.key = key
                 self.cert = cert
-
-            def check_bytes(self, string):
-                if isinstance(string, bytes):
-                    return string.decode()
-                else:
-                    return str(string)
 
             def get_value(self, length, data):
                 with suppress(Exception):
@@ -107,25 +49,15 @@ class QRDPServer:
                             break
                         if _ == 0:
                             continue
-                        else:
-                            var += bytes([_])
+                        var += bytes([_])
                     if length / 2 == len(var):
                         return var
                 return b""
 
-            def extract_cookie(self, data):
-                cookie = b""
-                with suppress(Exception):
-                    for idx, _ in enumerate(data):
-                        if _ == 13 and data[idx + 1] == 10:
-                            break
-                        else:
-                            cookie += bytes([_])
-                return cookie
+            def extract_cookie(self, data: bytes) -> bytes:
+                return data[: data.find(b"\r\n")]
 
-            def extract_creds(self, data):
-                user = ""
-                password = ""
+            def extract_creds(self, data: bytes):
                 with suppress(Exception):
                     (
                         flag,
@@ -160,7 +92,7 @@ class QRDPServer:
                 with suppress(Exception):
                     _q_s.logs.info(
                         {
-                            "server": "rdp_server",
+                            "server": _q_s.NAME,
                             "action": "connection",
                             "src_ip": self.sock.getpeername()[0],
                             "src_port": self.sock.getpeername()[1],
@@ -172,11 +104,10 @@ class QRDPServer:
 
                     data = self.sock.recv(1024)
                     if b"Cookie" in data:
-                        cookie = self.extract_cookie(data[11:])
-                        cookie = self.check_bytes(cookie)
+                        cookie = self.extract_cookie(data[11:]).decode(errors="replace")
                         _q_s.logs.info(
                             {
-                                "server": "rdp_server",
+                                "server": _q_s.NAME,
                                 "action": "stshash",
                                 "mstshash": "success",
                                 "src_ip": self.sock.getpeername()[0],
@@ -257,19 +188,15 @@ class QRDPServer:
                             data = self.sock.recv(1024)
                             if len(data) > 14:
                                 if data[15] == 64:
-                                    username = ""
-                                    password = ""
                                     status = "failed"
                                     username, password = self.extract_creds(data)
-                                    username = self.check_bytes(username)
-                                    password = self.check_bytes(password)
+                                    username = check_bytes(username)
+                                    password = check_bytes(password)
                                     if username == _q_s.username and password == _q_s.password:
-                                        username = _q_s.username
-                                        password = _q_s.password
                                         status = "success"
                                     _q_s.logs.info(
                                         {
-                                            "server": "rdp_server",
+                                            "server": _q_s.NAME,
                                             "action": "login",
                                             "status": status,
                                             "src_ip": self.sock.getpeername()[0],
@@ -299,84 +226,17 @@ class QRDPServer:
                 with suppress(Exception):
                     self.sock.close()
 
-        CreateCert("localhost", self.key, self.cert)
         rpdserver = socket(AF_INET, SOCK_STREAM)
         rpdserver.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         rpdserver.bind((self.ip, self.port))
         rpdserver.listen()
 
-        while True:
-            with suppress(Exception):
-                client, addr = rpdserver.accept()
-                client.settimeout(10.0)
-                ConnectionHandle(client, self.key, self.cert).start()
-
-    def run_server(self, process=False, auto=False):
-        status = "error"
-        run = False
-        if process:
-            if auto and not self.auto_disabled:
-                port = get_free_port()
-                if port > 0:
-                    self.port = port
-                    run = True
-            elif self.close_port() and self.kill_server():
-                run = True
-
-            if run:
-                self.process = Popen(
-                    [
-                        "python3",
-                        path.realpath(__file__),
-                        "--custom",
-                        "--ip",
-                        str(self.ip),
-                        "--port",
-                        str(self.port),
-                        "--username",
-                        str(self.username),
-                        "--password",
-                        str(self.password),
-                        "--options",
-                        str(self.options),
-                        "--config",
-                        str(self.config),
-                        "--uuid",
-                        str(self.uuid),
-                    ]
-                )
-                if self.process.poll() is None and check_if_server_is_running(self.uuid):
-                    status = "success"
-
-            self.logs.info(
-                {
-                    "server": "rdp_server",
-                    "action": "process",
-                    "status": status,
-                    "src_ip": self.ip,
-                    "src_port": self.port,
-                    "username": self.username,
-                    "password": self.password,
-                    "dest_ip": self.ip,
-                    "dest_port": self.port,
-                }
-            )
-
-            if status == "success":
-                return True
-            else:
-                self.kill_server()
-                return False
-        else:
-            self.rdp_server_main()
-
-    def close_port(self):
-        ret = close_port_wrapper("rdp_server", self.ip, self.port, self.logs)
-        return ret
-
-    def kill_server(self):
-        ret = kill_server_wrapper("rdp_server", self.uuid, self.process)
-        return ret
+        with create_certificate() as (cert, key):
+            while True:
+                with suppress(Exception):
+                    client, addr = rpdserver.accept()
+                    client.settimeout(10.0)
+                    ConnectionHandle(client, key, cert).start()
 
     def test_server(self, ip=None, port=None):
         with suppress(Exception):
