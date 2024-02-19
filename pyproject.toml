@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "honeypots"
-version = "0.64"
+version = "0.65"
 authors = [
     { name = "QeeqBox", email = "gigaqeeq@gmail.com" },
 ]
