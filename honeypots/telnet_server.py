@@ -49,14 +49,11 @@ class QTelnetServer(BaseServer):
                 self._pass = None
                 self.transport.write(b"PC login: ")
                 self._state = b"Username"
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
 
@@ -69,23 +66,8 @@ class QTelnetServer(BaseServer):
                 elif self._state == b"Password":
                     username = check_bytes(self._user)
                     password = check_bytes(data)
-                    status = "failed"
-                    # may need decode
-                    if username == _q_s.username and password == _q_s.password:
-                        status = "success"
-                    _q_s.logs.info(
-                        {
-                            "server": _q_s.NAME,
-                            "action": "login",
-                            "status": status,
-                            "src_ip": self.transport.getPeer().host,
-                            "src_port": self.transport.getPeer().port,
-                            "dest_ip": _q_s.ip,
-                            "dest_port": _q_s.port,
-                            "username": username,
-                            "password": password,
-                        }
-                    )
+                    peer = self.transport.getPeer()
+                    _q_s.check_login(username, password, ip=peer.host, port=peer.port)
                     self.transport.loseConnection()
                 else:
                     self.transport.loseConnection()

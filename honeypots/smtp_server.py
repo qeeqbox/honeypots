@@ -43,28 +43,22 @@ class QSMTPServer(BaseServer):
                             if len(line.split(" ")) > 2:
                                 data = line.split(" ", 2)[2]
                         if command != "HELO" and command != "EHLO":
-                            _q_s.logs.info(
+                            _q_s.log(
                                 {
-                                    "server": _q_s.NAME,
                                     "action": "connection",
                                     "src_ip": self.addr[0],
                                     "src_port": self.addr[1],
-                                    "dest_ip": _q_s.ip,
-                                    "dest_port": _q_s.port,
                                     "data": {"command": command, "arg": arg, "data": data},
                                 }
                             )
                 super().found_terminator()
 
             def smtp_EHLO(self, arg):
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.addr[0],
                         "src_port": self.addr[1],
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
                 if not arg:
@@ -86,22 +80,7 @@ class QSMTPServer(BaseServer):
                             .decode("utf-8", errors="replace")
                             .split("\0")
                         )
-                        status = "failed"
-                        if username == _q_s.username and password == _q_s.password:
-                            status = "success"
-                        _q_s.logs.info(
-                            {
-                                "server": _q_s.NAME,
-                                "action": "login",
-                                "status": status,
-                                "src_ip": self.addr[0],
-                                "src_port": self.addr[1],
-                                "dest_ip": _q_s.ip,
-                                "dest_port": _q_s.port,
-                                "username": username,
-                                "password": password,
-                            }
-                        )
+                        _q_s.check_login(username, password, *self.addr)
 
                 self.push("235 Authentication successful")
 
@@ -116,14 +95,11 @@ class QSMTPServer(BaseServer):
 
             def handle_accept(self):
                 conn, addr = self.accept()
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": addr[0],
                         "src_port": addr[1],
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
                 CustomSMTPChannel(self, conn, addr)

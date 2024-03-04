@@ -39,4 +39,4 @@ def test_irc_server(server_logs):
     assert_connect_is_logged(connect, PORT)
 
     assert command["action"] == "command"
-    assert command["data"] == {"command": "PASS", "params": "['testing']", "prefix": ""}
+    assert command["data"] == {"command": "PASS", "params": f"['{PASSWORD}']", "prefix": ""}

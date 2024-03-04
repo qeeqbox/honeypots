@@ -10,7 +10,6 @@
 //  -------------------------------------------------------------
 """
 from contextlib import suppress
-from random import choice
 from typing import Tuple
 
 from twisted.internet import reactor
@@ -30,7 +29,7 @@ class QPOP3Server(BaseServer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.mocking_server = choice(["Microsoft Exchange POP3 service is ready"])
+        self.mocking_server = "Microsoft Exchange POP3 service is ready"
 
     def server_main(self):
         _q_s = self
@@ -39,25 +38,21 @@ class QPOP3Server(BaseServer):
             self._user = None
 
             def connectionMade(self):
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
                 self._user = None
-                self.successResponse(f"{_q_s.mocking_server}")
+                self.successResponse(_q_s.mocking_server)
 
             def processCommand(self, command: bytes, *args):
                 with suppress(Exception):
                     if "capture_commands" in _q_s.options:
-                        _q_s.logs.info(
+                        _q_s.log(
                             {
-                                "server": _q_s.NAME,
                                 "action": "command",
                                 "data": {
                                     "cmd": check_bytes(command),
@@ -65,8 +60,6 @@ class QPOP3Server(BaseServer):
                                 },
                                 "src_ip": self.transport.getPeer().host,
                                 "src_port": self.transport.getPeer().port,
-                                "dest_ip": _q_s.ip,
-                                "dest_port": _q_s.port,
                             }
                         )
 
@@ -96,25 +89,9 @@ class QPOP3Server(BaseServer):
             def do_PASS(self, password: bytes, *words: Tuple[bytes]):
                 if self._user:
                     username = check_bytes(self._user)
-                    password = check_bytes(b" ".join((password,) + words))
-                    status = "failed"
-                    if username == _q_s.username and password == _q_s.password:
-                        username = _q_s.username
-                        password = _q_s.password
-                        status = "success"
-                    _q_s.logs.info(
-                        {
-                            "server": _q_s.NAME,
-                            "action": "login",
-                            "status": status,
-                            "src_ip": self.transport.getPeer().host,
-                            "src_port": self.transport.getPeer().port,
-                            "dest_ip": _q_s.ip,
-                            "dest_port": _q_s.port,
-                            "username": username,
-                            "password": password,
-                        }
-                    )
+                    password = check_bytes(b" ".join((password, *words)))
+                    peer = self.transport.getPeer()
+                    _q_s.check_login(username, password, ip=peer.host, port=peer.port)
                     self.failResponse("Authentication failed")
                 else:
                     self.failResponse("USER first, then PASS")

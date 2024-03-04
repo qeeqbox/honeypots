@@ -9,25 +9,31 @@
 //  contributors list qeeqbox/honeypots/graphs/contributors
 //  -------------------------------------------------------------
 """
+from __future__ import annotations
 
+import logging
 from _thread import start_new_thread
 from binascii import hexlify
 from contextlib import suppress
+from datetime import datetime
 from io import StringIO
 from random import choice
-from re import compile as rcompile
+import re
 from socket import socket, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from threading import Event
 from time import time
+from typing import TYPE_CHECKING
 
 from paramiko import (
     RSAKey,
     ServerInterface,
     Transport,
+)
+from paramiko.common import (
+    AUTH_FAILED,
     AUTH_SUCCESSFUL,
     OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED,
     OPEN_SUCCEEDED,
-    AUTH_FAILED,
 )
 from paramiko.ssh_exception import SSHException
 
@@ -36,6 +42,42 @@ from honeypots.helper import (
     server_arguments,
     check_bytes,
 )
+
+if TYPE_CHECKING:
+    from paramiko.channel import Channel
+
+
+# deactivate logging output of paramiko
+logging.getLogger("paramiko").setLevel(logging.CRITICAL)
+
+CTRL_C = b"\x03"
+CTRL_D = b"\x04"
+ANSI_SEQUENCE = b"\x1b"
+DEL = b"\x7f"
+COMMANDS = {
+    "ls": (
+        "bin boot cdrom dev etc home lib lib32 libx32 lib64 lost+found media mnt opt proc root "
+        "run sbin snap srv sys tmp usr var"
+    ),
+    "pwd": "/",
+    "whoami": "root",
+    "": "",
+    "cd": "",
+    "cd /": "",
+    "uname": "Linux",
+    "uname -s": "Linux",
+    "uname -n": "n1-v26",
+    "uname -r": "5.4.0-26-generic",
+    "uname -v": "#26-Ubuntu SMP %TIME",
+    "uname -m": "x86_64",
+    "uname -p": "x86_64",
+    "uname -i": "x86_64",
+    "uname -o": "GNU/Linux",
+    "uname -a": (
+        "Linux n1-v26 5.4.0-26-generic #26-Ubuntu SMP %TIME x86_64 x86_64 x86_64 GNU/Linux"
+    ),
+}
+ANSI_REGEX = re.compile(rb"(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]")
 
 
 class QSSHServer(BaseServer):
@@ -47,17 +89,15 @@ class QSSHServer(BaseServer):
         self.mocking_server = choice(
             ["OpenSSH 7.5", "OpenSSH 7.3", "Serv-U SSH Server 15.1.1.108", "OpenSSH 6.4"]
         )
-        self.ansi = rcompile(r"(?:\x1B[@-_]|[\x80-\x9F])[0-?]*[ -/]*[@-~]")
 
-    def generate_pub_pri_keys(self):
-        with suppress(Exception):
-            key = RSAKey.generate(2048)
-            string_io = StringIO()
-            key.write_private_key(string_io)
-            return key.get_base64(), string_io.getvalue()
-        return None, None
+    @staticmethod
+    def generate_pub_pri_keys() -> str:
+        key = RSAKey.generate(2048)
+        string_io = StringIO()
+        key.write_private_key(string_io)
+        return string_io.getvalue()
 
-    def server_main(self):
+    def server_main(self):  # noqa: C901
         _q_s = self
 
         class SSHHandle(ServerInterface):
@@ -66,7 +106,7 @@ class QSSHServer(BaseServer):
                 self.port = port
                 self.event = Event()
 
-            def check_channel_request(self, kind, chanid):
+            def check_channel_request(self, kind, *_, **__):
                 if kind == "session":
                     return OPEN_SUCCEEDED
                 return OPEN_FAILED_ADMINISTRATIVELY_PROHIBITED
@@ -74,175 +114,107 @@ class QSSHServer(BaseServer):
             def check_auth_password(self, username, password):
                 username = check_bytes(username)
                 password = check_bytes(password)
-                status = "failed"
-                if username == _q_s.username and password == _q_s.password:
-                    username = _q_s.username
-                    password = _q_s.password
-                    status = "success"
-                if status == "success":
-                    _q_s.logs.info(
-                        {
-                            "server": _q_s.NAME,
-                            "action": "login",
-                            "status": status,
-                            "src_ip": self.ip,
-                            "src_port": self.port,
-                            "dest_ip": _q_s.ip,
-                            "dest_port": _q_s.port,
-                            "username": username,
-                            "password": password,
-                        }
-                    )
+                if _q_s.check_login(username, password, self.ip, self.port):
                     return AUTH_SUCCESSFUL
-                _q_s.logs.info(
-                    {
-                        "server": _q_s.NAME,
-                        "action": "login",
-                        "status": status,
-                        "src_ip": self.ip,
-                        "src_port": self.port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
-                        "username": username,
-                        "password": password,
-                    }
-                )
                 return AUTH_FAILED
 
-            def check_channel_exec_request(self, channel, command):
+            def check_channel_exec_request(self, channel, command):  # noqa: ARG002
                 if "capture_commands" in _q_s.options:
-                    _q_s.logs.info(
+                    _q_s.log(
                         {
-                            "server": _q_s.NAME,
                             "action": "command",
                             "src_ip": self.ip,
                             "src_port": self.port,
-                            "dest_ip": _q_s.ip,
-                            "dest_port": _q_s.port,
                             "data": {"command": check_bytes(command)},
                         }
                     )
                 self.event.set()
                 return True
 
-            def get_allowed_auths(self, username):
+            def get_allowed_auths(self, *_, **__):
                 return "password,publickey"
 
             def check_auth_publickey(self, username, key):
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "login",
                         "src_ip": self.ip,
                         "src_port": self.port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                         "username": check_bytes(username),
                         "key_fingerprint": check_bytes(hexlify(key.get_fingerprint())),
                     }
                 )
                 return AUTH_SUCCESSFUL
 
-            def check_channel_shell_request(self, channel):
+            def check_channel_shell_request(self, *_, **__):
                 return True
 
-            def check_channel_direct_tcpip_request(self, chanid, origin, destination):
+            def check_channel_direct_tcpip_request(self, *_, **__):
                 return OPEN_SUCCEEDED
 
-            def check_channel_pty_request(
-                self, channel, term, width, height, pixelwidth, pixelheight, modes
-            ):
+            def check_channel_pty_request(self, *_, **__):
                 return True
 
-        def ConnectionHandle(client, priv):
-            with suppress(Exception):
-                t = Transport(client)
+        def handle_connection(client, priv):
+            try:
                 ip, port = client.getpeername()
-                _q_s.logs.info(
+            except OSError as err:
+                _q_s.logger.debug(f"Server error: {err}")
+                return
+            _q_s.log(
+                {
+                    "action": "connection",
+                    "src_ip": ip,
+                    "src_port": port,
+                }
+            )
+
+            with Transport(client) as session:
+                session.local_version = f"SSH-2.0-{_q_s.mocking_server}"
+                session.add_server_key(RSAKey(file_obj=StringIO(priv)))
+                ssh_handle = SSHHandle(ip, port)
+                try:
+                    session.start_server(server=ssh_handle)
+                except (SSHException, EOFError, ConnectionResetError) as err:
+                    _q_s.logger.debug(f"Server error: {err}", exc_info=True)
+                    return
+
+                with session.accept(30) as conn:
+                    if "interactive" in _q_s.options and conn is not None:
+                        _handle_interactive_session(conn, ip, port)
+                    with suppress(TimeoutError):
+                        ssh_handle.event.wait(2)
+
+        def _handle_interactive_session(conn: Channel, ip: str, port: int):
+            conn.send(b"Welcome to Ubuntu 20.04 LTS (GNU/Linux 5.4.0-26-generic x86_64)\r\n\r\n")
+            timeout = time() + 300
+            while time() < timeout:
+                try:
+                    conn.send(b"$ ")
+                    line = _receive_line(conn)
+                except (TimeoutError, EOFError):
+                    break
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
-                        "action": "connection",
+                        "action": "interactive",
                         "src_ip": ip,
                         "src_port": port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
+                        "data": {"command": line},
                     }
                 )
-                t.local_version = "SSH-2.0-" + _q_s.mocking_server
-                t.add_server_key(RSAKey(file_obj=StringIO(priv)))
-                sshhandle = SSHHandle(ip, port)
-                try:
-                    t.start_server(server=sshhandle)
-                except SSHException:
-                    return
-                conn = t.accept(30)
-                if "interactive" in _q_s.options and conn is not None:
-                    conn.send(
-                        b"Welcome to Ubuntu 20.04.4 LTS (GNU/Linux 5.10.60.1-microsoft-standard-WSL2 x86_64)\r\n\r\n"
-                    )
-                    current_time = time()
-                    while True and time() < current_time + 10:
-                        conn.send(b"/$ ")
-                        line = ""
-                        while (
-                            not line.endswith("\x0d")
-                            and not line.endswith("\x0a")
-                            and time() < current_time + 10
-                        ):
-                            conn.settimeout(10)
-                            recv = conn.recv(1).decode()
-                            conn.settimeout(None)
-                            if _q_s.ansi.match(recv) is None and recv != "\x7f":
-                                conn.send(recv.encode())
-                                line += recv
-                        line = line.rstrip()
-                        _q_s.logs.info(
-                            {
-                                "server": _q_s.NAME,
-                                "action": "interactive",
-                                "src_ip": ip,
-                                "src_port": port,
-                                "dest_ip": _q_s.ip,
-                                "dest_port": _q_s.port,
-                                "data": {"command": line},
-                            }
-                        )
-                        if line == "ls":
-                            conn.send(
-                                b"\r\nbin cdrom etc lib lib64 lost+found mnt proc run snap "
-                                b"swapfile tmp var boot dev home lib32 libx32 media opt root "
-                                b"sbin srv sys usr\r\n"
-                            )
-                        elif line == "pwd":
-                            conn.send(b"\r\n/\r\n")
-                        elif line == "whoami":
-                            conn.send(b"\r\nroot\r\n")
-                        elif line == "exit":
-                            break
-                        else:
-                            conn.send(f"\r\n{line}: command not found\r\n".encode())
-                with suppress(Exception):
-                    sshhandle.event.wait(2)
-                with suppress(Exception):
-                    conn.close()
-                with suppress(Exception):
-                    t.close()
+                if line == "exit":
+                    break
+                _respond(conn, line)
 
         sock = socket(AF_INET, SOCK_STREAM)
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
         sock.bind((self.ip, self.port))
         sock.listen(1)
-        pub, priv = self.generate_pub_pri_keys()
+        private_key = self.generate_pub_pri_keys()
         while True:
             with suppress(Exception):
-                client, addr = sock.accept()
-                start_new_thread(
-                    ConnectionHandle,
-                    (
-                        client,
-                        priv,
-                    ),
-                )
+                client, _ = sock.accept()
+                start_new_thread(handle_connection, (client, private_key))
 
     def test_server(self, ip=None, port=None, username=None, password=None):
         from paramiko import SSHClient, AutoAddPolicy
@@ -256,6 +228,67 @@ class QSSHServer(BaseServer):
             AutoAddPolicy()
         )  # if you have default ones, remove them before using this..
         ssh.connect(_ip, port=_port, username=_username, password=_password)
+
+
+def _receive_line(conn: Channel) -> str:
+    line = b""
+    while not any(line.endswith(char) for char in [b"\r", b"\n", CTRL_C]):
+        # timeout if the user does not send anything for 10 seconds
+        conn.settimeout(10)
+        # a button press may equate to multiple bytes (e.g. non-ascii chars,
+        # ANSI sequences, etc.), so we receive more than one byte here
+        recv = conn.recv(1024)
+        if not recv or recv == CTRL_D:  # capture ctrl+D
+            conn.send(b"^D\r\n")
+            raise EOFError
+        if recv == CTRL_C:
+            conn.send(b"^C\r\n")
+        elif recv == b"\r":
+            # ssh only sends "\r" on enter press so we also need to send "\n" back
+            conn.send(b"\n")
+        elif ANSI_SEQUENCE in recv:
+            recv = ANSI_REGEX.sub(b"", recv)
+        if DEL in recv:
+            recv.replace(DEL, b"")
+        if recv:
+            line += recv
+            conn.send(recv)
+    return line.strip().decode(errors="replace")
+
+
+def _respond(conn: Channel, line: str):
+    if line == "" or line.endswith(CTRL_C.decode()):
+        return
+    if line in COMMANDS:
+        response = COMMANDS.get(line)
+        if "%TIME" in response:
+            response = response.replace(
+                "%TIME", datetime.now().strftime("%a %b %d %H:%M:%S UTC %Y")
+            )
+        conn.send(f"{response}\r\n".encode())
+    elif line.startswith("cd "):
+        target = _parse_args(line)
+        if not target:
+            conn.send(b"\r\n")
+        else:
+            if target.startswith("~"):
+                target = target.replace("~", "/root")
+            conn.send(f"sh: 1: cd: can't cd to {target}\r\n".encode())
+    elif line.startswith("ls "):
+        target = _parse_args(line)
+        if not target:
+            conn.send(f"{COMMANDS['ls']}\r\n".encode())
+        else:
+            conn.send(f"ls: cannot open directory '{target}': Permission denied\r\n".encode())
+    else:
+        conn.send(f"{line}: command not found\r\n".encode())
+
+
+def _parse_args(line: str) -> str | None:
+    args = [i for i in line.split(" ")[1:] if i and not i.startswith("-")]
+    if args:
+        return args[0]
+    return None
 
 
 if __name__ == "__main__":

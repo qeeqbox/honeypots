@@ -31,14 +31,11 @@ class QSOCKS5Server(BaseServer):
         class CustomStreamRequestHandler(StreamRequestHandler):
             def handle(self):
                 src_ip, src_port = self.client_address
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": src_ip,
                         "src_port": src_port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
                 try:
@@ -51,22 +48,7 @@ class QSOCKS5Server(BaseServer):
                                 username = check_bytes(self.connection.recv(_len))
                                 _len = ord(self.connection.recv(1))
                                 password = check_bytes(self.connection.recv(_len))
-                                status = "failed"
-                                if username == _q_s.username and password == _q_s.password:
-                                    status = "success"
-                                _q_s.logs.info(
-                                    {
-                                        "server": _q_s.NAME,
-                                        "action": "login",
-                                        "status": status,
-                                        "src_ip": src_ip,
-                                        "src_port": src_port,
-                                        "dest_ip": _q_s.ip,
-                                        "dest_port": _q_s.port,
-                                        "username": username,
-                                        "password": password,
-                                    }
-                                )
+                                _q_s.check_login(username, password, src_ip, src_port)
                 except ConnectionResetError:
                     _q_s.logger.debug(
                         f"[{_q_s.NAME}]: Connection reset error when trying to handle connection"

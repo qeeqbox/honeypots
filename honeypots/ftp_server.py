@@ -80,21 +80,16 @@ class QFTPServer(BaseServer):
                     username = check_bytes(credentials.username)
                     password = check_bytes(credentials.password)
                     if username == _q_s.username and password == _q_s.password:
-                        username = _q_s.username
-                        password = _q_s.password
                         return defer.succeed(credentials.username)
                 return defer.fail(UnauthorizedLogin())
 
         class CustomFTPProtocol(FTP):
             def connectionMade(self):
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
                 self.state = self.UNAUTH
@@ -104,9 +99,8 @@ class QFTPServer(BaseServer):
             def processCommand(self, cmd, *params):
                 with suppress(Exception):
                     if "capture_commands" in _q_s.options:
-                        _q_s.logs.info(
+                        _q_s.log(
                             {
-                                "server": _q_s.NAME,
                                 "action": "command",
                                 "data": {
                                     "cmd": check_bytes(cmd.upper()),
@@ -114,8 +108,6 @@ class QFTPServer(BaseServer):
                                 },
                                 "src_ip": self.transport.getPeer().host,
                                 "src_port": self.transport.getPeer().port,
-                                "dest_ip": _q_s.ip,
-                                "dest_port": _q_s.port,
                             }
                         )
                 return super().processCommand(cmd, *params)
@@ -123,22 +115,8 @@ class QFTPServer(BaseServer):
             def ftp_PASS(self, password):
                 username = check_bytes(self._user)
                 password = check_bytes(password)
-                status = "failed"
-                if username == _q_s.username and password == _q_s.password:
-                    status = "success"
-                _q_s.logs.info(
-                    {
-                        "server": _q_s.NAME,
-                        "action": "login",
-                        "status": status,
-                        "src_ip": self.transport.getPeer().host,
-                        "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
-                        "username": username,
-                        "password": password,
-                    }
-                )
+                peer = self.transport.getPeer()
+                _q_s.check_login(username, password, ip=peer.host, port=peer.port)
 
                 if self.factory.allowAnonymous and self._user == self.factory.userAnonymous:
                     creds = credentials.Anonymous()

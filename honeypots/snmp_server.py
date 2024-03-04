@@ -45,28 +45,22 @@ class QSNMPServer(BaseServer):
                 return version, community, oids
 
             def datagramReceived(self, data, addr):
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "status": "fail",
                         "src_ip": addr[0],
                         "src_port": addr[1],
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
                 version, community, oids = self.parse_snmp(data)
                 if version or community or oids:
-                    _q_s.logs.info(
+                    _q_s.log(
                         {
-                            "server": _q_s.NAME,
                             "action": "query",
                             "status": "success",
                             "src_ip": addr[0],
                             "src_port": addr[1],
-                            "dest_ip": _q_s.ip,
-                            "dest_port": _q_s.port,
                             "data": {"version": version, "community": community, "oids": oids},
                         }
                     )

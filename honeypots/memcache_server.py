@@ -136,14 +136,11 @@ class QMemcacheServer(BaseServer):
                 return ret
 
             def connectionMade(self):
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
 
@@ -162,14 +159,11 @@ class QMemcacheServer(BaseServer):
                     else:
                         self.transport.write(b"ERROR\r\n")
                     if _data[0] != b"":
-                        _q_s.logs.info(
+                        _q_s.log(
                             {
-                                "server": _q_s.NAME,
                                 "action": _data[0].decode(),
                                 "src_ip": self.transport.getPeer().host,
                                 "src_port": self.transport.getPeer().port,
-                                "dest_ip": _q_s.ip,
-                                "dest_port": _q_s.port,
                             }
                         )
                 self.transport.loseConnection()

@@ -39,11 +39,11 @@ class BaseHttpServer(BaseServer, ABC):
         )
 
     class MainResource(Resource):
-        isLeaf = True
+        isLeaf = True  # noqa: N815
         home_file = load_template("home.html")
         login_file = load_template("login.html")
 
-        def __init__(self, *args, hp_server=None, **kwargs):
+        def __init__(self, *args, hp_server: BaseHttpServer = None, **kwargs):
             super().__init__(*args, **kwargs)
             self.hp_server = hp_server
             self.headers = {}
@@ -53,30 +53,24 @@ class BaseHttpServer(BaseServer, ABC):
 
             with suppress(Exception):
                 log_data = {
-                    "server": self.hp_server.NAME,
                     "action": "connection",
                     "src_ip": client_ip,
                     "src_port": request.getClientAddress().port,
-                    "dest_ip": self.hp_server.ip,
-                    "dest_port": self.hp_server.port,
                 }
                 if "capture_commands" in self.hp_server.options:
                     log_data["data"] = headers
-                self.hp_server.logs.info(log_data)
+                self.hp_server.log(log_data)
 
             if self.hp_server.mocking_server != "":
                 request.responseHeaders.removeHeader("Server")
                 request.responseHeaders.addRawHeader("Server", self.hp_server.mocking_server)
 
             if request.method in (b"GET", b"POST"):
-                self.hp_server.logs.info(
+                self.hp_server.log(
                     {
-                        "server": self.hp_server.NAME,
                         "action": request.method.decode(),
                         "src_ip": client_ip,
                         "src_port": request.getClientAddress().port,
-                        "dest_ip": self.hp_server.ip,
-                        "dest_port": self.hp_server.port,
                     }
                 )
 
@@ -115,7 +109,7 @@ class BaseHttpServer(BaseServer, ABC):
                     if "username" in form and "password" in form:
                         username = check_bytes(form["username"].value)
                         password = check_bytes(form["password"].value)
-                        self.hp_server.log_login(
+                        self.hp_server.check_login(
                             username, password, client_ip, request.getClientAddress().port
                         )
 

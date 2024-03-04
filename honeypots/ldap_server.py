@@ -37,14 +37,11 @@ class QLDAPServer(BaseServer):
 
             def connectionMade(self):
                 self._state = 1
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
 
@@ -98,23 +95,8 @@ class QLDAPServer(BaseServer):
             def _check_login(self, data):
                 username, password = self.parse_ldap_packet(data)
                 if username != "" or password != "":
-                    if username == _q_s.username and password == _q_s.password:
-                        status = "success"
-                    else:
-                        status = "failed"
-                    _q_s.logs.info(
-                        {
-                            "server": _q_s.NAME,
-                            "action": "login",
-                            "status": status,
-                            "src_ip": self.transport.getPeer().host,
-                            "src_port": self.transport.getPeer().port,
-                            "dest_ip": _q_s.ip,
-                            "dest_port": _q_s.port,
-                            "username": username,
-                            "password": password,
-                        }
-                    )
+                    peer = self.transport.getPeer()
+                    _q_s.check_login(username, password, ip=peer.host, port=peer.port)
 
             def connectionLost(self, reason):
                 self._state = None

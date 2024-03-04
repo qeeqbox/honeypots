@@ -70,28 +70,22 @@ class QOracleServer(BaseServer):
                 return service_name, program, local_user
 
             def connectionMade(self):
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
 
             def dataReceived(self, data):
                 service_name, program, local_user = self.parse_payload(data)
                 if service_name or program or local_user:
-                    _q_s.logs.info(
+                    _q_s.log(
                         {
-                            "server": _q_s.NAME,
                             "action": "login",
                             "src_ip": self.transport.getPeer().host,
                             "src_port": self.transport.getPeer().port,
-                            "dest_ip": _q_s.ip,
-                            "dest_port": _q_s.port,
                             "data": {
                                 "local_user": local_user,
                                 "program": program,

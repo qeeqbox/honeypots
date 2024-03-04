@@ -12,8 +12,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 IP = "127.0.0.1"
-USERNAME = "testing"
-PASSWORD = "testing"
+USERNAME = "test_user"
+PASSWORD = "test_pw"
 EXPECTED_KEYS = ("action", "dest_ip", "dest_port", "server", "src_ip", "src_port", "timestamp")
 
 

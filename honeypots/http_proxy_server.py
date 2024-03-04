@@ -62,14 +62,11 @@ class QHTTPProxyServer(BaseServer):
                     _, parsed_request = request_string.split(b"\r\n", 1)
                     headers = BytesParser().parsebytes(parsed_request)
                     host = headers["host"].split(":")
-                    _q_s.logs.info(
+                    _q_s.log(
                         {
-                            "server": _q_s.NAME,
                             "action": "query",
                             "src_ip": self.transport.getPeer().host,
                             "src_port": self.transport.getPeer().port,
-                            "dest_ip": _q_s.ip,
-                            "dest_port": _q_s.port,
                             "data": host[0],
                         }
                     )
@@ -77,14 +74,11 @@ class QHTTPProxyServer(BaseServer):
                 return None
 
             def dataReceived(self, data):  # noqa: N802
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
                 ip = self.resolve_domain(data)

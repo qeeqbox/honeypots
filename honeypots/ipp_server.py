@@ -201,16 +201,13 @@ class QIPPServer(BaseServer):
 
                 with suppress(Exception):
                     log_data = {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": client_ip,
                         "src_port": request.getClientAddress().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                     if "capture_commands" in _q_s.options:
                         log_data["data"] = headers
-                    _q_s.logs.info(log_data)
+                    _q_s.log(log_data)
 
                 data = request.content.read()
 
@@ -270,15 +267,12 @@ class QIPPServer(BaseServer):
                     if response[-1] == "|":
                         response = response[0:-1]
                 if len(response) > 0:
-                    _q_s.logs.info(
+                    _q_s.log(
                         {
-                            "server": _q_s.NAME,
                             "action": "query",
                             "status": status,
                             "src_ip": client_ip,
                             "src_port": request.getClientAddress().port,
-                            "dest_ip": _q_s.ip,
-                            "dest_port": _q_s.port,
                             "data": {"request": response},
                         }
                     )

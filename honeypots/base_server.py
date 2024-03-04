@@ -5,6 +5,7 @@ from abc import ABC, abstractmethod
 from os import getenv
 from shlex import split
 from subprocess import Popen
+from typing import Any
 from uuid import uuid4
 
 from honeypots.helper import (
@@ -96,15 +97,12 @@ class BaseServer(ABC):
             if self.process.poll() is None and check_if_server_is_running(self.uuid):
                 status = "success"
 
-        self.logs.info(
+        self.log(
             {
-                "server": self.NAME,
                 "action": "process",
                 "status": status,
                 "src_ip": self.ip,
                 "src_port": self.port,
-                "dest_ip": self.ip,
-                "dest_port": self.port,
             }
         )
 
@@ -113,21 +111,29 @@ class BaseServer(ABC):
         self.kill_server()
         return False
 
-    def log_login(self, username: str, password: str, ip: str, port: int):
+    def check_login(self, username: str, password: str, ip: str, port: int) -> bool:
         status = "success" if self._login_is_correct(username, password) else "failed"
-        self.logs.info(
+        self.log(
             {
-                "server": self.NAME,
                 "action": "login",
                 "status": status,
                 "src_ip": ip,
                 "src_port": port,
                 "username": username,
                 "password": password,
+            }
+        )
+        return status == "success"
+
+    def _login_is_correct(self, username: str, password: str) -> bool:
+        return username == self.username and password == self.password
+
+    def log(self, log_data: dict[str, Any]):
+        log_data.update(
+            {
+                "server": self.NAME,
                 "dest_ip": self.ip,
                 "dest_port": self.port,
             }
         )
-
-    def _login_is_correct(self, username: str, password: str) -> bool:
-        return username == self.username and password == self.password
+        self.logs.info(log_data)

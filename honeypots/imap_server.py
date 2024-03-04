@@ -64,9 +64,8 @@ class QIMAPServer(BaseServer):
 
                 with suppress(Exception):
                     if "capture_commands" in _q_s.options:
-                        _q_s.logs.info(
+                        _q_s.log(
                             {
-                                "server": _q_s.NAME,
                                 "action": "command",
                                 "data": {
                                     "cmd": check_bytes(cmd),
@@ -75,8 +74,6 @@ class QIMAPServer(BaseServer):
                                 },
                                 "src_ip": self.transport.getPeer().host,
                                 "src_port": self.transport.getPeer().port,
-                                "dest_ip": _q_s.ip,
-                                "dest_port": _q_s.port,
                             }
                         )
 
@@ -90,14 +87,11 @@ class QIMAPServer(BaseServer):
                     self.sendNegativeResponse(tag, "Illegal mailbox name: " + str(e))
 
             def connectionMade(self):
-                _q_s.logs.info(
+                _q_s.log(
                     {
-                        "server": _q_s.NAME,
                         "action": "connection",
                         "src_ip": self.transport.getPeer().host,
                         "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
                     }
                 )
                 self.sendPositiveResponse(message=_q_s.mocking_server)
@@ -105,25 +99,8 @@ class QIMAPServer(BaseServer):
             def authenticateLogin(self, user, passwd):
                 username = check_bytes(user)
                 password = check_bytes(passwd)
-                status = "failed"
-                if username == _q_s.username and password == _q_s.password:
-                    username = _q_s.username
-                    password = _q_s.password
-                    status = "success"
-                _q_s.logs.info(
-                    {
-                        "server": _q_s.NAME,
-                        "action": "login",
-                        "status": status,
-                        "src_ip": self.transport.getPeer().host,
-                        "src_port": self.transport.getPeer().port,
-                        "dest_ip": _q_s.ip,
-                        "dest_port": _q_s.port,
-                        "username": username,
-                        "password": password,
-                    }
-                )
-
+                peer = self.transport.getPeer()
+                _q_s.check_login(username, password, ip=peer.host, port=peer.port)
                 raise cred.error.UnauthorizedLogin()
 
             def lineReceived(self, line):
