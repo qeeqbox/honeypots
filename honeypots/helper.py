@@ -27,10 +27,11 @@ from socket import AF_INET, SOCK_STREAM, socket
 from sqlite3 import connect as sqlite3_connect
 from sys import stdout
 from tempfile import _get_candidate_names, gettempdir, NamedTemporaryFile
-from time import sleep
+from time import sleep, time
 from typing import Any, Iterator
 from urllib.parse import urlparse
 
+import psutil
 from OpenSSL import crypto
 from psutil import process_iter
 from psycopg2 import connect as psycopg2_connect, sql
@@ -241,15 +242,6 @@ def kill_servers(name):
                 process.kill()
 
 
-def check_if_server_is_running(uuid):
-    with suppress(Exception):
-        for process in process_iter():
-            cmdline = " ".join(process.cmdline())
-            if "--custom" in cmdline and uuid in cmdline:
-                return True
-    return False
-
-
 def kill_server_wrapper(server_name, name, process):
     with suppress(Exception):
         if process is not None:
@@ -298,11 +290,6 @@ def close_port_wrapper(server_name, ip, port, logs):
 class ComplexEncoder(JSONEncoder):
     def default(self, obj):
         return repr(obj).replace("\x00", " ")
-
-
-class ComplexEncoder_db(JSONEncoder):
-    def default(self, obj):
-        return "Something wrong, deleted.."
 
 
 def serialize_object(_dict):
@@ -742,3 +729,25 @@ def get_headers_and_ip_from_request(request, options):
     if client_ip == "":
         client_ip = request.getClientAddress().host
     return client_ip, headers
+
+
+def service_has_started(port: int):
+    try:
+        wait_for_service(port)
+        return True
+    except TimeoutError:
+        return False
+
+
+def wait_for_service(port: int, interval: float = 0.1, timeout: int = 5.0):
+    start_time = time()
+    while True:
+        if _service_runs(port):
+            return
+        sleep(interval)
+        if time() - start_time > timeout:
+            raise TimeoutError()
+
+
+def _service_runs(port: int) -> bool:
+    return any(service.laddr.port == port for service in psutil.net_connections())

@@ -12,7 +12,8 @@ authors = [
 ]
 description = "30 different honeypots in one package! (dhcp, dns, elastic, ftp, http proxy, https proxy, http, https, imap, ipp, irc, ldap, memcache, mssql, mysql, ntp, oracle, pjl, pop3, postgres, rdp, redis, sip, smb, smtp, snmp, socks5, ssh, telnet, vnc)"
 readme = "README.rst"
-requires-python = ">=3.8"
+# ToDo: fix smtp incompatibility with 3.12
+requires-python = ">=3.8,<3.12"
 dependencies = [
     "twisted==21.7.0",
     "psutil==5.9.0",
@@ -23,7 +24,7 @@ dependencies = [
     "impacket==0.9.24",
     "paramiko==3.1.0",
     "scapy==2.4.5",
-    "service_identity==21.1.0",
+    "service-identity==21.1.0",
     "netifaces==0.11.0",
 ]
 license = {text = "AGPL-3.0"}
