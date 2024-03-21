@@ -11,7 +11,7 @@
 """
 
 from socket import inet_aton
-from struct import error as StructError, unpack
+import struct
 
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol
@@ -42,7 +42,7 @@ class QDHCPServer(BaseServer):
                     siaddr,
                     giaddr,
                     chaddr,
-                ) = unpack("1s1s1s1s4s2s2s4s4s4s4s16s", message[:44])
+                ) = struct.unpack("1s1s1s1s4s2s2s4s4s4s4s16s", message[:44])
                 # op, htype, hlen, hops, xid, secs, flags, ciaddr
                 response = b"\x02\x01\x06\x00" + xid + b"\x00\x00\x00\x00\x00\x00\x00\x00"
                 # yiaddr, siaddr, giaddr, chaddr
@@ -69,27 +69,26 @@ class QDHCPServer(BaseServer):
                 tag_name = None
                 tag_size = None
                 tag = ""
-                for idx, b in enumerate(raw):
+                for b in raw:
                     if tag_name is None:
                         tag_name = b
                     elif tag_name is not None and tag_size is None:
                         tag_size = b
                         tag = ""
-                    else:
-                        if tag_size:
-                            tag_size -= 1
-                            tag += chr(b)
-                            if tag_size == 0:
-                                options.update({check_bytes(tag_name): check_bytes(tag)})
-                                tag_name = None
-                                tag_size = None
-                                tag = ""
+                    elif tag_size:
+                        tag_size -= 1
+                        tag += chr(b)
+                        if tag_size == 0:
+                            options.update({check_bytes(tag_name): check_bytes(tag)})
+                            tag_name = None
+                            tag_size = None
+                            tag = ""
                 return options
 
-            def datagramReceived(self, data, addr):
+            def datagramReceived(self, data, addr):  # noqa: N802
                 try:
-                    mac_address = unpack("!28x6s", data[:34])[0].hex(":")
-                except StructError:
+                    mac_address = struct.unpack("!28x6s", data[:34])[0].hex(":")
+                except struct.error:
                     mac_address = "None"
                 data = self.parse_options(data[240:])
                 data.update({"mac_address": mac_address})

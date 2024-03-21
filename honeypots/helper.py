@@ -11,16 +11,18 @@
 """
 from __future__ import annotations
 
+import json
 import logging
+import os
 import sys
 from argparse import ArgumentParser
 from collections.abc import Mapping
-from contextlib import suppress, contextmanager
+from contextlib import contextmanager, suppress
 from datetime import datetime
-from json import dumps, JSONEncoder, load
-from logging import DEBUG, Formatter, getLogger, Handler
+from json import JSONEncoder
+from logging import DEBUG, Formatter, getLogger, Handler, LogRecord
 from logging.handlers import RotatingFileHandler, SysLogHandler
-from os import getuid, makedirs, path, scandir
+from os import getuid, scandir
 from pathlib import Path
 from signal import SIGTERM
 from socket import AF_INET, SOCK_STREAM, socket
@@ -28,23 +30,13 @@ from sqlite3 import connect as sqlite3_connect
 from sys import stdout
 from tempfile import _get_candidate_names, gettempdir, NamedTemporaryFile
 from time import sleep, time
-from typing import Any, Iterator
+from typing import Any, Iterator, MutableMapping
 from urllib.parse import urlparse
 
 import psutil
 from OpenSSL import crypto
 from psutil import process_iter
 from psycopg2 import connect as psycopg2_connect, sql
-
-
-def is_privileged():
-    with suppress(Exception):
-        return getuid() == 0
-    with suppress(Exception):
-        import ctypes
-
-        return ctypes.windll.shell32.IsUserAnAdmin() != 0
-    return False
 
 
 def set_up_error_logging():
@@ -59,128 +51,104 @@ def set_up_error_logging():
     return _logger
 
 
-def set_local_vars(self, config):
+logger = set_up_error_logging()
+
+
+def is_privileged():
+    with suppress(Exception):
+        return getuid() == 0
+    with suppress(Exception):
+        import ctypes
+
+        return ctypes.windll.shell32.IsUserAnAdmin() != 0
+    return False
+
+
+def set_local_vars(self, config: str | None = None):
+    if not config:
+        return
     try:
-        if config:
-            with open(config) as f:
-                config_data = load(f)
-                honeypots = config_data.get("honeypots", [])
-                honeypot = self.__class__.__name__[1:-6].lower()
-            if honeypot and honeypot in honeypots:
-                for attr, value in honeypots[honeypot].items():
-                    setattr(self, attr, value)
-                    if attr == "port":
-                        self.auto_disabled = True
+        config_data = json.loads(Path(config).read_text())
+        honeypots = config_data.get("honeypots", [])
+        honeypot = self.__class__.__name__[1:-6].lower()
+        if honeypot and honeypot in honeypots:
+            for attr, value in honeypots[honeypot].items():
+                setattr(self, attr, value)
+                if attr == "port":
+                    self.auto_disabled = True
     except Exception as error:
-        logging.exception(f"Setting local variables failed: {error}")
+        logger.debug(f"Setting local variables failed: {error}", exc_info=True)
 
 
-def parse_record(record, custom_filter, type_):
-    timestamp = {"timestamp": datetime.utcnow().isoformat()}
+def _serialize_message(  # noqa: C901
+    record: LogRecord,
+    custom_filter: dict,
+) -> dict | str | None:
     try:
-        if custom_filter is not None:
-            if "remove_errors" in custom_filter["honeypots"]["options"]:
-                if "error" in record.msg:
+        if custom_filter:
+            filters = custom_filter.get("honeypots", {})
+            options = filters.get("options", [])
+            if "remove_errors" in options and "error" in record.msg:
+                return None
+            if isinstance(record.msg, MutableMapping):
+                if "remove_init" in options and record.msg.get("action") == "process":
                     return None
-            if isinstance(record.msg, Mapping):
-                if "remove_init" in custom_filter["honeypots"]["options"]:
-                    if record.msg.get("action", None) == "process":
-                        return None
-                if "remove_word_server" in custom_filter["honeypots"]["options"]:
-                    if "server" in record.msg:
-                        record.msg["server"] = record.msg["server"].replace("_server", "")
-                if "honeypots" in custom_filter:
-                    for key in record.msg.copy():
-                        if key in custom_filter["honeypots"]["change"]:
-                            record.msg[custom_filter["honeypots"]["change"][key]] = record.msg.pop(
-                                key
-                            )
-                    for key in record.msg.copy():
-                        if key in custom_filter["honeypots"]["remove"]:
-                            del record.msg[key]
-                if custom_filter["honeypots"]["contains"]:
-                    if not all(k in record.msg for k in custom_filter["honeypots"]["contains"]):
-                        return None
+                if "remove_word_server" in options and "server" in record.msg:
+                    record.msg["server"] = record.msg["server"].replace("_server", "")
+                for old_key, new_key in filters.get("change", {}).items():
+                    if old_key in record.msg:
+                        record.msg[new_key] = record.msg.pop(old_key)
+                for key in filters.get("remove", []):
+                    record.msg.pop(key, None)
+                if "contains" in filters and any(k not in record.msg for k in filters["contains"]):
+                    return None
         if isinstance(record.msg, Mapping):
-            record.msg = serialize_object({**timestamp, **record.msg})
-        else:
-            record.msg = serialize_object(record.msg)
-    except Exception as e:
-        record.msg = serialize_object({"name": record.name, "error": repr(e)})
+            return serialize_object({"timestamp": datetime.utcnow().isoformat(), **record.msg})
+        return serialize_object(record.msg)
+    except Exception as error:
+        return serialize_object({"name": record.name, "error": repr(error)})
+
+
+def _parse_record(record: LogRecord, custom_filter: dict, type_: str) -> LogRecord | None:
+    serialized_msg = _serialize_message(record, custom_filter)
+    if not serialized_msg:
+        return None
     with suppress(Exception):
         if type_ == "file":
-            if custom_filter is not None:
-                if "dump_json_to_file" in custom_filter["honeypots"]["options"]:
-                    record.msg = dumps(record.msg, sort_keys=True, cls=ComplexEncoder)
+            if custom_filter:
+                options = custom_filter.get("honeypots", {}).get("options", [])
+                if "dump_json_to_file" in options:
+                    record.msg = json.dumps(serialized_msg, sort_keys=True, cls=ComplexEncoder)
         elif type_ == "db_postgres":
             pass
         elif type_ == "db_sqlite":
             for item in ["data", "error"]:
-                if item in record.msg:
-                    if not isinstance(record.msg[item], str):
-                        record.msg[item] = repr(record.msg[item]).replace("\x00", " ")
+                if item in serialized_msg and not isinstance(serialized_msg[item], str):
+                    serialized_msg[item] = repr(serialized_msg[item]).replace("\x00", " ")
         else:
-            record.msg = dumps(record.msg, sort_keys=True, cls=ComplexEncoder)
+            record.msg = json.dumps(serialized_msg, sort_keys=True, cls=ComplexEncoder)
     return record
 
 
-def get_running_servers():
-    temp_list = []
-    with suppress(Exception):
-        honeypots = [
-            "QDNSServer",
-            "QFTPServer",
-            "QHTTPProxyServer",
-            "QHTTPServer",
-            "QHTTPSServer",
-            "QIMAPServer",
-            "QMysqlServer",
-            "QPOP3Server",
-            "QPostgresServer",
-            "QRedisServer",
-            "QSMBServer",
-            "QSMTPServer",
-            "QSOCKS5Server",
-            "QSSHServer",
-            "QTelnetServer",
-            "QVNCServer",
-            "QElasticServer",
-            "QMSSQLServer",
-            "QLDAPServer",
-            "QNTPServer",
-            "QMemcacheServer",
-            "QOracleServer",
-            "QSNMPServer",
-        ]
-        for process in process_iter():
-            cmdline = " ".join(process.cmdline())
-            for honeypot in honeypots:
-                if "--custom" in cmdline and honeypot in cmdline:
-                    temp_list.append(cmdline.split(" --custom ")[1])
-    return temp_list
-
-
-def setup_logger(name, temp_name, config, drop=False):
+def setup_logger(name: str, temp_name: str, config: str, drop: bool = False):
     logs = "terminal"
     logs_location = ""
-    syslog_address = ""
-    syslog_facility = ""
-    config_data = None
+    config_data = {}
     custom_filter = None
-    if config and config != "":
-        with suppress(Exception):
-            with open(config) as f:
-                config_data = load(f)
-                logs = config_data.get("logs", logs)
-                logs_location = config_data.get("logs_location", logs_location)
-                syslog_address = config_data.get("syslog_address", syslog_address)
-                syslog_facility = config_data.get("syslog_facility", syslog_facility)
-                custom_filter = config_data.get("custom_filter", custom_filter)
-    if logs_location == "" or logs_location is None:
-        logs_location = path.join(gettempdir(), "logs")
-    if not path.exists(logs_location):
-        makedirs(logs_location)
-    file_handler = None
+    if config:
+        try:
+            config_data = json.loads(Path(config).read_text())
+            logs = config_data.get("logs", logs)
+            logs_location = config_data.get("logs_location", logs_location)
+            custom_filter = config_data.get("custom_filter", custom_filter)
+        except json.JSONDecodeError as error:
+            logger.error(f"Could not parse config '{config}' as JSON: {error}")
+        except OSError as error:
+            logger.error(f"Could not read config file '{config}': {error}")
+
+    logs_path = Path(logs_location) if logs_location else Path(gettempdir()) / "logs"
+    logs_path.mkdir(parents=True, exist_ok=True)
+
     ret_logs_obj = getLogger(temp_name)
     ret_logs_obj.setLevel(DEBUG)
     if "db_postgres" in logs or "db_sqlite" in logs:
@@ -188,43 +156,39 @@ def setup_logger(name, temp_name, config, drop=False):
     elif "terminal" in logs:
         ret_logs_obj.addHandler(CustomHandler(temp_name, logs, custom_filter))
     if "file" in logs:
-        max_bytes = 10000
-        backup_count = 10
-        with suppress(Exception):
-            if config_data is not None:
-                if "honeypots" in config_data:
-                    temp_server_name = name[1:].lower().replace("server", "")
-                    if temp_server_name in config_data["honeypots"]:
-                        if "log_file_name" in config_data["honeypots"][temp_server_name]:
-                            temp_name = config_data["honeypots"][temp_server_name]["log_file_name"]
-                        if "max_bytes" in config_data["honeypots"][temp_server_name]:
-                            max_bytes = config_data["honeypots"][temp_server_name]["max_bytes"]
-                        if "backup_count" in config_data["honeypots"][temp_server_name]:
-                            backup_count = config_data["honeypots"][temp_server_name][
-                                "backup_count"
-                            ]
+        server = name[1:].lower().replace("server", "")
+        server_config = config_data.get("honeypots", {}).get(server, {})
         file_handler = CustomHandlerFileRotate(
-            temp_name,
-            logs,
-            custom_filter,
-            path.join(logs_location, temp_name),
-            maxBytes=max_bytes,
-            backupCount=backup_count,
+            str(logs_path / server_config.get("log_file_name", temp_name)),
+            logs=logs,
+            custom_filter=custom_filter,
+            maxBytes=server_config.get("max_bytes", 10000),
+            backupCount=server_config.get("backup_count", 10),
         )
         ret_logs_obj.addHandler(file_handler)
     if "syslog" in logs:
-        if syslog_address == "":
-            address = ("localhost", 514)
-        else:
-            address = (
-                syslog_address.split("//")[1].split(":")[0],
-                int(syslog_address.split("//")[1].split(":")[1]),
-            )
-        syslog = SysLogHandler(address=address, facility=syslog_facility)
-        formatter = Formatter("[%(name)s] [%(levelname)s] - %(message)s")
-        syslog.setFormatter(formatter)
-        ret_logs_obj.addHandler(syslog)
+        syslog_handler = _set_up_syslog_handler(
+            config_data.get("syslog_address"),
+            config_data.get("syslog_facility"),
+        )
+        if syslog_handler:
+            ret_logs_obj.addHandler(syslog_handler)
     return ret_logs_obj
+
+
+def _set_up_syslog_handler(address: str | None, facility: int | None) -> Handler | None:
+    if not address:
+        address = ("localhost", 514)
+    else:
+        url = urlparse(address)
+        if not url.hostname or not url.port:
+            logger.error(f"Could not parse syslog address '{address}': host or port not found")
+            return None
+        address = (url.hostname, url.port)
+    handler = SysLogHandler(address=address, facility=facility)
+    formatter = Formatter("[%(name)s] [%(levelname)s] - %(message)s")
+    handler.setFormatter(formatter)
+    return handler
 
 
 def clean_all():
@@ -242,19 +206,6 @@ def kill_servers(name):
                 process.kill()
 
 
-def kill_server_wrapper(server_name, name, process):
-    with suppress(Exception):
-        if process is not None:
-            process.kill()
-        for process in process_iter():
-            cmdline = " ".join(process.cmdline())
-            if "--custom" in cmdline and name in cmdline:
-                process.send_signal(SIGTERM)
-                process.kill()
-        return True
-    return False
-
-
 def get_free_port():
     port = 0
     with suppress(Exception):
@@ -265,81 +216,53 @@ def get_free_port():
     return port
 
 
-def close_port_wrapper(server_name, ip, port, logs):
-    ret = False
-    sock = socket(AF_INET, SOCK_STREAM)
-    sock.settimeout(2)
-    if sock.connect_ex((ip, port)) == 0:
-        for process in process_iter():
-            with suppress(Exception):
-                for conn in process.connections(kind="inet"):
-                    if port == conn.laddr.port:
-                        process.send_signal(SIGTERM)
-                        process.kill()
-    with suppress(Exception):
-        sock.bind((ip, port))
-        ret = True
-
-    if sock.connect_ex((ip, port)) != 0 and ret:
-        return True
-    else:
-        logs.error({"server": server_name, "error": f"port_open.. {ip} still open.."})
-        return False
-
-
 class ComplexEncoder(JSONEncoder):
     def default(self, obj):
         return repr(obj).replace("\x00", " ")
 
 
-def serialize_object(_dict):
-    if isinstance(_dict, Mapping):
-        return dict((k, serialize_object(v)) for k, v in _dict.items())
-    elif isinstance(_dict, list):
-        return list(serialize_object(v) for v in _dict)
-    elif isinstance(_dict, (int, float)):
-        return str(_dict)
-    elif isinstance(_dict, str):
-        return _dict.replace("\x00", " ")
-    elif isinstance(_dict, bytes):
-        return _dict.decode("utf-8", "ignore").replace("\x00", " ")
-    else:
-        return repr(_dict).replace("\x00", " ")
+def serialize_object(obj: Any) -> dict | list | str:
+    if isinstance(obj, Mapping):
+        return {k: serialize_object(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [serialize_object(v) for v in obj]
+    if isinstance(obj, (int, float)):
+        return str(obj)
+    if isinstance(obj, bytes):
+        obj = obj.decode("utf-8", "ignore")
+    elif not isinstance(obj, str):
+        obj = repr(obj)
+    return obj.replace("\x00", " ")
 
 
 class CustomHandlerFileRotate(RotatingFileHandler):
-    def __init__(
-        self,
-        uuid="",
-        logs="",
-        custom_filter=None,
-        filename="",
-        mode="a",
-        maxBytes=0,
-        backupCount=0,
-        encoding=None,
-        delay=False,
-        errors=None,
-    ):
+    def __init__(self, *args, logs="", custom_filter=None, **kwargs):
         self.logs = logs
         self.custom_filter = custom_filter
-        RotatingFileHandler.__init__(self, filename, mode, maxBytes, backupCount, encoding, delay)
+        super().__init__(*args, **kwargs)
 
     def emit(self, record):
-        _record = parse_record(record, self.custom_filter, "file")
-        if _record is not None:
+        _record = _parse_record(record, self.custom_filter, "file")
+        if _record:
             super().emit(_record)
 
 
 class CustomHandler(Handler):
-    def __init__(self, uuid="", logs="", custom_filter=None, config=None, drop=False):
+    def __init__(  # noqa: PLR0913
+        self,
+        uuid: str = "",
+        logs: str = "",
+        custom_filter: dict | None = None,
+        config: dict | None = None,
+        drop: bool = False,
+    ):
         self.db = {"db_postgres": None, "db_sqlite": None}
         self.logs = logs
         self.uuid = uuid
         self.custom_filter = custom_filter
-        if config and config != "" and "db_postgres" in self.logs:
+        if config and "db_postgres" in self.logs:
             parsed = urlparse(config["postgres"])
-            self.db["db_postgres"] = postgres_class(
+            self.db["db_postgres"] = PostgresClass(
                 host=parsed.hostname,
                 port=parsed.port,
                 username=parsed.username,
@@ -348,56 +271,60 @@ class CustomHandler(Handler):
                 uuid=self.uuid,
                 drop=drop,
             )
-        if config and config != "" and "db_sqlite" in self.logs:
-            self.db["db_sqlite"] = sqlite_class(
+        if config and "db_sqlite" in self.logs:
+            self.db["db_sqlite"] = SqliteClass(
                 file=config["sqlite_file"], drop=drop, uuid=self.uuid
             )
-        Handler.__init__(self)
+        super().__init__()
 
-    def emit(self, record):
+    def emit(self, record: LogRecord):  # noqa: C901,PLR0912
         try:
-            if "db_postgres" in self.logs:
-                if self.db["db_postgres"]:
-                    if isinstance(record.msg, list):
-                        if record.msg[0] == "sniffer" or record.msg[0] == "errors":
-                            self.db["db_postgres"].insert_into_data_safe(
-                                record.msg[0],
-                                dumps(serialize_object(record.msg[1]), cls=ComplexEncoder),
-                            )
-                    elif isinstance(record.msg, Mapping):
-                        if "server" in record.msg:
-                            self.db["db_postgres"].insert_into_data_safe(
-                                "servers", dumps(serialize_object(record.msg), cls=ComplexEncoder)
-                            )
+            if "db_postgres" in self.logs and self.db["db_postgres"]:
+                if isinstance(record.msg, list):
+                    if record.msg[0] in {"sniffer", "errors"}:
+                        self.db["db_postgres"].insert_into_data_safe(
+                            record.msg[0],
+                            json.dumps(serialize_object(record.msg[1]), cls=ComplexEncoder),
+                        )
+                elif isinstance(record.msg, Mapping) and "server" in record.msg:
+                    self.db["db_postgres"].insert_into_data_safe(
+                        "servers",
+                        json.dumps(serialize_object(record.msg), cls=ComplexEncoder),
+                    )
             if "db_sqlite" in self.logs:
-                _record = parse_record(record, self.custom_filter, "db_sqlite")
+                _record = _parse_record(record, self.custom_filter, "db_sqlite")
                 if _record:
                     self.db["db_sqlite"].insert_into_data_safe(_record.msg)
             if "terminal" in self.logs:
-                _record = parse_record(record, self.custom_filter, "terminal")
+                _record = _parse_record(record, self.custom_filter, "terminal")
                 if _record:
                     stdout.write(_record.msg + "\n")
             if "syslog" in self.logs:
-                _record = parse_record(record, self.custom_filter, "terminal")
+                _record = _parse_record(record, self.custom_filter, "terminal")
                 if _record:
                     stdout.write(_record.msg + "\n")
-        except Exception as e:
-            if self.custom_filter is not None:
-                if "honeypots" in self.custom_filter:
-                    if "remove_errors" in self.custom_filter["honeypots"]["options"]:
-                        return
-            stdout.write(
-                dumps(
-                    {"error": repr(e), "logger": repr(record)}, sort_keys=True, cls=ComplexEncoder
-                )
-                + "\n"
-            )
+        except Exception as error:
+            if (
+                self.custom_filter is not None
+                and "honeypots" in self.custom_filter
+                and "remove_errors" in self.custom_filter["honeypots"].get("options", [])
+            ):
+                return
+            log_entry = {"error": repr(error), "logger": repr(record)}
+            stdout.write(f"{json.dumps(log_entry, sort_keys=True, cls=ComplexEncoder)}\n")
         stdout.flush()
 
 
-class postgres_class:
-    def __init__(
-        self, host=None, port=None, username=None, password=None, db=None, drop=False, uuid=None
+class PostgresClass:
+    def __init__(  # noqa: PLR0913
+        self,
+        host=None,
+        port=None,
+        username=None,
+        password=None,
+        db=None,
+        drop=False,
+        uuid=None,
     ):
         self.host = host
         self.port = port
@@ -409,7 +336,10 @@ class postgres_class:
         self.wait_until_up()
         if drop:
             self.con = psycopg2_connect(
-                host=self.host, port=self.port, user=self.username, password=self.password
+                host=self.host,
+                port=self.port,
+                user=self.username,
+                password=self.password,
             )
             self.con.set_isolation_level(0)
             self.cur = self.con.cursor()
@@ -419,7 +349,10 @@ class postgres_class:
             self.con.close()
         else:
             self.con = psycopg2_connect(
-                host=self.host, port=self.port, user=self.username, password=self.password
+                host=self.host,
+                port=self.port,
+                user=self.username,
+                password=self.password,
             )
             self.con.set_isolation_level(0)
             self.cur = self.con.cursor()
@@ -442,7 +375,7 @@ class postgres_class:
         test = True
         while test:
             with suppress(Exception):
-                print(f"{self.uuid} - Waiting on postgres connection")
+                logger.info(f"{self.uuid} - Waiting on postgres connection")
                 stdout.flush()
                 conn = psycopg2_connect(
                     host=self.host,
@@ -454,7 +387,7 @@ class postgres_class:
                 conn.close()
                 test = False
             sleep(1)
-        print(f"{self.uuid} - postgres connection is good")
+        logger.info(f"{self.uuid} - postgres connection is good")
 
     def addattr(self, x, val):
         self.__dict__[x] = val
@@ -472,7 +405,7 @@ class postgres_class:
 
     def drop_db(self):
         with suppress(Exception):
-            print(f"[x] Dropping {self.db} db")
+            logger.warning(f"Dropping {self.db} db")
             if self.check_db_if_exists():
                 self.cur.execute(
                     sql.SQL("drop DATABASE IF EXISTS {}").format(sql.Identifier(self.db))
@@ -481,7 +414,7 @@ class postgres_class:
             self.cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(self.db)))
 
     def create_db(self):
-        print("create")
+        logger.info("Creating PostgreSQL database")
         self.cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(self.db)))
 
     def drop_tables(
@@ -493,11 +426,12 @@ class postgres_class:
             )
 
     def create_tables(self):
-        for x in self.mapped_tables:
+        for table in self.mapped_tables:
             self.cur.execute(
                 sql.SQL(
-                    "CREATE TABLE IF NOT EXISTS {} (id SERIAL NOT NULL,date timestamp with time zone DEFAULT now(),data json)"
-                ).format(sql.Identifier(x + "_table"))
+                    "CREATE TABLE IF NOT EXISTS {} "
+                    "(id SERIAL NOT NULL,date timestamp with time zone DEFAULT now(),data json)"
+                ).format(sql.Identifier(table + "_table"))
             )
 
     def insert_into_data_safe(self, table, obj):
@@ -510,7 +444,7 @@ class postgres_class:
             )
 
 
-class sqlite_class:
+class SqliteClass:
     def __init__(self, file=None, drop=False, uuid=None):
         self.file = file
         self.uuid = uuid
@@ -547,43 +481,30 @@ class sqlite_class:
         test = True
         while test:
             with suppress(Exception):
-                print(f"{self.uuid} - Waiting on sqlite connection")
+                logger.info(f"{self.uuid} - Waiting on sqlite connection")
                 conn = sqlite3_connect(self.file, timeout=1, check_same_thread=False)
                 conn.close()
                 test = False
             sleep(1)
-        print(f"{self.uuid} - sqlite connection is good")
-
-    def drop_db_test(self):
-        with suppress(Exception):
-            file_exists = False
-            sql_file = False
-            with open(self.file, "rb") as f:
-                file_exists = True
-                header = f.read(100)
-                if header[:16] == b"SQLite format 3\x00":
-                    sql_file = True
-            if sql_file:
-                print("yes")
+        logger.info(f"{self.uuid} - sqlite connection is good")
 
     def drop_db(self):
         with suppress(Exception):
             file = Path(self.file)
             file.unlink(missing_ok=False)
 
-    def drop_tables(
-        self,
-    ):
+    def drop_tables(self):
         with suppress(Exception):
-            for x in self.mapped_tables:
-                self.cur.execute(f"DROP TABLE IF EXISTS '{x:s}'")
+            for table in self.mapped_tables:
+                self.cur.execute(f"DROP TABLE IF EXISTS '{table:s}'")
 
     def create_tables(self):
         with suppress(Exception):
             self.cur.execute(
-                "CREATE TABLE IF NOT EXISTS '{:s}' (id INTEGER PRIMARY KEY,date DATETIME DEFAULT CURRENT_TIMESTAMP,server text, action text, status text, src_ip text, src_port text,dest_ip text, dest_port text, username text, password text, data text, error text)".format(
-                    "servers_table"
-                )
+                "CREATE TABLE IF NOT EXISTS 'servers_table' (id INTEGER PRIMARY KEY,"
+                "date DATETIME DEFAULT CURRENT_TIMESTAMP,server text, action text, "
+                "status text, src_ip text, src_port text,dest_ip text, dest_port text, "
+                "username text, password text, data text, error text)"
             )
 
     def insert_into_data_safe(self, obj):
@@ -591,7 +512,9 @@ class sqlite_class:
             parsed = {k: v for k, v in obj.items() if v is not None}
             dict_ = {**self.servers_table_template, **parsed}
             self.cur.execute(
-                "INSERT INTO servers_table (server, action, status, src_ip, src_port, dest_ip, dest_port, username, password, data, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO servers_table ("
+                "server, action, status, src_ip, src_port, dest_ip, dest_port, username, "
+                "password, data, error) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (
                     dict_["server"],
                     dict_["action"],
@@ -612,7 +535,11 @@ def server_arguments():
     _server_parser = ArgumentParser(prog="Server")
     _server_parsergroupdeq = _server_parser.add_argument_group("Initialize Server")
     _server_parsergroupdeq.add_argument(
-        "--ip", type=str, help="Change server ip, current is 0.0.0.0", required=False, metavar=""
+        "--ip",
+        type=str,
+        help="Change server ip, current is 0.0.0.0",
+        required=False,
+        metavar="",
     )
     _server_parsergroupdeq.add_argument(
         "--port", type=int, help="Change port", required=False, metavar=""
@@ -652,7 +579,11 @@ def server_arguments():
     )
     _server_parsergroupdef = _server_parser.add_argument_group("Initialize Loging")
     _server_parsergroupdef.add_argument(
-        "--config", type=str, help="config file for logs and database", required=False, default=""
+        "--config",
+        type=str,
+        help="config file for logs and database",
+        required=False,
+        default="",
     )
     _server_parsergroupdea = _server_parser.add_argument_group("Auto Configuration")
     _server_parsergroupdea.add_argument(
@@ -668,7 +599,10 @@ def server_arguments():
         "--custom", action="store_true", help="Run custom server", required=False
     )
     _server_parsergroupdea.add_argument(
-        "--auto", action="store_true", help="Run auto configured with random port", required=False
+        "--auto",
+        action="store_true",
+        help="Run auto configured with random port",
+        required=False,
     )
     _server_parsergroupdef.add_argument("--uuid", type=str, help="unique id", required=False)
     return _server_parser.parse_args()
@@ -751,3 +685,14 @@ def wait_for_service(port: int, interval: float = 0.1, timeout: int = 5.0):
 
 def _service_runs(port: int) -> bool:
     return any(service.laddr.port == port for service in psutil.net_connections())
+
+
+@contextmanager
+def hide_stderr():
+    stderr = sys.stderr
+    try:
+        with Path(os.devnull).open("w") as devnull:
+            sys.stderr = devnull
+            yield
+    finally:
+        sys.stderr = stderr

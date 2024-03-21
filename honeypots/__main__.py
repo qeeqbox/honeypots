@@ -168,7 +168,7 @@ class HoneypotsManager:
 
         if self.options.list:
             for service in all_servers:
-                print(service)  # noqa: T201
+                print(service)
         elif self.options.kill:
             clean_all()
         elif self.options.chameleon and self.config_data is not None:
@@ -350,7 +350,7 @@ class HoneypotsManager:
     def _start_sniffer(self, sniffer_filter, sniffer_interface):
         logger.info("[x] Starting sniffer")
         sniffer = QBSniffer(
-            filter=sniffer_filter,
+            filter_=sniffer_filter,
             interface=sniffer_interface,
             config=self.options.config,
         )

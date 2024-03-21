@@ -10,8 +10,11 @@
 //  -------------------------------------------------------------
 """
 
+from __future__ import annotations
+
 from contextlib import suppress
 from hashlib import sha1
+from pathlib import Path
 from struct import pack
 
 from twisted.internet import reactor
@@ -30,92 +33,68 @@ class QMysqlServer(BaseServer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.words = [self.password.encode()]
-
-    def load_words(
-        self,
-    ):
-        with open(self.file_name, encoding="utf-8") as file:
-            self.words = file.read().splitlines()
+        if hasattr(self, "file_name"):
+            self.words = Path(self.file_name).read_text("utf-8").splitlines()
+        else:
+            self.words = [self.password.encode()]
 
     def greeting(self):
         base = [
-            "\x0a",
-            "5.7.00" + "\0",
-            "\x36\x00\x00\x00",
-            "12345678" + "\0",
-            "\xff\xf7",
-            "\x21",
-            "\x02\x00",
-            "\x0f\x81",
-            "\x15",
-            "\0" * 10,
-            "123456789012" + "\0",
-            "mysql_native_password" + "\0",
+            b"\x0a",
+            b"5.7.00" + b"\0",
+            b"\x36\x00\x00\x00",
+            b"12345678" + b"\0",
+            b"\xff\xf7",
+            b"\x21",
+            b"\x02\x00",
+            b"\x0f\x81",
+            b"\x15",
+            b"\0" * 10,
+            b"123456789012" + b"\0",
+            b"mysql_native_password" + b"\0",
         ]
-        payload_len = list(pack("<I", len("".join(base))))
-        # payload_len[3] = '\x00'
-        string_ = (
-            chr(payload_len[0])
-            + chr(payload_len[1])
-            + chr(payload_len[2])
-            + "\x00"
-            + "".join(base)
-        )
-        string_ = bytes([ord(c) for c in string_])
-        return string_
+        return self._create_response(base)
 
     def too_many(self):
-        base = ["\xff", "\x10\x04", "#08004", "Too many connections"]
-        payload_len = list(pack("<I", len("".join(base))))
-        # payload_len[3] = '\x02'
-        string_ = (
-            chr(payload_len[0])
-            + chr(payload_len[1])
-            + chr(payload_len[2])
-            + "\x02"
-            + "".join(base)
-        )
-        string_ = bytes([ord(c) for c in string_])
-        return string_
+        base = [b"\xff", b"\x10\x04", b"#08004", b"Too many connections"]
+        return self._create_response(base, sequence_id=2)
 
     def access_denied(self):
-        base = ["\xff", "\x15\x04", "#28000", "Access denied.."]
-        payload_len = list(pack("<I", len("".join(base))))
-        # payload_len[3] = '\x02'
-        string_ = (
-            chr(payload_len[0])
-            + chr(payload_len[1])
-            + chr(payload_len[2])
-            + "\x02"
-            + "".join(base)
-        )
-        string_ = bytes([ord(c) for c in string_])
-        return string_
+        base = [b"\xff", b"\x15\x04", b"#28000", b"Access denied.."]
+        return self._create_response(base, sequence_id=2)
 
-    def parse_data(self, data):
-        with suppress(Exception):
-            username_len = data[36:].find(b"\x00")
-            username = data[36:].split(b"\x00")[0]
-            password_len = data[36 + username_len + 1]
-            password = data[36 + username_len + 2 : 36 + username_len + 2 + password_len]
-            rest_ = data[36 + username_len + 2 + password_len :]
-            if len(password) == 20:
-                return username, password, True
+    @staticmethod
+    def _create_response(base: list[bytes], sequence_id: int = 0) -> bytes:
+        # MySQL Packets structure: 3 byte payload_len, 1 byte sequence_id, payload
+        payload_len = pack("<I", len(b"".join(base)))[:3]
+        payload = b"".join(base)
+        return payload_len + pack("b", sequence_id) + payload
+
+    @staticmethod
+    def parse_data(data: bytes) -> tuple[bytes, bytes, bool]:
+        username, password = "", ""
+        username_offset = 36
+        username_len = data[username_offset:].find(b"\x00")
+        if username_len != -1:
+            with suppress(IndexError):
+                username = data[username_offset : username_offset + username_len]
+                password_offset = username_offset + username_len + 2
+                password_len = data[password_offset - 1]
+                password = data[password_offset : password_offset + password_len]
+                if password_len == 20:  # noqa: PLR2004
+                    return username, password, True
         return username, password, False
 
-    def decode(self, hash):
+    def decode(self, hash_: bytes):
         with suppress(Exception):
             for word in self.words:
-                temp = word
-                word = word.strip(b"\n")
-                hash1 = sha1(word).digest()
+                hash1 = sha1(word.strip(b"\n")).digest()
                 hash2 = sha1(hash1).digest()
                 encrypted = [
                     (a ^ b) for a, b in zip(hash1, sha1(b"12345678123456789012" + hash2).digest())
                 ]
-                if encrypted == list([(i) for i in hash]):
-                    return temp
+                if encrypted == list(hash_):
+                    return word
         return None
 
     def server_main(self):
@@ -124,7 +103,7 @@ class QMysqlServer(BaseServer):
         class CustomMysqlProtocol(Protocol):
             _state = None
 
-            def connectionMade(self):
+            def connectionMade(self):  # noqa: N802
                 self._state = 1
                 self.transport.write(_q_s.greeting())
                 _q_s.log(
@@ -135,7 +114,7 @@ class QMysqlServer(BaseServer):
                     }
                 )
 
-            def dataReceived(self, data):
+            def dataReceived(self, data):  # noqa: N802
                 try:
                     if self._state == 1:
                         ret_access_denied = False
@@ -175,7 +154,7 @@ class QMysqlServer(BaseServer):
                     self.transport.write(_q_s.too_many())
                     self.transport.loseConnection()
 
-            def connectionLost(self, reason):
+            def connectionLost(self, reason):  # noqa: N802,ARG002
                 self._state = None
 
         factory = Factory()

@@ -35,7 +35,10 @@ def test_elastic_server(server_logs):
 
     logs = load_logs_from_file(server_logs)
 
-    assert len(logs) == 2
-    connect, login = logs
+    assert len(logs) == 3
+    connect, login, dump = logs
     assert_connect_is_logged(connect, PORT)
     assert_login_is_logged(login)
+
+    assert "headers" in dump
+    assert dump["data"] == "POST /test/_search HTTP/1.1\r\n"

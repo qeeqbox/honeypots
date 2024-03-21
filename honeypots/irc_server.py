@@ -31,7 +31,7 @@ class QIRCServer(BaseServer):
         _q_s = self
 
         class CustomIRCProtocol(service.IRCUser):
-            def connectionMade(self):
+            def connectionMade(self):  # noqa: N802
                 _q_s.log(
                     {
                         "action": "connection",
@@ -40,7 +40,7 @@ class QIRCServer(BaseServer):
                     }
                 )
 
-            def handleCommand(self, command, prefix, params):
+            def handleCommand(self, command, prefix, params):  # noqa: N802
                 if "capture_commands" in _q_s.options:
                     _q_s.log(
                         {
@@ -56,7 +56,7 @@ class QIRCServer(BaseServer):
                     )
                 service.IRCUser.handleCommand(self, command, prefix, params)
 
-            def dataReceived(self, data: bytes):
+            def dataReceived(self, data: bytes):  # noqa: N802
                 try:
                     service.IRCUser.dataReceived(self, data)
                 except UnicodeDecodeError:
@@ -67,7 +67,7 @@ class QIRCServer(BaseServer):
             def irc_unknown(self, prefix, command, params):
                 pass
 
-            def irc_NICK(self, prefix, params):
+            def irc_NICK(self, prefix, params):  # noqa: N802,ARG002
                 username = check_bytes("".join(params))
                 password = check_bytes(self.password)
                 peer = self.transport.getPeer()

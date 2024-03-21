@@ -36,17 +36,17 @@ class QDNSServer(BaseServer):
         _q_s = self
 
         class CustomClientResolver(client.Resolver):
-            def queryUDP(self, queries, timeout=2):
+            def queryUDP(self, queries, timeout=2):  # noqa: N802
                 res = client.Resolver.queryUDP(self, queries, timeout)
 
-                def queryFailed(reason):
+                def queryFailed(reason):  # noqa: N802,ARG001
                     return defer.fail(error.DomainError())
 
                 res.addErrback(queryFailed)
                 return res
 
         class CustomDNSServerFactory(DNSServerFactory):
-            def gotResolverResponse(self, response, protocol, message, address):
+            def gotResolverResponse(self, response, protocol, message, address):  # noqa: N802
                 if address is None:
                     src_ip, src_port = "None", "None"
                 else:
@@ -64,7 +64,7 @@ class QDNSServer(BaseServer):
                 return super().gotResolverResponse(response, protocol, message, address)
 
         class CustomDnsUdpProtocol(dns.DNSDatagramProtocol):
-            def datagramReceived(self, data: bytes, addr: tuple[str, int]):
+            def datagramReceived(self, data: bytes, addr: tuple[str, int]):  # noqa: N802
                 _q_s.log(
                     {
                         "action": "connection",
@@ -82,7 +82,7 @@ class QDNSServer(BaseServer):
         reactor.listenTCP(self.port, self.factory, interface=self.ip)
         reactor.run()
 
-    def test_server(self, ip=None, port=None, domain=None):
+    def test_server(self, *_, domain=None, **__):
         with suppress(Exception):
             from dns.resolver import Resolver
 
@@ -90,7 +90,7 @@ class QDNSServer(BaseServer):
             res.nameservers = [self.ip]
             res.port = self.port
             temp_domain = domain or "example.org"
-            r = res.query(temp_domain, "a")
+            res.resolve(temp_domain, "a")
 
 
 if __name__ == "__main__":

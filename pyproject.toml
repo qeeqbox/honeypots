@@ -42,6 +42,7 @@ dev = [
     "pymssql",
     "pysnmplib",
     "pytest",
+    "pytest-xdist==3.5.0",
     "redis",
     "redis",
     "vncdotool",
@@ -100,6 +101,7 @@ ignore = [
     "RUF002",
     "RUF003",
     "RUF015",
+    "T201",
     # pydantic only supports these from python>=3.9
     "UP006",
     "UP007",

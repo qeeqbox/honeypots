@@ -11,40 +11,39 @@
 """
 
 from contextlib import suppress
-from struct import unpack
 
 from twisted.internet import reactor
 from twisted.internet.protocol import Factory, Protocol
 
 from honeypots.base_server import BaseServer
-from honeypots.helper import (
-    server_arguments,
-    check_bytes,
-)
+from honeypots.helper import check_bytes, server_arguments
+
+GSSResponse = 112  # password response message
 
 
 class QPostgresServer(BaseServer):
     NAME = "postgres_server"
     DEFAULT_PORT = 5432
 
-    def server_main(self):
+    def server_main(self):  # noqa: C901
         _q_s = self
 
         class CustomPostgresProtocol(Protocol):
-            _state = None
-            _variables = {}
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self._variables = {}
+                self._state = None
 
-            def read_data_custom(self, data):
+            def read_data_custom(self, data: bytes):
                 _data = data.decode("utf-8")
-                length = unpack("!I", data[0:4])
                 encoded_list = _data[8:-1].split("\x00")
                 self._variables = dict(zip(*([iter(encoded_list)] * 2)))
 
-            def read_password_custom(self, data):
+            def read_password_custom(self, data: bytes):
                 data = data.decode("utf-8")
                 self._variables["password"] = data[5:].split("\x00")[0]
 
-            def connectionMade(self):
+            def connectionMade(self):  # noqa: N802
                 self._state = 1
                 self._variables = {}
                 _q_s.log(
@@ -55,16 +54,17 @@ class QPostgresServer(BaseServer):
                     }
                 )
 
-            def dataReceived(self, data):
+            def dataReceived(self, data: bytes):  # noqa: N802
                 if self._state == 1:
                     self._state = 2
                     self.transport.write(b"N")
-                elif self._state == 2:
+                elif self._state == 2:  # noqa: PLR2004
                     self.read_data_custom(data)
                     self._state = 3
                     self.transport.write(b"R\x00\x00\x00\x08\x00\x00\x00\x03")
-                elif self._state == 3:
-                    if data[0] == 112 and "user" in self._variables:
+                elif self._state == 3:  # noqa: PLR2004
+                    message_type = data[0]
+                    if message_type == GSSResponse and "user" in self._variables:
                         self.read_password_custom(data)
                         username = check_bytes(self._variables["user"])
                         password = check_bytes(self._variables["password"])
@@ -74,7 +74,7 @@ class QPostgresServer(BaseServer):
                 else:
                     self.transport.loseConnection()
 
-            def connectionLost(self, reason):
+            def connectionLost(self, reason):  # noqa: N802,ARG002
                 self._state = 1
                 self._variables = {}
 
@@ -91,7 +91,7 @@ class QPostgresServer(BaseServer):
             _port = port or self.port
             _username = username or self.username
             _password = password or self.password
-            x = connect(host=_ip, port=_port, user=_username, password=_password)
+            connect(host=_ip, port=_port, user=_username, password=_password)
 
 
 if __name__ == "__main__":

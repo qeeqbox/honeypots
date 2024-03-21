@@ -2,11 +2,8 @@ name: Tests CI
 run-name: Tests CI
 on:
   pull_request:
-    branches:
-      - main
   push:
-    branches:
-      - main
+    branches: [main]
   workflow_dispatch:
 
 jobs:
@@ -29,4 +26,4 @@ jobs:
     - name: Installation
       run: python -m pip install ".[dev]"
     - name: Unit Tests
-      run: pytest -v ./tests
+      run: pytest -v -n 3 ./tests

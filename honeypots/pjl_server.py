@@ -54,7 +54,7 @@ class QPJLServer(BaseServer):
         class Custompjlrotocol(Protocol):
             _state = None
 
-            def connectionMade(self):
+            def connectionMade(self):  # noqa: N802
                 self._state = 1
                 _q_s.log(
                     {
@@ -64,7 +64,7 @@ class QPJLServer(BaseServer):
                     }
                 )
 
-            def dataReceived(self, data):
+            def dataReceived(self, data):  # noqa: N802
                 # Control to PJL (Removed)
                 data = data.replace(b"\x1b%-12345X", b"")
                 if data.lower().startswith(b"@pjl echo"):
@@ -85,7 +85,7 @@ class QPJLServer(BaseServer):
                 )
                 self.transport.loseConnection()
 
-            def connectionLost(self, reason):
+            def connectionLost(self, reason):  # noqa: N802,ARG002
                 self._state = None
 
         factory = Factory()
@@ -93,7 +93,7 @@ class QPJLServer(BaseServer):
         reactor.listenTCP(port=self.port, factory=factory, interface=self.ip)
         reactor.run()
 
-    def test_server(self, ip=None, port=None, username=None, password=None):
+    def test_server(self, ip=None, port=None, username=None, password=None):  # noqa: ARG002
         with suppress(Exception):
             from warnings import filterwarnings
 

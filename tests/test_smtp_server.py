@@ -25,11 +25,11 @@ SERVER_CONFIG = {
     }
 }
 EXPECTED_DATA = [
-    {"arg": "FROM:<fromtest>", "command": "MAIL", "data": "None"},
-    {"arg": "TO:<totest>", "command": "RCPT", "data": "None"},
-    {"arg": "None", "command": "DATA", "data": "None"},
-    {"arg": "None", "command": "NOTHING", "data": "None"},
-    {"arg": "None", "command": "QUIT", "data": "None"},
+    {"arg": "FROM:<fromtest>", "command": "mail", "data": "None"},
+    {"arg": "TO:<totest>", "command": "rcpt", "data": "None"},
+    {"arg": "None", "command": "data", "data": "None"},
+    {"arg": "None", "command": "Nothing", "data": "None"},
+    {"arg": "None", "command": "quit", "data": "None"},
 ]
 
 

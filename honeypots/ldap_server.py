@@ -11,6 +11,7 @@
 """
 from __future__ import annotations
 
+import struct
 from binascii import unhexlify
 from contextlib import suppress
 from struct import unpack
@@ -24,18 +25,21 @@ from honeypots.helper import (
     check_bytes,
 )
 
+# authentication with clear text password
+AUTH_SIMPLE_BIND = 0x80
+
 
 class QLDAPServer(BaseServer):
     NAME = "ldap_server"
     DEFAULT_PORT = 389
 
-    def server_main(self):
+    def server_main(self):  # noqa: C901
         _q_s = self
 
         class CustomLDAProtocol(Protocol):
             _state = None
 
-            def connectionMade(self):
+            def connectionMade(self):  # noqa: N802
                 self._state = 1
                 _q_s.log(
                     {
@@ -48,44 +52,40 @@ class QLDAPServer(BaseServer):
             @staticmethod
             def parse_ldap_packet(data: bytes) -> tuple[str, str]:
                 #                 V
-                # 30[20] 0201[02] 60[1b] 0201[03] 04[0a] 7379736261636b757031 [80][0a] 7379736261636b757032
+                # 30[20] 0201[02] 60[1b] 0201[03] 04[0a] 7379736261636b757031
+                # [80][0a] 7379736261636b757032
 
                 username = ""
                 password = ""
-                with suppress(Exception):
-                    version = data.find(b"\x02\x01\x03")
-                    if version > 0:
-                        username_start = version + 5
-                        username_end = (
-                            unpack("b", data[version + 4 : username_start])[0] + username_start
-                        )
-                        username = data[username_start:username_end]
+                with suppress(IndexError, struct.error):
+                    version_offset = data.find(b"\x02\x01\x03")
+                    if version_offset > 0:
+                        username_start = version_offset + 5
+                        username_len = data[username_start - 1]
+                        username_end = username_start + username_len
+                        username = check_bytes(data[username_start:username_end])
                         auth_type = data[username_end]
-                        if auth_type == 0x80:
-                            if data[username_end + 1] == 0x82:
+                        if auth_type == AUTH_SIMPLE_BIND:
+                            if data[username_end + 1] == 0x82:  # noqa: PLR2004
+                                # the length of the password needs more than one byte
                                 password_start = username_end + 4
-                                password_end = (
-                                    unpack(">H", data[username_end + 2 : username_end + 4])[0]
-                                    + username_end
-                                    + 4
-                                )
+                                password_len = unpack(
+                                    ">H", data[password_start - 2 : password_start]
+                                )[0]
                             else:
                                 password_start = username_end + 2
-                                password_end = (
-                                    unpack("b", data[username_end + 2 : username_end + 3])[0]
-                                    + username_start
-                                    + 2
-                                )
-                            password = data[password_start:password_end]
+                                password_len = data[password_start - 1]
+                            password_end = password_start + password_len
+                            password = check_bytes(data[password_start:password_end])
 
-                return check_bytes(username), check_bytes(password)
+                return username, password
 
-            def dataReceived(self, data):
+            def dataReceived(self, data):  # noqa: N802
                 if self._state == 1:
                     self._state = 2
                     self._check_login(data)
                     self.transport.write(unhexlify(b"300c02010165070a013204000400"))
-                elif self._state == 2:
+                elif self._state == 2:  # noqa: PLR2004
                     self._state = 3
                     self._check_login(data)
                     self.transport.write(unhexlify(b"300c02010265070a013204000400"))
@@ -98,7 +98,7 @@ class QLDAPServer(BaseServer):
                     peer = self.transport.getPeer()
                     _q_s.check_login(username, password, ip=peer.host, port=peer.port)
 
-            def connectionLost(self, reason):
+            def connectionLost(self, reason):  # noqa: N802,ARG002
                 self._state = None
 
         factory = Factory()
