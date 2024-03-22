@@ -130,7 +130,7 @@ def _parse_record(record: LogRecord, custom_filter: dict, type_: str) -> LogReco
     return record
 
 
-def setup_logger(name: str, temp_name: str, config: str, drop: bool = False):
+def setup_logger(name: str, temp_name: str, config: str | None, drop: bool = False):
     logs = "terminal"
     logs_location = ""
     config_data = {}

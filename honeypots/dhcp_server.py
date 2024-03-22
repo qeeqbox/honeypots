@@ -10,8 +10,8 @@
 //  -------------------------------------------------------------
 """
 
-from socket import inet_aton
 import struct
+from socket import inet_aton
 
 from twisted.internet import reactor
 from twisted.internet.protocol import DatagramProtocol

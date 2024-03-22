@@ -88,6 +88,9 @@ class BaseServer(ABC):
             except TimeoutError:
                 self._server_process.kill()
 
+    def server_is_alive(self) -> bool:
+        return self._server_process and self._server_process.is_alive()
+
     @abstractmethod
     def server_main(self):
         pass
