@@ -10,7 +10,6 @@ from functools import wraps
 from os import geteuid
 from signal import alarm, SIGALRM, SIGINT, signal, SIGTERM, SIGTSTP
 from subprocess import Popen
-from sys import stdout
 from time import sleep
 from typing import Any, Type, TYPE_CHECKING
 from uuid import uuid4
@@ -20,7 +19,7 @@ from psutil import net_io_counters, Process
 
 from honeypots import (
     HL7Server,
-    QBSniffer,
+    QSniffer,
     QDHCPServer,
     QDNSServer,
     QElasticServer,
@@ -176,9 +175,11 @@ class HoneypotsManager:
                 print(service)
         elif self.options.kill:
             clean_all()
-        elif self.options.chameleon and self.config_data is not None:
+        elif self.options.chameleon and self.config_data:
             self._start_chameleon_mode()
         elif self.options.setup:
+            if self.options.sniffer:
+                self._set_up_sniffer()
             self._set_up_honeypots()
 
     def _set_up_honeypots(self):  # noqa: C901
@@ -277,19 +278,6 @@ class HoneypotsManager:
             logger.error("logging must be configured with db_sqlite or db_postgres")
             sys.exit(1)
 
-        sniffer_filter = self.config_data.get("sniffer_filter")
-        sniffer_interface = self.config_data.get("sniffer_interface")
-        if not (sniffer_filter and sniffer_interface):
-            return
-
-        if not self.options.test and self.options.sniffer:
-            _check_interfaces(sniffer_interface)
-            if self.options.iptables:
-                _fix_ip_tables()
-            logger.info("[x] Wait for 10 seconds...")
-            stdout.flush()
-            sleep(2)
-
         if self.options.config != "":
             logger.warning(
                 "[x] Config.json file overrides --ip, --port, --username and --password"
@@ -319,7 +307,7 @@ class HoneypotsManager:
             sys.exit(1)
 
         if self.options.sniffer:
-            self._start_sniffer(sniffer_filter, sniffer_interface)
+            self._set_up_sniffer()
 
         if not self.options.test:
             logger.info("[x] Everything looks good!")
@@ -336,15 +324,30 @@ class HoneypotsManager:
             drop = True
         return setup_logger("main", uuid, self.config_data, drop)
 
+    def _set_up_sniffer(self):
+        sniffer_filter = self.config_data.get("sniffer_filter")
+        sniffer_interface = self.config_data.get("sniffer_interface")
+        if not sniffer_interface:
+            logger.error('If sniffer is enabled, "sniffer_interface" must be set in the config')
+            sys.exit(1)
+        if not self.options.test and self.options.sniffer:
+            _check_interfaces(sniffer_interface)
+            if self.options.iptables:
+                _fix_ip_tables()
+                logger.info("[x] Wait for iptables update...")
+                sleep(2)
+        self._start_sniffer(sniffer_filter, sniffer_interface)
+
     def _start_sniffer(self, sniffer_filter, sniffer_interface):
         logger.info("[x] Starting sniffer")
-        sniffer = QBSniffer(
+        sniffer = QSniffer(
             filter_=sniffer_filter,
             interface=sniffer_interface,
             config=self.options.config,
         )
         sniffer.run_sniffer(process=True)
-        self.honeypots.append((sniffer, "sniffer", True))
+        sleep(0.1)
+        self.honeypots.append((sniffer, "sniffer", sniffer.server_is_alive()))
 
     def _stats_loop(self, logs):
         while True:

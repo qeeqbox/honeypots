@@ -28,13 +28,13 @@ class BaseServer(ABC):
     def __init__(self, **kwargs):
         self.auto_disabled = False
         self.process = None
-        self.uuid = f"honeypotslogger_{__class__.__name__}_{str(uuid4())[:8]}"
+        self.uuid = f"honeypotslogger_{self.__class__.__name__}_{str(uuid4())[:8]}"
         self.config: dict = kwargs.get("config", {})
         if self.config:
-            self.logs = setup_logger(__class__.__name__, self.uuid, self.config)
+            self.logs = setup_logger(self.__class__.__name__, self.uuid, self.config)
             set_local_vars(self, self.config)
         else:
-            self.logs = setup_logger(__class__.__name__, self.uuid, None)
+            self.logs = setup_logger(self.__class__.__name__, self.uuid, None)
         self.ip = kwargs.get("ip", None) or (hasattr(self, "ip") and self.ip) or "0.0.0.0"
         self.port = (
             (kwargs.get("port", None) and int(kwargs.get("port", None)))
@@ -90,6 +90,9 @@ class BaseServer(ABC):
 
     def test_server(self, **_):
         self.logger.warning(f"Test method of {self.NAME} is not implemented")
+
+    def server_is_alive(self) -> bool:
+        return self._server_process and self._server_process.is_alive()
 
     @abstractmethod
     def server_main(self):
