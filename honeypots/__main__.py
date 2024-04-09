@@ -7,19 +7,18 @@ import sys
 from argparse import ArgumentParser, SUPPRESS, Namespace
 from atexit import register
 from functools import wraps
-from json import JSONDecodeError, loads
 from os import geteuid
-from pathlib import Path
 from signal import alarm, SIGALRM, SIGINT, signal, SIGTERM, SIGTSTP
 from subprocess import Popen
 from time import sleep
-from typing import Any
+from typing import Any, Type, TYPE_CHECKING
 from uuid import uuid4
 
 from netifaces import ifaddresses, AF_INET, AF_LINK, interfaces
 from psutil import net_io_counters, Process
 
 from honeypots import (
+    HL7Server,
     QSniffer,
     QDHCPServer,
     QDNSServer,
@@ -50,17 +49,23 @@ from honeypots import (
     QSSHServer,
     QTelnetServer,
     QVNCServer,
-    is_privileged,
     clean_all,
-    setup_logger,
+    is_privileged,
     set_up_error_logging,
+    setup_logger,
 )
+from honeypots.helper import load_config
+
+if TYPE_CHECKING:
+    from honeypots.base_server import BaseServer
+
 
 all_servers = {
     "dhcp": QDHCPServer,
     "dns": QDNSServer,
     "elastic": QElasticServer,
     "ftp": QFTPServer,
+    "hl7": HL7Server,
     "httpproxy": QHTTPProxyServer,
     "https": QHTTPSServer,
     "http": QHTTPServer,
@@ -141,10 +146,10 @@ def timeout(seconds=10):
 
 
 @timeout(5)
-def server_timeout(obj, name):
+def server_timeout(server: BaseServer, name: str):
     try:
         logger.info(f"Start testing {name}")
-        obj.test_server()
+        server.test_server()
     except TimeoutError:
         logging.error(f"Timeout during test {name}")
     logger.info(f"Done testing {name}")
@@ -154,7 +159,7 @@ class HoneypotsManager:
     def __init__(self, options: Namespace, server_args: dict[str, str | int]):
         self.options = options
         self.server_args = server_args
-        self.config_data = self._load_config() if self.options.config else {}
+        self.config_data: dict = load_config(self.options.config) if self.options.config else {}
         self.auto = options.auto if geteuid() != 0 else False
         self.honeypots: list[tuple[Any, str, bool]] = []
 
@@ -176,22 +181,6 @@ class HoneypotsManager:
             if self.options.sniffer:
                 self._set_up_sniffer()
             self._set_up_honeypots()
-
-    def _load_config(self):
-        config_path = Path(self.options.config)
-        if not config_path.is_file():
-            logger.error(f'Config file "{config_path}" not found')
-            sys.exit(1)
-        try:
-            config_data = loads(config_path.read_text())
-            logger.info(f"Successfully loaded config file {config_path}")
-            return config_data
-        except FileNotFoundError:
-            logger.error(f"Unable to load config file: File {config_path} not found")
-            sys.exit(1)
-        except JSONDecodeError as error:
-            logger.error(f"Unable to parse config file as JSON: {error}")
-            sys.exit(1)
 
     def _set_up_honeypots(self):  # noqa: C901
         register(_exit_handler)
@@ -257,11 +246,11 @@ class HoneypotsManager:
     def _start_server(self, service: str, auto: bool | None = None):
         if auto is None:
             auto = self.auto
-        server_class = all_servers.get(service.lower())
+        server_class: Type[BaseServer] = all_servers.get(service.lower().replace("_", ""))
         if not server_class:
             logger.warning(f"Skipping unknown service {service}")
             return
-        server = server_class(**self.server_args)
+        server = server_class(**self.server_args, config=self.config_data)
         if not self.options.test:
             status = server.run_server(process=True, auto=auto)
         else:
@@ -333,7 +322,7 @@ class HoneypotsManager:
             logger.info(f"[x] Setup Logger {uuid} with a db, drop is {drop}")
         else:
             drop = True
-        return setup_logger("main", uuid, self.options.config, drop)
+        return setup_logger("main", uuid, self.config_data, drop)
 
     def _set_up_sniffer(self):
         sniffer_filter = self.config_data.get("sniffer_filter")
@@ -464,15 +453,15 @@ def _parse_args() -> tuple[Namespace, dict[str, str | int]]:
         "--password", help="Override the password", metavar="", default=""
     )
     arg_parser_optional.add_argument(
+        "--options", type=str, help="Extra options", metavar="", default=""
+    )
+    arg_parser_optional_2 = arg_parser.add_argument_group("General options")
+    arg_parser_optional_2.add_argument(
         "--config",
         help="Use a config file for honeypots settings",
         metavar="",
         default="",
     )
-    arg_parser_optional.add_argument(
-        "--options", type=str, help="Extra options", metavar="", default=""
-    )
-    arg_parser_optional_2 = arg_parser.add_argument_group("General options")
     arg_parser_optional_2.add_argument(
         "--termination-strategy",
         help="Determines the strategy to terminate by",

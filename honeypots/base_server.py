@@ -29,7 +29,7 @@ class BaseServer(ABC):
         self.auto_disabled = False
         self.process = None
         self.uuid = f"honeypotslogger_{self.__class__.__name__}_{str(uuid4())[:8]}"
-        self.config = kwargs.get("config", "")
+        self.config: dict = kwargs.get("config", {})
         if self.config:
             self.logs = setup_logger(self.__class__.__name__, self.uuid, self.config)
             set_local_vars(self, self.config)
@@ -88,11 +88,15 @@ class BaseServer(ABC):
             except TimeoutError:
                 self._server_process.kill()
 
+    def test_server(self, **_):
+        self.logger.warning(f"Test method of {self.NAME} is not implemented")
+
     def server_is_alive(self) -> bool:
         return self._server_process and self._server_process.is_alive()
 
     @abstractmethod
     def server_main(self):
+        # main server loop goes here
         pass
 
     def run_server(self, process: bool = False, auto: bool = False) -> bool | None:

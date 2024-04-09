@@ -20,9 +20,9 @@ from zlib import compressobj, DEFLATED
 
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
-    server_arguments,
     create_certificate,
     check_bytes,
+    run_single_server,
 )
 
 
@@ -349,14 +349,4 @@ class QElasticServer(BaseServer):
 
 
 if __name__ == "__main__":
-    parsed = server_arguments()
-    if parsed.docker or parsed.aws or parsed.custom:
-        qelasticserver = QElasticServer(
-            ip=parsed.ip,
-            port=parsed.port,
-            username=parsed.username,
-            password=parsed.password,
-            options=parsed.options,
-            config=parsed.config,
-        )
-        qelasticserver.run_server()
+    run_single_server(QElasticServer)

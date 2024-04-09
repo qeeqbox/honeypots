@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import json
 from contextlib import contextmanager
 from multiprocessing import Process
 from pathlib import Path
@@ -13,34 +12,33 @@ from .utils import IP, PASSWORD, USERNAME
 
 
 @contextmanager
-def config_for_testing(custom_config: dict) -> Iterator[Path]:
+def get_log_dir() -> Iterator[Path]:
     with TemporaryDirectory() as tmp_dir:
-        config = Path(tmp_dir) / "config.json"
         logs_output_dir = Path(tmp_dir) / "logs"
         logs_output_dir.mkdir()
-        testing_config = {
-            "logs": "file,terminal,json",
-            "logs_location": str(logs_output_dir.absolute()),
-            **custom_config,
-        }
-        config.write_text(json.dumps(testing_config))
-        yield config
+        yield logs_output_dir
 
 
 @pytest.fixture()
 def server_logs(request):
     custom_config = request.param.get("custom_config", {})
-    with config_for_testing(custom_config) as config_file:
+    with get_log_dir() as log_dir:
+        custom_config.update(
+            {
+                "logs": "file,terminal,json",
+                "logs_location": str(log_dir.absolute()),
+            }
+        )
         _server = request.param["server"](
             ip=IP,
             port=request.param["port"],
             username=USERNAME,
             password=PASSWORD,
             options="",
-            config=str(config_file.absolute()),
+            config=custom_config,
         )
         server_process = Process(target=_server.run_server)
         server_process.start()
-        yield config_file.parent / "logs"
+        yield log_dir
         server_process.terminate()
         server_process.join()

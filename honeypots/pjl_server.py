@@ -17,8 +17,8 @@ from twisted.internet.protocol import Factory, Protocol
 
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
-    server_arguments,
     check_bytes,
+    run_single_server,
 )
 
 
@@ -108,9 +108,4 @@ class QPJLServer(BaseServer):
 
 
 if __name__ == "__main__":
-    parsed = server_arguments()
-    if parsed.docker or parsed.aws or parsed.custom:
-        qpjlserver = QPJLServer(
-            ip=parsed.ip, port=parsed.port, options=parsed.options, config=parsed.config
-        )
-        qpjlserver.run_server()
+    run_single_server(QPJLServer)

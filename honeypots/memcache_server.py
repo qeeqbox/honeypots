@@ -19,7 +19,7 @@ from twisted.internet.protocol import Factory, Protocol
 
 from honeypots.base_server import BaseServer
 from honeypots.helper import (
-    server_arguments,
+    run_single_server,
 )
 
 
@@ -183,9 +183,4 @@ class QMemcacheServer(BaseServer):
 
 
 if __name__ == "__main__":
-    parsed = server_arguments()
-    if parsed.docker or parsed.aws or parsed.custom:
-        QMemcacheServer = QMemcacheServer(
-            ip=parsed.ip, port=parsed.port, options=parsed.options, config=parsed.config
-        )
-        QMemcacheServer.run_server()
+    run_single_server(QMemcacheServer)

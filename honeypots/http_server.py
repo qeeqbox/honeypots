@@ -17,7 +17,7 @@ from twisted.web.server import Site
 
 from honeypots.base_http_server import BaseHttpServer
 from honeypots.helper import (
-    server_arguments,
+    run_single_server,
 )
 
 
@@ -46,14 +46,4 @@ class QHTTPServer(BaseHttpServer):
 
 
 if __name__ == "__main__":
-    parsed = server_arguments()
-    if parsed.docker or parsed.aws or parsed.custom:
-        qhttpserver = QHTTPServer(
-            ip=parsed.ip,
-            port=parsed.port,
-            username=parsed.username,
-            password=parsed.password,
-            options=parsed.options,
-            config=parsed.config,
-        )
-        qhttpserver.run_server()
+    run_single_server(QHTTPServer)
