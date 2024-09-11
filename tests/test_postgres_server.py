@@ -3,7 +3,7 @@ from __future__ import annotations
 from contextlib import suppress
 
 import pytest
-from psycopg2 import connect, OperationalError
+from socket import socket
 
 from honeypots import QPostgresServer
 from .utils import (
@@ -14,10 +14,10 @@ from .utils import (
     PASSWORD,
     USERNAME,
     wait_for_server,
+    connect_to
 )
 
 PORT = "55432"
-
 
 @pytest.mark.parametrize(
     "server_logs",
@@ -25,8 +25,12 @@ PORT = "55432"
     indirect=True,
 )
 def test_postgres_server(server_logs):
-    with wait_for_server(PORT), suppress(OperationalError):
-        connect(host=IP, port=PORT, user=USERNAME, password=PASSWORD)
+    with wait_for_server(PORT), connect_to(IP, PORT) as connection:
+        connection.send(b'\x00\x00\x00\x08\x04\xd2\x16\x2f')
+        data, _ = connection.recvfrom(10000)
+        connection.send(b'\x00\x00\x00\x21\x00\x03\x00\x00\x75\x73\x65\x72\x00' + USERNAME.encode() + b'\x00\x64\x61\x74\x61\x62\x61\x73\x65\x00' + USERNAME.encode() + b'\x00\x00')
+        data, _ = connection.recvfrom(10000)
+        connection.send(b'\x70\x00\x00\x00\x09' + PASSWORD.encode() + b'\x00')
 
     logs = load_logs_from_file(server_logs)
 
