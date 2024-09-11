@@ -20,14 +20,6 @@ Honeypots is in the awesome [telekom security T-Pot project!](https://github.com
 pip3 install honeypots
 ```
 
-```
-# or 
-sudo apt-get install postgresql
-sudo apt-get install python-psycopg2
-sudo apt-get install libpq-dev
-pip3 install honeypots
-```
-
 ## honeypots -h
 ```sh
 Qeeqbox/honeypots customizable honeypots for monitoring network traffic, bots activities, and username\password credentials
@@ -404,7 +396,7 @@ qsshserver.kill_server()
     - Logs: ip, port
 
 ## acknowledgment
-- By using this framework, you are accepting the license terms of all these packages: `pipenv twisted psutil psycopg2-binary dnspython requests impacket paramiko redis mysql-connector pycryptodome vncdotool service_identity requests[socks] pygments http.server`
+- By using this framework, you are accepting the license terms of all these packages: `pipenv twisted psutil dnspython requests impacket paramiko redis mysql-connector pycryptodome vncdotool service_identity requests[socks] pygments http.server`
 - Let me know if I missed a reference or resource!
 
 ## Notes
