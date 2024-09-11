@@ -8,7 +8,7 @@ from argparse import ArgumentParser
 from collections.abc import Mapping
 from contextlib import contextmanager, suppress
 from datetime import datetime
-from json import JSONEncoder
+from json import JSONEncoder, loads, JSONDecodeError
 from logging import DEBUG, Formatter, getLogger, Handler, LogRecord
 from logging.handlers import RotatingFileHandler, SysLogHandler
 from os import getuid, scandir
@@ -19,13 +19,16 @@ from sqlite3 import connect as sqlite3_connect
 from sys import stdout
 from tempfile import _get_candidate_names, gettempdir, NamedTemporaryFile
 from time import sleep, time
-from typing import Any, Iterator, MutableMapping
+from typing import Any, Iterator, MutableMapping, TYPE_CHECKING, Type
 from urllib.parse import urlparse
 
 import psutil
 from OpenSSL import crypto
 from psutil import process_iter
 #from psycopg2 import connect as psycopg2_connect, sql
+
+if TYPE_CHECKING:
+    from honeypots.base_server import BaseServer
 
 
 def set_up_error_logging():
@@ -34,10 +37,28 @@ def set_up_error_logging():
         _logger.setLevel(logging.INFO)
         handler = logging.StreamHandler(sys.stdout)
         handler.setLevel(logging.INFO)
-        formatter = logging.Formatter("[%(levelname)s] %(message)s")
+        formatter = ColoringFormatter("[%(levelname)s] %(message)s")
         handler.setFormatter(formatter)
         _logger.addHandler(handler)
     return _logger
+
+
+class ColoringFormatter(Formatter):
+    LOG_LEVEL_COLORS = (
+        ("[DEBUG]", "\033[95m"),
+        ("[INFO]", "\033[94m"),
+        ("[WARNING]", "\033[93m"),
+        ("[ERROR]", "\033[91m"),
+        ("[CRITICAL]", "\033[91m\033[1m"),
+    )
+    END_COLOR = "\033[0m"
+
+    def format(self, record: LogRecord) -> str:
+        formatted_text = super().format(record)
+        for log_level, color in self.LOG_LEVEL_COLORS:
+            if log_level in formatted_text:
+                return formatted_text.replace(log_level, f"{color}{log_level}{self.END_COLOR}")
+        return formatted_text
 
 
 logger = set_up_error_logging()
@@ -53,20 +74,17 @@ def is_privileged():
     return False
 
 
-def set_local_vars(self, config: str | None = None):
+def set_local_vars(server: BaseServer, config: dict | None = None):
     if not config:
         return
     try:
-        config_data = json.loads(Path(config).read_text())
-        honeypots = config_data.get("honeypots", [])
-        honeypot = self.__class__.__name__[1:-6].lower()
-        if honeypot and honeypot in honeypots:
-            for attr, value in honeypots[honeypot].items():
-                setattr(self, attr, value)
-                if attr == "port":
-                    self.auto_disabled = True
+        service = server.NAME.replace("server", "").replace("_", "")
+        for attr, value in config.get("honeypots", {}).get(service, {}).items():
+            setattr(server, attr, value)
+            if attr == "port":
+                server.auto_disabled = True
     except Exception as error:
-        logger.debug(f"Setting local variables failed: {error}", exc_info=True)
+        logger.error(f"Applying honeypot config failed: {error}", exc_info=True)
 
 
 def _serialize_message(  # noqa: C901
@@ -119,14 +137,13 @@ def _parse_record(record: LogRecord, custom_filter: dict, type_: str) -> LogReco
     return record
 
 
-def setup_logger(name: str, temp_name: str, config: str | None, drop: bool = False):
+def setup_logger(name: str, temp_name: str, config: dict, drop: bool = False):
     logs = "terminal"
     logs_location = ""
-    config_data = {}
+    config_data = config or {}
     custom_filter = None
     if config:
         try:
-            config_data = json.loads(Path(config).read_text())
             logs = config_data.get("logs", logs)
             logs_location = config_data.get("logs_location", logs_location)
             custom_filter = config_data.get("custom_filter", custom_filter)
@@ -555,3 +572,36 @@ def hide_stderr():
             yield
     finally:
         sys.stderr = stderr
+
+
+def run_single_server(server_class: Type[BaseServer]):
+    parsed = server_arguments()
+    config = load_config(parsed.config) if parsed.config else {}
+    if parsed.docker or parsed.aws or parsed.custom:
+        logger.info(f"Starting {server_class.NAME}")
+        server = server_class(
+            ip=parsed.ip,
+            port=parsed.port,
+            username=parsed.username,
+            password=parsed.password,
+            options=parsed.options,
+            config=config,
+        )
+        server.run_server()
+
+
+def load_config(config_path: str):
+    config_file = Path(config_path)
+    if not config_file.is_file():
+        logger.error(f'Config file "{config_file}" not found')
+        sys.exit(1)
+    try:
+        config_data = loads(config_file.read_text())
+        logger.info(f"Successfully loaded config file {config_file}")
+        return config_data
+    except FileNotFoundError:
+        logger.error(f"Unable to load config file: File {config_file} not found")
+        sys.exit(1)
+    except JSONDecodeError as error:
+        logger.error(f"Unable to parse config file as JSON: {error}")
+        sys.exit(1)
