@@ -1,15 +1,3 @@
-"""
-//  -------------------------------------------------------------
-//  author        Giga
-//  project       qeeqbox/honeypots
-//  email         gigaqeeq@gmail.com
-//  description   app.py (CLI)
-//  licensee      AGPL-3.0
-//  -------------------------------------------------------------
-//  contributors list qeeqbox/honeypots/graphs/contributors
-//  -------------------------------------------------------------
-"""
-
 from binascii import hexlify, unhexlify
 from contextlib import suppress
 from struct import pack, unpack

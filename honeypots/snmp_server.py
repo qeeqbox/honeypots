@@ -1,15 +1,3 @@
-"""
-//  -------------------------------------------------------------
-//  author        Giga
-//  project       qeeqbox/honeypots
-//  email         gigaqeeq@gmail.com
-//  description   app.py (CLI)
-//  licensee      AGPL-3.0
-//  -------------------------------------------------------------
-//  contributors list qeeqbox/honeypots/graphs/contributors
-//  -------------------------------------------------------------
-"""
-
 from scapy.error import Scapy_Exception
 from scapy.layers.snmp import SNMP
 from twisted.internet import reactor

@@ -1,15 +1,3 @@
-"""
-//  -------------------------------------------------------------
-//  author        Giga
-//  project       qeeqbox/honeypots
-//  email         gigaqeeq@gmail.com
-//  description   app.py (CLI)
-//  licensee      AGPL-3.0
-//  -------------------------------------------------------------
-//  contributors list qeeqbox/honeypots/graphs/contributors
-//  -------------------------------------------------------------
-"""
-
 from contextlib import suppress
 from socket import socket, SHUT_RDWR, AF_INET, SOCK_STREAM, SOL_SOCKET, SO_REUSEADDR
 from ssl import SSLContext, PROTOCOL_TLSv1_2, CERT_NONE

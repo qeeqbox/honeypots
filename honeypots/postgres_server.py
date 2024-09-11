@@ -1,15 +1,3 @@
-"""
-//  -------------------------------------------------------------
-//  author        Giga
-//  project       qeeqbox/honeypots
-//  email         gigaqeeq@gmail.com
-//  description   app.py (CLI)
-//  licensee      AGPL-3.0
-//  -------------------------------------------------------------
-//  contributors list qeeqbox/honeypots/graphs/contributors
-//  -------------------------------------------------------------
-"""
-
 from contextlib import suppress
 
 from twisted.internet import reactor
@@ -55,6 +43,7 @@ class QPostgresServer(BaseServer):
                 )
 
             def dataReceived(self, data: bytes):  # noqa: N802
+                print(data.hex())
                 if self._state == 1:
                     self._state = 2
                     self.transport.write(b"N")
@@ -64,6 +53,7 @@ class QPostgresServer(BaseServer):
                     self.transport.write(b"R\x00\x00\x00\x08\x00\x00\x00\x03")
                 elif self._state == 3:  # noqa: PLR2004
                     message_type = data[0]
+                    print(data.hex())
                     if message_type == GSSResponse and "user" in self._variables:
                         self.read_password_custom(data)
                         username = check_bytes(self._variables["user"])
@@ -85,13 +75,21 @@ class QPostgresServer(BaseServer):
 
     def test_server(self, ip=None, port=None, username=None, password=None):
         with suppress(Exception):
-            from psycopg2 import connect
+            from socket import socket
 
             _ip = ip or self.ip
             _port = port or self.port
             _username = username or self.username
             _password = password or self.password
-            connect(host=_ip, port=_port, user=_username, password=_password)
+
+            s = socket()
+            s.connect((_ip,_port))
+            s.send(b'\x00\x00\x00\x08\x04\xd2\x16\x2f')
+            s.recv(1024)
+            s.send(b'\x00\x00\x00\x21\x00\x03\x00\x00\x75\x73\x65\x72\x00' + _username + b'\x00\x64\x61\x74\x61\x62\x61\x73\x65\x00' + _username + b'\x00\x00')
+            s.recv(1024)
+            s.send(b'\x70\x00\x00\x00\x09' + _password + b'\x00')
+            s.close()
 
 
 if __name__ == "__main__":

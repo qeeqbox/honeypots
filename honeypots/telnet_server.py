@@ -1,15 +1,3 @@
-"""
-//  -------------------------------------------------------------
-//  author        Giga
-//  project       qeeqbox/honeypots
-//  email         gigaqeeq@gmail.com
-//  description   app.py (CLI)
-//  licensee      AGPL-3.0
-//  -------------------------------------------------------------
-//  contributors list qeeqbox/honeypots/graphs/contributors
-//  -------------------------------------------------------------
-"""
-
 from contextlib import suppress
 
 from twisted.conch.telnet import TelnetProtocol, TelnetTransport
