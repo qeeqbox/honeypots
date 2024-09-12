@@ -2,7 +2,7 @@ from base64 import b64encode, b64decode
 from contextlib import suppress
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
 from json import dumps
-from ssl import wrap_socket
+from ssl import SSLContext, PROTOCOL_TLS_SERVER
 from urllib.parse import urlparse
 from zlib import compressobj, DEFLATED
 
@@ -312,10 +312,10 @@ class QElasticServer(BaseServer):
         with create_certificate() as (cert, key):
             server = CustomElasticServer((self.ip, self.port))
             server.set_auth_key(self.username, self.password)
-            server.socket = wrap_socket(
+            ctx = SSLContext(PROTOCOL_TLS_SERVER)
+            ctx.load_cert_chain(certfile=cert, keyfile=key)
+            server.socket = ctx.wrap_socket(
                 server.socket,
-                keyfile=key,
-                certfile=cert,
                 server_side=True,
             )
             server.serve_forever()
