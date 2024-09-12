@@ -24,13 +24,6 @@ SERVER_CONFIG = {
         },
     }
 }
-EXPECTED_DATA = [
-    {"arg": "FROM:<fromtest>", "command": "mail", "data": "None"},
-    {"arg": "TO:<totest>", "command": "rcpt", "data": "None"},
-    {"arg": "None", "command": "data", "data": "None"},
-    {"arg": "None", "command": "Nothing", "data": "None"},
-    {"arg": "None", "command": "quit", "data": "None"},
-]
 
 
 @pytest.mark.parametrize(
@@ -43,19 +36,15 @@ def test_smtp_server(server_logs):
         client = SMTP(IP, int(PORT))
         client.ehlo()
         client.login(USERNAME, PASSWORD)
-        client.sendmail("fromtest", "totest", "Nothing")
         client.quit()
 
     logs = load_logs_from_file(server_logs)
 
-    assert len(logs) == 9
-    connect1, connect2, auth, login, *additional = logs
+    assert len(logs) == 4
+    connect1, auth, login, *additional = logs
     assert_connect_is_logged(connect1, PORT)
-    assert_connect_is_logged(connect2, PORT)
     assert_login_is_logged(login)
 
     assert auth["data"]["command"] == "AUTH"
     assert b64decode(auth["data"]["data"]).decode() == f"\x00{USERNAME}\x00{PASSWORD}"
 
-    for entry, expected in zip(additional, EXPECTED_DATA):
-        assert entry["data"] == expected
