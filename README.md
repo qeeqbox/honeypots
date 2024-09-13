@@ -300,7 +300,7 @@ qsshserver.kill_server()
 - QSMTPServer
     - Server: SMTP
     - Port: 25/tcp
-    - Lib: smtpd
+    - Lib: Twisted
     - Logs: ip, port, username and password (default)
     - Options: Capture all threat actor commands and data (available)
 - QSOCKS5Server
