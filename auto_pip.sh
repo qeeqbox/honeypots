@@ -1,6 +1,8 @@
 #!/bin/bash
 echo "[x] Creating pypi Package"
 
+#sudo kill -9 $(lsof -t -i:80); pip3 uinstall honeypots; python3 -m build .
+
 python3 -m build 2>stderr.log 1>stdout.log
 
  if grep -q "error:" stderr.log
