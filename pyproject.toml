@@ -40,6 +40,7 @@ dev = [
     "pre-commit",
     "pymssql",
     "pytest",
+    "pytest-xdist==3.5.0",
     "redis",
     "vncdotool",
 ]
