@@ -1,15 +1,6 @@
 from __future__ import annotations
 
 import pytest
-from pysnmp.hlapi import (
-    CommunityData,
-    ContextData,
-    getCmd,
-    ObjectIdentity,
-    ObjectType,
-    SnmpEngine,
-    UdpTransportTarget,
-)
 
 from honeypots import QSNMPServer
 from .utils import (
