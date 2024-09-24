@@ -39,11 +39,9 @@ dev = [
     "mysql-connector",
     "pre-commit",
     "pymssql",
+    "pyasn1",
     "pysnmp-lextudio==5.0.34",
     "pytest",
-    "pyasn1",
-    "pytest-xdist==3.5.0",
-    "redis",
     "redis",
     "vncdotool",
 ]
