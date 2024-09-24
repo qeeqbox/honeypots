@@ -39,7 +39,7 @@ dev = [
     "mysql-connector",
     "pre-commit",
     "pymssql",
-    "pysnmp-lextudio",
+    "pysnmp-lextudio==5.0.34",
     "pytest",
     "pytest-xdist==3.5.0",
     "redis",
