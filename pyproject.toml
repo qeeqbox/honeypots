@@ -41,6 +41,7 @@ dev = [
     "pymssql",
     "pysnmp-lextudio==5.0.34",
     "pytest",
+    "pyasn1",
     "pytest-xdist==3.5.0",
     "redis",
     "redis",
