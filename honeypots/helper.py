@@ -140,7 +140,7 @@ def setup_logger(name: str, temp_name: str, config: str | None, drop: bool = Fal
 
     ret_logs_obj = getLogger(temp_name)
     ret_logs_obj.setLevel(DEBUG)
-    if "db_postgres" in logs or "db_sqlite" in logs:
+    if "db_postgres_removed" in logs or "db_sqlite" in logs:
         ret_logs_obj.addHandler(CustomHandler(temp_name, logs, custom_filter, config_data, drop))
     elif "terminal" in logs:
         ret_logs_obj.addHandler(CustomHandler(temp_name, logs, custom_filter))
@@ -268,7 +268,7 @@ class CustomHandler(Handler):
 
     def emit(self, record: LogRecord):  # noqa: C901,PLR0912
         try:
-            if "db_postgres" in self.logs and self.db["db_postgres"]:
+            if "db_postgres_removed" in self.logs and self.db["db_postgres"]:
                 if isinstance(record.msg, list):
                     if record.msg[0] in {"sniffer", "errors"}:
                         self.db["db_postgres"].insert_into_data_safe(
