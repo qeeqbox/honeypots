@@ -501,7 +501,7 @@ def check_bytes(string: Any) -> str:
 
 def load_template(filename: str) -> str:
     file_path = Path(__file__).parent / "data" / filename
-    return file_path.read_text()
+    return file_path.read_bytes()
 
 
 def get_headers_and_ip_from_request(request, options):
