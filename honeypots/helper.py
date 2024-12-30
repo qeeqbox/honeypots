@@ -25,7 +25,6 @@ from urllib.parse import urlparse
 import psutil
 from OpenSSL import crypto
 from psutil import process_iter
-# from psycopg2 import connect as psycopg2_connect, sql
 
 
 def set_up_error_logging():
@@ -249,17 +248,6 @@ class CustomHandler(Handler):
         self.logs = logs
         self.uuid = uuid
         self.custom_filter = custom_filter
-        if config and "db_postgres_removed" in self.logs:
-            parsed = urlparse(config["postgres"])
-            # self.db["db_postgres"] = PostgresClass(
-            #    host=parsed.hostname,
-            #    port=parsed.port,
-            #    username=parsed.username,
-            #    password=parsed.password,
-            #    db=parsed.path[1:],
-            #    uuid=self.uuid,
-            #    drop=drop,
-            ####
         if config and "db_sqlite" in self.logs:
             self.db["db_sqlite"] = SqliteClass(
                 file=config["sqlite_file"], drop=drop, uuid=self.uuid
