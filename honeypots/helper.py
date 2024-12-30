@@ -25,7 +25,7 @@ from urllib.parse import urlparse
 import psutil
 from OpenSSL import crypto
 from psutil import process_iter
-#from psycopg2 import connect as psycopg2_connect, sql
+# from psycopg2 import connect as psycopg2_connect, sql
 
 
 def set_up_error_logging():
@@ -251,7 +251,7 @@ class CustomHandler(Handler):
         self.custom_filter = custom_filter
         if config and "db_postgres_removed" in self.logs:
             parsed = urlparse(config["postgres"])
-            #self.db["db_postgres"] = PostgresClass(
+            # self.db["db_postgres"] = PostgresClass(
             #    host=parsed.hostname,
             #    port=parsed.port,
             #    username=parsed.username,
@@ -302,6 +302,7 @@ class CustomHandler(Handler):
             log_entry = {"error": repr(error), "logger": repr(record)}
             stdout.write(f"{json.dumps(log_entry, sort_keys=True, cls=ComplexEncoder)}\n")
         stdout.flush()
+
 
 class SqliteClass:
     def __init__(self, file=None, drop=False, uuid=None):
