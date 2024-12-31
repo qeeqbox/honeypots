@@ -25,7 +25,6 @@ from urllib.parse import urlparse
 import psutil
 from OpenSSL import crypto
 from psutil import process_iter
-#from psycopg2 import connect as psycopg2_connect, sql
 
 
 def set_up_error_logging():
@@ -249,17 +248,6 @@ class CustomHandler(Handler):
         self.logs = logs
         self.uuid = uuid
         self.custom_filter = custom_filter
-        if config and "db_postgres_removed" in self.logs:
-            parsed = urlparse(config["postgres"])
-            #self.db["db_postgres"] = PostgresClass(
-            #    host=parsed.hostname,
-            #    port=parsed.port,
-            #    username=parsed.username,
-            #    password=parsed.password,
-            #    db=parsed.path[1:],
-            #    uuid=self.uuid,
-            #    drop=drop,
-            ####
         if config and "db_sqlite" in self.logs:
             self.db["db_sqlite"] = SqliteClass(
                 file=config["sqlite_file"], drop=drop, uuid=self.uuid
@@ -302,6 +290,7 @@ class CustomHandler(Handler):
             log_entry = {"error": repr(error), "logger": repr(record)}
             stdout.write(f"{json.dumps(log_entry, sort_keys=True, cls=ComplexEncoder)}\n")
         stdout.flush()
+
 
 class SqliteClass:
     def __init__(self, file=None, drop=False, uuid=None):
@@ -501,7 +490,7 @@ def check_bytes(string: Any) -> str:
 
 def load_template(filename: str) -> str:
     file_path = Path(__file__).parent / "data" / filename
-    return file_path.read_text()
+    return file_path.read_bytes()
 
 
 def get_headers_and_ip_from_request(request, options):
