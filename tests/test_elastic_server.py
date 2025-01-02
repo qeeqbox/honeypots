@@ -31,7 +31,7 @@ def test_elastic_server(server_logs):
             basic_auth=(USERNAME, PASSWORD),
             verify_certs=False,
         )
-        elastic.search(index="test", body={}, size=99)
+        elastic.search(index="test", body={'size':99})
 
     logs = load_logs_from_file(server_logs)
 
