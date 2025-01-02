@@ -135,7 +135,13 @@ sudo -E python3 -m honeypots --setup ftp --config config.json
     "logs_location": "",
     "syslog_address":"",
     "syslog_facility":0,
-    "postgres":"//username:password@172.19.0.2:9999/honeypots",
+    "postgres":{
+        "username":"postgres",
+        "password":"test",
+        "hostname":"192.168.2.20",
+        "port":"5432",
+        "db":"honeypots"
+    },
     "sqlite_file":"",
     "db_options":["drop"],
     "sniffer_filter": "",
