@@ -25,7 +25,7 @@ from urllib.parse import urlparse
 import psutil
 from OpenSSL import crypto
 from psutil import process_iter
-
+from psycopg import connect as psycopg_connect, sql
 
 def set_up_error_logging():
     _logger = logging.getLogger("honeypots.error")
@@ -139,7 +139,7 @@ def setup_logger(name: str, temp_name: str, config: str | None, drop: bool = Fal
 
     ret_logs_obj = getLogger(temp_name)
     ret_logs_obj.setLevel(DEBUG)
-    if "db_postgres_removed" in logs or "db_sqlite" in logs:
+    if "db_postgres" in logs or "db_sqlite" in logs:
         ret_logs_obj.addHandler(CustomHandler(temp_name, logs, custom_filter, config_data, drop))
     elif "terminal" in logs:
         ret_logs_obj.addHandler(CustomHandler(temp_name, logs, custom_filter))
@@ -248,6 +248,17 @@ class CustomHandler(Handler):
         self.logs = logs
         self.uuid = uuid
         self.custom_filter = custom_filter
+        if config and "db_postgres" in self.logs:
+            self.db["db_postgres"] = PostgresClass(
+                path="postgresql://{}:{}@{}:{}".format(config["postgres"]["username"],config["postgres"]["password"],config["postgres"]["hostname"],config["postgres"]["port"]),
+                host=config["postgres"]["hostname"],
+                port=config["postgres"]["port"],
+                username=config["postgres"]["username"],
+                password=config["postgres"]["password"],
+                db=config["postgres"]["db"],
+                uuid=self.uuid,
+                drop=drop,
+            )
         if config and "db_sqlite" in self.logs:
             self.db["db_sqlite"] = SqliteClass(
                 file=config["sqlite_file"], drop=drop, uuid=self.uuid
@@ -256,7 +267,7 @@ class CustomHandler(Handler):
 
     def emit(self, record: LogRecord):  # noqa: C901,PLR0912
         try:
-            if "db_postgres_removed" in self.logs and self.db["db_postgres"]:
+            if "db_postgres" in self.logs and self.db["db_postgres"]:
                 if isinstance(record.msg, list):
                     if record.msg[0] in {"sniffer", "errors"}:
                         self.db["db_postgres"].insert_into_data_safe(
@@ -290,6 +301,121 @@ class CustomHandler(Handler):
             log_entry = {"error": repr(error), "logger": repr(record)}
             stdout.write(f"{json.dumps(log_entry, sort_keys=True, cls=ComplexEncoder)}\n")
         stdout.flush()
+
+class PostgresClass:
+    def __init__(  # noqa: PLR0913
+        self,
+        path=None,
+        host=None,
+        port=None,
+        username=None,
+        password=None,
+        db=None,
+        drop=False,
+        uuid=None,
+    ):
+        self.path = path
+        self.host = host
+        self.port = port
+        self.username = username
+        self.password = password
+        self.db = db
+        self.uuid = uuid
+        self.mapped_tables = ["errors", "servers", "sniffer", "system"]
+        self.wait_until_up()
+        if drop:
+            self.con = psycopg_connect(
+                conninfo=self.path,
+                autocommit=True
+            )
+            self.cur = self.con.cursor()
+            self.drop_db()
+            self.drop_tables()
+            self.create_db()
+            self.con.close()
+        else:
+            self.con = psycopg_connect(
+                conninfo=self.path,
+                autocommit=True
+            )
+            self.cur = self.con.cursor()
+            if not self.check_db_if_exists():
+                self.create_db()
+            self.con.close()
+        self.con = psycopg_connect(
+                conninfo=self.path + "/" + self.db,
+                autocommit=True
+        )
+        self.cur = self.con.cursor()
+        self.create_tables()
+
+    def wait_until_up(self):
+        test = True
+        while test:
+            with suppress():
+                logger.info(f"{self.uuid} - Waiting on postgres connection")
+                stdout.flush()
+                conn = psycopg_connect(
+                    conninfo=self.path + "?connect_timeout=1"
+                )
+                conn.close()
+                test = False
+            sleep(1)
+        logger.info(f"{self.uuid} - postgres connection is good")
+
+    def addattr(self, x, val):
+        self.__dict__[x] = val
+
+    def check_db_if_exists(self):
+        exists = False
+        with suppress(Exception):
+            self.cur.execute(
+                "SELECT exists(SELECT 1 from pg_catalog.pg_database where datname = %s)",
+                (self.db,),
+            )
+            if self.cur.fetchone()[0]:
+                exists = True
+        return exists
+
+    def drop_db(self):
+        with suppress(Exception):
+            logger.warning(f"Dropping {self.db} db")
+            if self.check_db_if_exists():
+                self.cur.execute(
+                    sql.SQL("drop DATABASE IF EXISTS {}").format(sql.Identifier(self.db))
+                )
+                sleep(2)
+            self.cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(self.db)))
+
+    def create_db(self):
+        logger.info("Creating PostgreSQL database")
+        self.cur.execute(sql.SQL("CREATE DATABASE {}").format(sql.Identifier(self.db)))
+
+    def drop_tables(
+        self,
+    ):
+        for x in self.mapped_tables:
+            self.cur.execute(
+                sql.SQL("drop TABLE IF EXISTS {}").format(sql.Identifier(x + "_table"))
+            )
+
+    def create_tables(self):
+        for table in self.mapped_tables:
+            self.cur.execute(
+                sql.SQL(
+                    "CREATE TABLE IF NOT EXISTS {} "
+                    "(id SERIAL NOT NULL,date timestamp with time zone DEFAULT now(),data json)"
+                ).format(sql.Identifier(table + "_table"))
+            )
+
+    def insert_into_data_safe(self, table, obj):
+        with suppress(Exception):
+            self.cur.execute(
+                sql.SQL("INSERT INTO {} (id,date, data) VALUES (DEFAULT ,now(), %s)").format(
+                    sql.Identifier(table + "_table")
+                ),
+                [obj],
+            )
 
 
 class SqliteClass:
