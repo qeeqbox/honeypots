@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from abc import ABC
-from cgi import FieldStorage
+from urllib.parse import parse_qs
 from contextlib import suppress
 from random import choice
 
@@ -95,20 +95,10 @@ class BaseHttpServer(BaseServer, ABC):
                     and self.hp_server.username != ""
                     and self.hp_server.password != ""
                 ):
-                    form = FieldStorage(
-                        fp=request.content,
-                        headers=self.headers,
-                        environ={
-                            "REQUEST_METHOD": "POST",
-                            "CONTENT_TYPE": self.headers.get(
-                                b"content-type",
-                                b"application/x-www-form-urlencoded",
-                            ),
-                        },
-                    )
-                    if "username" in form and "password" in form:
-                        username = check_bytes(form["username"].value)
-                        password = check_bytes(form["password"].value)
+                    form = parse_qs(request.content.read(int(self.headers.get(b"content-length"))))
+                    if b"username" in form and b"password" in form:
+                        username = check_bytes(form[b"username"][0])
+                        password = check_bytes(form[b"password"][0])
                         self.hp_server.check_login(
                             username, password, client_ip, request.getClientAddress().port
                         )
