@@ -1,0 +1,2 @@
+sudo apt install git python3-pytest python3-pip
+pip3 uninstall -y honeypots --break-system-packages && pip3 install . --break-system-packages
