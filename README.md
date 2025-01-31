@@ -159,7 +159,7 @@ sudo -E python3 -m honeypots --setup ftp --config config.json
 #### config.json (Output to sqlite db)
 ```json
 {
-    "logs": "db_postgres",
+    "logs": "db_sqlite",
     "logs_location": "",
     "syslog_address":"",
     "syslog_facility":0,
