@@ -168,11 +168,14 @@ class QSSHServer(BaseServer):
                     _q_s.logger.debug(f"Server error: {err}", exc_info=True)
                     return
 
-                with session.accept(30) as conn:
+                conn = session.accept(30) as conn:
+                if conn: 
                     if "interactive" in _q_s.options and conn is not None:
                         _handle_interactive_session(conn, ip, port)
                     with suppress(TimeoutError):
                         ssh_handle.event.wait(2)
+                else:
+                    _q_s.logger.debug(f"Server connection is None, timedout")
 
         def _handle_interactive_session(conn: Channel, ip: str, port: int):
             conn.send(b"Welcome to Ubuntu 20.04 LTS (GNU/Linux 5.4.0-26-generic x86_64)\r\n\r\n")
