@@ -485,6 +485,10 @@ class SqliteClass:
         with suppress(Exception):
             parsed = {k: v for k, v in obj.items() if v is not None}
             dict_ = {**self.servers_table_template, **parsed}
+            if isinstance(dict_.get("data"), dict):
+                dict_["data"] = json.dumps(dict_["data"], ensure_ascii=False)
+            if isinstance(dict_.get("error"), dict):
+                dict_["error"] = json.dumps(dict_["error"], ensure_ascii=False)
             self.cur.execute(
                 "INSERT INTO servers_table ("
                 "server, action, status, src_ip, src_port, dest_ip, dest_port, username, "
