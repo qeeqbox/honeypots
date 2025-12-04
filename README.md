@@ -3,7 +3,7 @@
 30 low-high level honeypots in a single PyPI package for monitoring network traffic, bots activities, and username \ password credentials. 
 
 ## Why honeypots package is very powerful?
-The honeypots respond back, non-blocking, can be used as objects, or called directly with the in-built auto-configure scripts! Also, they are easy to set up and customize; it takes 1-2 seconds to spin a honeypot up. You can spin up multiple instances with the same type. For easy integration, the output can be logged to a Postgres database, file[s], terminal, or Syslog.
+The honeypots respond back, non-blocking, can be used as objects, or called directly with the in-built auto-configure scripts! Also, they are easy to set up and customize; it takes 1-2 seconds to spin a honeypot up. You can spin up multiple instances with the same type. For easy integration, the output can be logged to a SQlite database, file[s], terminal, or Syslog.
 
 This honeypots package is the only package that contains all the following: dhcp, dns, elastic, ftp, http proxy, https proxy, http, https, imap, ipp, irc, ldap, memcache, mssql, mysql, ntp, oracle, pjl, pop3, postgres, rdp, redis, sip, smb, smtp, snmp, socks5, ssh, telnet, vnc.
 
@@ -126,34 +126,6 @@ sudo -E python3 -m honeypots --setup ftp --config config.json
   }
 }
 
-```
-
-#### config.json (Output to Postgres db)
-```json
-{
-    "logs": "db_postgres",
-    "logs_location": "",
-    "syslog_address":"",
-    "syslog_facility":0,
-    "postgres":{
-        "username":"postgres",
-        "password":"test",
-        "hostname":"192.168.2.20",
-        "port":"5432",
-        "db":"honeypots"
-    },
-    "sqlite_file":"",
-    "db_options":["drop"],
-    "sniffer_filter": "",
-    "sniffer_interface": "",
-    "honeypots": {
-        "ftp": {
-            "port": 21,
-            "username": "test",
-            "password": "test"
-        }
-    }
-}
 ```
 
 #### config.json (Output to sqlite db)
