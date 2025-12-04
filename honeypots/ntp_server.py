@@ -16,6 +16,12 @@ class QNTPServer(BaseServer):
     NAME = "ntp_server"
     DEFAULT_PORT = 123
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        #Adaptor
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
+
+
     def server_main(self):
         _q_s = self
 
@@ -72,9 +78,10 @@ class QNTPServer(BaseServer):
                         "data": {"version": version, "mode": mode},
                     }
                 )
-
+        #Adaptor
+        bind_ip = self.adaptor_ip if self.adaptor_ip else ""
         reactor.listenUDP(
-            port=self.port, protocol=CustomDatagramProtocolProtocol(), interface=self.ip
+            port=self.port, protocol=CustomDatagramProtocolProtocol(), interface=bind_ip
         )
         reactor.run()
 

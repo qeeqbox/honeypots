@@ -71,6 +71,8 @@ class QSniffer(BaseServer):
         self.allowed_ports = []
         self.allowed_ips = []
         self.common = re.compile(rb"pass|user|login")
+        #Adaptor
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
 
     @staticmethod
     def find_icmp(type_, code):
@@ -91,7 +93,9 @@ class QSniffer(BaseServer):
 
     def server_main(self):
         try:
-            sniff(filter=self.filter, iface=self.interface, prn=self.capture_logic)
+            #Adaptor
+            bind_ip = self.adaptor_ip if self.adaptor_ip else ""
+            sniff(filter=self.filter, iface=bind_ip, prn=self.capture_logic)
         except PermissionError as error:
             self.logger.error(f"Could not start sniffer: {error}")
 

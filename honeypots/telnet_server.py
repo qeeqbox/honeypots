@@ -17,6 +17,8 @@ class QTelnetServer(BaseServer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        #Adaptor
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
         self.random_servers = [
             "Ubuntu 18.04 LTS",
             "Ubuntu 16.04.3 LTS",
@@ -67,7 +69,9 @@ class QTelnetServer(BaseServer):
 
         factory = Factory()
         factory.protocol = lambda: TelnetTransport(CustomTelnetProtocol)
-        reactor.listenTCP(port=self.port, factory=factory, interface=self.ip)
+        #Adaptor
+        bind_ip = self.adaptor_ip if self.adaptor_ip else ""
+        reactor.listenTCP(port=self.port, factory=factory, interface=bind_ip)
         reactor.run()
 
     def test_server(self, ip=None, port=None, username=None, password=None):

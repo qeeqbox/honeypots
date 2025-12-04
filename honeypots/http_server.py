@@ -12,10 +12,15 @@ from honeypots.helper import (
 class QHTTPServer(BaseHttpServer):
     NAME = "http_server"
     DEFAULT_PORT = 80
-
+    #Adaptor
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
     def server_main(self):
         resource = self.MainResource(hp_server=self)
-        reactor.listenTCP(port=self.port, factory=Site(resource), interface=self.ip)
+  #Adaptor
+        bind_ip = self.adaptor_ip if self.adaptor_ip else ""
+        reactor.listenTCP(self.port, Site(resource), interface=bind_ip)
         reactor.run()
 
     def test_server(self, ip=None, port=None, username=None, password=None):

@@ -19,6 +19,8 @@ class QDNSServer(BaseServer):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self.resolver_addresses = [("8.8.8.8", 53)]
+        #adapter 
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
 
     def server_main(self):
         _q_s = self
@@ -66,8 +68,10 @@ class QDNSServer(BaseServer):
         self.resolver = CustomClientResolver(servers=self.resolver_addresses)
         self.factory = CustomDNSServerFactory(clients=[self.resolver])
         self.protocol = CustomDnsUdpProtocol(controller=self.factory)
-        reactor.listenUDP(self.port, self.protocol, interface=self.ip)
-        reactor.listenTCP(self.port, self.factory, interface=self.ip)
+        #adaptor
+        bind_ip = self.adaptor_ip if self.adaptor_ip else ""
+        reactor.listenUDP(self.port, self.protocol, interface=bind_ip)
+        reactor.listenTCP(self.port, self.factory, interface=bind_ip)
         reactor.run()
 
     def test_server(self, *_, domain=None, **__):

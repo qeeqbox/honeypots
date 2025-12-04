@@ -18,10 +18,13 @@ class QElasticServer(BaseServer):
     NAME = "elastic_server"
     DEFAULT_PORT = 9200
     DEFAULT_USERNAME = "elastic"
+    #adaptor
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
 
     def server_main(self):  # noqa: C901
         _q_s = self
-
         class CustomElasticServerHandler(SimpleHTTPRequestHandler):
             server_version = ""
             sys_version = ""
@@ -310,7 +313,10 @@ class QElasticServer(BaseServer):
                 return self.key
 
         with create_certificate() as (cert, key):
-            server = CustomElasticServer((self.ip, self.port))
+
+            # Adaptor
+            bind_ip = self.adaptor_ip if self.adaptor_ip else ""
+            server = CustomElasticServer((bind_ip, self.port))
             server.set_auth_key(self.username, self.password)
             ctx = SSLContext(PROTOCOL_TLS_SERVER)
             ctx.load_cert_chain(certfile=cert, keyfile=key)

@@ -16,6 +16,13 @@ class QRedisServer(BaseServer):
     NAME = "redis_server"
     DEFAULT_PORT = 6379
 
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+    #Adaptor
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
+
+
     def server_main(self):  # noqa: C901
         _q_s = self
 

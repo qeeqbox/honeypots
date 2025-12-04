@@ -11,7 +11,9 @@ from honeypots.helper import check_bytes, server_arguments
 class QDHCPServer(BaseServer):
     NAME = "dhcp_server"
     DEFAULT_PORT = 67
-
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
     def server_main(self):
         _q_s = self
 
@@ -90,9 +92,11 @@ class QDHCPServer(BaseServer):
                     }
                 )
 
+        bind_ip = self.adaptor_ip if self.adaptor_ip else ""
         reactor.listenUDP(
-            port=self.port, protocol=CustomDatagramProtocolProtocol(), interface=self.ip
+        port=self.port, protocol=CustomDatagramProtocolProtocol(), interface=bind_ip
         )
+
         reactor.run()
 
     def test_server(self, ip=None, port=None):

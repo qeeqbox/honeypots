@@ -261,6 +261,10 @@ class HoneypotsManager:
         if not server_class:
             logger.warning(f"Skipping unknown service {service}")
             return
+ # pass adaptor_ip along with other server_args
+        init_args = dict(self.server_args)
+        if hasattr(self.options, "adaptor_ip"):
+            init_args["adaptor_ip"] = self.options.adaptor_ip or None 
         server = server_class(**self.server_args)
         if not self.options.test:
             status = server.run_server(process=True, auto=auto)
@@ -472,6 +476,8 @@ def _parse_args() -> tuple[Namespace, dict[str, str | int]]:
     arg_parser_optional.add_argument(
         "--options", type=str, help="Extra options", metavar="", default=""
     )
+    # <-- Add adaptor-ip option
+    arg_parser_optional.add_argument("--adaptor-ip", help="Interface IP to bind honeypots to", metavar="", default="") 
     arg_parser_optional_2 = arg_parser.add_argument_group("General options")
     arg_parser_optional_2.add_argument(
         "--termination-strategy",

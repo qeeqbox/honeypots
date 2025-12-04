@@ -13,6 +13,11 @@ from honeypots.helper import (
 class QSIPServer(BaseServer):
     NAME = "sip_server"
     DEFAULT_PORT = 5060
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+    #Adaptor
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
 
     def server_main(self):
         _q_s = self
@@ -43,8 +48,9 @@ class QSIPServer(BaseServer):
                 response = self.responseFromRequest(200, message)
                 response.creationFinished()
                 self.deliverResponse(response)
-
-        reactor.listenUDP(port=self.port, protocol=CustomSIPServer(), interface=self.ip)
+        #Adaptor
+        bind_ip = self.adaptor_ip if self.adaptor_ip else ""
+        reactor.listenUDP(port=self.port, protocol=CustomSIPServer(), interface=bind_ip)
         reactor.run()
 
     def test_server(self, ip=None, port=None, username=None, password=None):

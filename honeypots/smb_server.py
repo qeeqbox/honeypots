@@ -22,6 +22,8 @@ class QSMBServer(BaseServer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        #Adaptor
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
         self.folders = ""
 
     def server_main(self):  # noqa: C901
@@ -90,7 +92,9 @@ class QSMBServer(BaseServer):
                 self.__server.serve_forever()
 
         with TemporaryDirectory() as tmpdir:
-            server = SimpleSMBServer(listenAddress=self.ip, listenPort=self.port)
+            #Adaptor
+            bind_ip = self.adaptor_ip if self.adaptor_ip else ""
+            server = SimpleSMBServer(listenAddress=bind_ip, listenPort=self.port)
             if self.folders == "" or self.folders is None:
                 server.addShare("C$", tmpdir, "", readOnly="yes")
             else:

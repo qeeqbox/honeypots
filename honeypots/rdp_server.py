@@ -16,6 +16,11 @@ class QRDPServer(BaseServer):
     NAME = "rdp_server"
     DEFAULT_PORT = 3389
 
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+    #Adaptor
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
+
     def server_main(self):  # noqa: C901
         _q_s = self
 
@@ -192,7 +197,9 @@ class QRDPServer(BaseServer):
 
         rpdserver = socket(AF_INET, SOCK_STREAM)
         rpdserver.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        rpdserver.bind((self.ip, self.port))
+        #Adaptor
+        bind_ip = self.adaptor_ip if self.adaptor_ip else ""
+        rpdserver.bind((bind_ip, self.port))
         rpdserver.listen()
 
         with create_certificate() as (cert, key):

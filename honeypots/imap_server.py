@@ -24,6 +24,7 @@ class QIMAPServer(BaseServer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
         self.mocking_server = choice(
             [b"OK Microsoft Exchange Server 2003 IMAP4rev1 server version 6.5.6944.0 DC9 ready"]
         )
@@ -106,7 +107,9 @@ class QIMAPServer(BaseServer):
                 return protocol
 
         factory = CustomIMAPFactory()
-        reactor.listenTCP(port=self.port, factory=factory, interface=self.ip)
+        # Adaptor
+        bind_ip = self.adaptor_ip if self.adaptor_ip else self.ip
+        reactor.listenTCP(port=self.port, factory=factory, interface=bind_ip)
         reactor.run()
 
     def test_server(self, ip=None, port=None, username=None, password=None):

@@ -75,6 +75,8 @@ class QSSHServer(BaseServer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        #Adaptor
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
         self.mocking_server = choice(
             ["OpenSSH 7.5", "OpenSSH 7.3", "Serv-U SSH Server 15.1.1.108", "OpenSSH 6.4"]
         )
@@ -197,7 +199,9 @@ class QSSHServer(BaseServer):
 
         sock = socket(AF_INET, SOCK_STREAM)
         sock.setsockopt(SOL_SOCKET, SO_REUSEADDR, 1)
-        sock.bind((self.ip, self.port))
+        #Adaptor
+        bind_ip = self.adaptor_ip if self.adaptor_ip else ""
+        sock.bind((bind_ip, self.port))
         sock.listen(1)
         private_key = self.generate_pub_pri_keys()
         while True:

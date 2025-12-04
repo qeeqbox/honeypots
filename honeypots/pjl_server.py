@@ -16,6 +16,8 @@ class QPJLServer(BaseServer):
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
+        #Adaptor
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
         self.printer = b"Brother HL-L2360"
         self.template = {
             "ProductName": "Brother HL-L2360",
@@ -78,7 +80,9 @@ class QPJLServer(BaseServer):
 
         factory = Factory()
         factory.protocol = Custompjlrotocol
-        reactor.listenTCP(port=self.port, factory=factory, interface=self.ip)
+        #Adaptor
+        bind_ip = self.adaptor_ip if self.adaptor_ip else ""
+        reactor.listenTCP(port=self.port, factory=factory, interface=bind_ip)
         reactor.run()
 
     def test_server(self, ip=None, port=None, username=None, password=None):  # noqa: ARG002

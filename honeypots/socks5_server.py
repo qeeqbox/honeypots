@@ -17,6 +17,11 @@ AUTH_TYPE_USER_PW = 2
 class QSOCKS5Server(BaseServer):
     NAME = "socks5_server"
     DEFAULT_PORT = 1080
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        #Adaptor
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
 
     def server_main(self):
         _q_s = self
@@ -64,7 +69,9 @@ class QSOCKS5Server(BaseServer):
             pass
 
         TCPServer.allow_reuse_address = True
-        server = ThreadingTCPServer((self.ip, self.port), CustomStreamRequestHandler)
+        #Adaptor
+        bind_ip = self.adaptor_ip if self.adaptor_ip else ""
+        server = ThreadingTCPServer((bind_ip, self.port), CustomStreamRequestHandler)
         server.serve_forever()
 
     def test_server(self, ip=None, port=None, username=None, password=None):

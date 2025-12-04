@@ -24,6 +24,8 @@ class QHTTPProxyServer(BaseServer):
     def __init__(self, **kwargs):
         self.template: str | None = None
         super().__init__(**kwargs)
+        #Adaptor
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
         self.template_contents: str | None = self._load_template()
 
     def _load_template(self) -> str | None:

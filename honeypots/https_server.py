@@ -13,12 +13,17 @@ from honeypots.helper import (
 class QHTTPSServer(BaseHttpServer):
     NAME = "https_server"
     DEFAULT_PORT = 443
-
+    #Adaptor
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
     def server_main(self):
         resource = self.MainResource(hp_server=self)
         with create_certificate() as (cert, key):
             ssl_context = ssl.DefaultOpenSSLContextFactory(key, cert)
-            reactor.listenSSL(self.port, Site(resource), ssl_context, interface=self.ip)
+    #Adaptor
+            bind_ip = self.adaptor_ip if self.adaptor_ip else ""
+            reactor.listenSSL(self.port, Site(resource), ssl_context, interface=bind_ip)
             reactor.run()
 
     def test_server(self, ip=None, port=None, username=None, password=None):

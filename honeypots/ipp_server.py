@@ -168,6 +168,11 @@ STATUS_CODE_BAD_REQUEST = b"\x04\x00"
 class QIPPServer(BaseServer):
     NAME = "ipp_server"
     DEFAULT_PORT = 631
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+    #Adaptor
+        self.adaptor_ip = kwargs.get("adaptor_ip", None)
 
     def server_main(self):  # noqa: C901
         _q_s = self
@@ -287,7 +292,10 @@ class QIPPServer(BaseServer):
                 )
                 return version + status_code + request_id + attributes
 
-        reactor.listenTCP(self.port, Site(MainResource()), interface=self.ip)
+
+        #Adaptor
+        bind_ip = self.adaptor_ip if self.adaptor_ip else ""
+        reactor.listenTCP(self.port, Site(MainResource()), interface=bind_ip)
         reactor.run()
 
     def test_server(self, ip=None, port=None):
